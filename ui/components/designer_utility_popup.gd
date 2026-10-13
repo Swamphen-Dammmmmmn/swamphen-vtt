@@ -9,6 +9,7 @@ var dragged := false
 var last_available := Vector2.ZERO
 var last_anchor := Vector2.ZERO
 var fit_pending := false
+var reveal_revision := 0
 
 func _ready() -> void:
 	hide()
@@ -31,10 +32,11 @@ func _ready() -> void:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(label)
 	var close := Button.new()
-	close.text = "×"
+	GoStyle.apply_icon(close,GoIconSet.CLOSE,18)
+	close.tooltip_text = "关闭"
 	Style.button(close)
 	close.custom_minimum_size.x = 36
-	close.pressed.connect(hide)
+	close.pressed.connect(dismiss)
 	header.add_child(close)
 	header.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT)!=0:
@@ -43,9 +45,11 @@ func _ready() -> void:
 	)
 
 func reveal_at(available: Vector2, anchor: Vector2) -> void:
+	reveal_revision += 1
+	var revision := reveal_revision
 	fit_at(available,anchor)
 	await get_tree().process_frame
-	if not is_inside_tree(): return
+	if not is_inside_tree() or revision!=reveal_revision: return
 	fit_at(get_parent().size,anchor)
 	show()
 	Style.Motion.fade_in(self)
@@ -72,3 +76,7 @@ func _queue_fit() -> void:
 func _refit() -> void:
 	fit_pending = false
 	if last_available!=Vector2.ZERO: fit_at(last_available,last_anchor)
+
+func dismiss() -> void:
+	reveal_revision += 1
+	hide()

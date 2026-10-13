@@ -4,6 +4,37 @@ const Footprint = preload("res://scripts/token_footprint.gd")
 const Appearance = preload("res://scripts/token_appearance.gd")
 const Components = preload("res://scripts/token_components.gd")
 const Sticker = preload("res://scripts/token_sticker.gd")
+const SCENE_FIELDS := ["temp_hp", "notes", "quarter_turn", "model_yaw_deg"]
+const MAX_NOTES := 8000
+
+static func scene_values(data: Dictionary) -> Dictionary:
+	return {"temp_hp":int(data.get("temp_hp",0)), "notes":str(data.get("notes","")), "quarter_turn":int(data.get("quarter_turn",0)), "model_yaw_deg":float(data.get("model_yaw_deg",0.0))}
+
+static func apply_orientation(actor: Node3D, data: Dictionary) -> void:
+	var quarter := deg_to_rad(float(data.get("quarter_turn",0))*90.0)
+	var offset := deg_to_rad(float(data.get("model_yaw_deg",0.0)))
+	var extent := Footprint.dimensions(data)
+	if not actor.has_meta("appearance_bounds"):
+		var measured := AABB()
+		var found := false
+		for child in actor.get_children():
+			if child is MeshInstance3D and child.mesh!=null:
+				var box: AABB = child.transform*child.mesh.get_aabb()
+				measured = measured.merge(box) if found else box
+				found = true
+		if found: actor.set_meta("appearance_bounds",measured)
+	var bounds: AABB = actor.get_meta("appearance_bounds",AABB(Vector3(-extent.x/2.0,0,-extent.y/2.0),Vector3(extent.x,float(data.get("size",1)),extent.y)))
+	var center := bounds.get_center()
+	var basis := Basis(Vector3.UP,offset)
+	var transform := Transform3D(basis,center-basis*center)
+	actor.rotation.y = quarter
+	for child in actor.get_children():
+		if not child is Node3D: continue
+		if not child.has_meta("orientation_rest"): child.set_meta("orientation_rest",child.transform)
+		var rest: Transform3D = child.get_meta("orientation_rest")
+		child.transform = rest if child.has_meta("rule_proxy") else transform*rest
+		if child.has_meta("rule_proxy"): child.rotation.y = -quarter
+	actor.set_meta("oriented_bounds",transform*bounds)
 
 static func raw(data: Dictionary) -> Dictionary:
 	var result := data.duplicate(true)
@@ -40,11 +71,22 @@ static func decode(data: Dictionary) -> Dictionary:
 	var params: Dictionary = result["parameters"]
 	params["kind"] = source.get("kind","basic")
 	params["tags"] = source.get("tags",[]).duplicate()
+	var temporary: Variant = source.get("temp_hp",0)
+	var quarter: Variant = source.get("quarter_turn",0)
+	var angle: Variant = source.get("model_yaw_deg",0.0)
+	var notes: Variant = source.get("notes","")
+	if not Store._integer(temporary) or int(temporary)<0 or int(temporary)>999999: return {"ok":false,"message":"临时生命值无效。"}
+	if not Store._integer(quarter) or int(quarter)<0 or int(quarter)>3: return {"ok":false,"message":"棋子实际朝向无效。"}
+	if typeof(angle) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(angle)) or absf(float(angle))>360: return {"ok":false,"message":"棋子模型偏角无效。"}
+	if not notes is String or notes.length()>MAX_NOTES: return {"ok":false,"message":"棋子备注过长或无效。"}
+	params.merge(scene_values(source),true)
 	return {"ok":true,"parameters":params}
 
 static func build(data: Dictionary, ghost := false) -> Node3D:
 	var components: Dictionary = data.get("components",{})
-	return Appearance.build(int(data["size"]),data["color"],data["base"],ghost) if components.is_empty() else Components.build(Components.validate(components,Footprint.dimensions(data)),ghost)
+	var actor: Node3D = Appearance.build(int(data["size"]),data["color"],data["base"],ghost) if components.is_empty() else Components.build(Components.validate(components,Footprint.dimensions(data)),ghost)
+	apply_orientation(actor,data)
+	return actor
 
 static func images(data: Dictionary) -> Array:
 	if data.get("components",{}).is_empty(): return []

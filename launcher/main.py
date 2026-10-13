@@ -15,7 +15,7 @@ def resources():
     return Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parent))
 
 def public_key():return (resources()/"release-public.pem").read_bytes()
-def certificate():return resources()/"default.crt"
+def certificate():return None
 
 def tell(message):
     if os.name=="nt":ctypes.windll.user32.MessageBoxW(None,str(message),"紫水鸡棋盘",0x10)
@@ -45,7 +45,14 @@ def worker(root,args):
     if len(job)!=32 or any(c not in "0123456789abcdef" for c in job):raise core.UpdateError("任务编号无效。")
     result=root/"cache"/"updates"/"jobs"/(job+".json")
     def report(value):core.atomic_json(result,value)
-    def progress(value):report({"state":"working","message":"正在准备更新","progress":round(value,3)})
+    progress_time=[0.0]
+    def progress(value):
+        now=time.monotonic()
+        fraction=value.get("progress",0) if isinstance(value,dict) else value
+        if now-progress_time[0]<0.15 and fraction<1:return
+        progress_time[0]=now
+        detail=value if isinstance(value,dict) else {"phase":"verify","progress":value}
+        report(dict(detail,state="working",message="正在下载更新" if detail.get("phase")=="download" else "正在校验更新"))
     report({"state":"working","message":"正在检查更新","progress":0})
     try:
         if args.action=="check":
@@ -56,10 +63,10 @@ def worker(root,args):
         elif args.action=="download":
             record,_,_=core.check(root,public_key(),certificate())
             record=core.download(root,record,public_key(),certificate(),progress)
-            report({"state":"staged","message":"更新已就绪","version":record["version"]})
+            report({"state":"staged","message":"更新已就绪","version":record["version"],"notes":record.get("notes","")})
         elif args.action=="import":
             record=core.stage(root,Path(args.package),public_key(),progress)
-            report({"state":"staged","message":"更新已就绪","version":record["version"]})
+            report({"state":"staged","message":"更新已就绪","version":record["version"],"notes":record.get("notes","")})
     except Exception as error:
         message=str(error) if isinstance(error,core.UpdateError) else "更新失败，请检查连接、文件与目录权限。当前程序和数据已保留。"
         report({"state":"failed","message":message})

@@ -48,6 +48,10 @@ func present(values: Array[Dictionary], at: Vector2, bounds: Vector2, margin: fl
 				var action: String = item[0]
 				var button := Button.new()
 				button.text = item[1]
+				if action=="more":
+					button.text = ""
+					GoStyle.apply_icon(button,GoIconSet.MORE,16)
+					button.tooltip_text = "更多操作"
 				button.focus_mode = Control.FOCUS_NONE
 				BoardUiStyle.action_button(button, BoardUiStyle.ACTION_HEIGHT, false, action.begins_with("delete"))
 				button.pressed.connect(func(): action_requested.emit(entry, action, card.get_global_rect()))

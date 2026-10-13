@@ -47,6 +47,7 @@ var next_measurement_id := 1
 var hover_shape := -1
 var tool := Tool.SELECT
 var tokens: Array[Dictionary] = []
+var turn_control: Control
 var next_token_id := 0
 var camera: Camera3D
 var ui: BoardUI
@@ -106,12 +107,18 @@ func _ready() -> void:
 			if tokens.size()==previous_count:
 				session_load_error = "部分棋子无法生成，已阻止覆盖保存。请返回后检查原冒险内容。"
 				continue
+			tokens[-1].merge(Instance.scene_values(data),true)
+			Instance.apply_orientation(tokens[-1]["node"],tokens[-1])
 			tokens[-1]["persistent_id"] = data["id"]
 			tokens[-1]["platform_id"] = platform["id"]
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	ui = UI_SCENE.instantiate() as BoardUI
 	layer.add_child(ui)
+	turn_control = preload("res://ui/components/token_turn_control.gd").new()
+	ui.add_child(turn_control)
+	turn_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	turn_control.z_index = 8
 	ui.set_map_title(session_map["title"])
 	ui.get_node("BoardInfo").hide()
 	ui.tool_requested.connect(_on_tool)
@@ -133,6 +140,9 @@ func _ready() -> void:
 	ui.entity_selection_requested.connect(_left_click)
 	ui.token_renamed.connect(_rename_token)
 	ui.token_stats_changed.connect(_update_token_stats)
+	ui.token_notes_changed.connect(func(index: int,text: String):
+		if can_operate_token(index): tokens[index]["notes"] = text.left(Instance.MAX_NOTES)
+	)
 	ui.route_action_requested.connect(_on_route_action)
 	_update_status()
 
@@ -158,6 +168,7 @@ func set_application_active(active: bool, keep_visible := false) -> void:
 	ui.set_navigation_suspended(not active)
 	if active: ui.set_map_navigation_active(false)
 	if not active:
+		turn_control.close()
 		ui.suspend_pointer_input()
 		_hide_navigation_popups(ui)
 
@@ -241,6 +252,7 @@ func _build_token_actor(cell: Vector2i, size: int, color: Color, base: String, i
 	add_child(actor)
 	actor.position = _cell_world(cell,extent,tokens[index].get("platform_id","") if index<tokens.size() else "")
 	var body := StaticBody3D.new()
+	body.set_meta("rule_proxy",true)
 	body.set_meta("token_index", index)
 	var collider := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
@@ -282,6 +294,7 @@ func _add_token(title: String, cell: Vector2i, size: int, color: Color, hp: int 
 	if surfaces!=null:
 		tokens[-1]["persistent_id"] = preload("res://scripts/map_data.gd").new_id()
 		tokens[-1]["platform_id"] = surfaces.current
+	tokens[-1].merge(Instance.scene_values({}),true)
 	next_token_id += 1
 
 func _appearance_height(actor: Node3D, legacy_size: int) -> float:
@@ -324,6 +337,7 @@ func _begin_token_placement(parameters: Dictionary) -> void:
 	token_placement_cell = Vector2i(-100, -100)
 	token_cancel_anchor = focus
 	token_preview = TokenAppearance.build(int(token_draft["size"]), parameters["color"], parameters["base"], true) if component_data.is_empty() else Components.build(Components.validate(component_data, extent), true)
+	Instance.apply_orientation(token_preview,token_draft)
 	add_child(token_preview)
 	token_preview.hide()
 	token_footprint = MeshInstance3D.new()
@@ -377,6 +391,8 @@ func _on_token_placement_action(action: String) -> void:
 		var previous_count := tokens.size()
 		_add_token(token_draft["title"], token_placement_cell, int(token_draft["size"]), token_draft["color"], int(token_draft["hp"]), int(token_draft["ac"]), token_draft["base"], int(token_draft["max_hp"]), token_draft.get("kind", "basic"), token_draft.get("tags", []), Footprint.dimensions(token_draft), token_draft.get("components", {}))
 		if tokens.size()==previous_count: return
+		tokens[-1].merge(Instance.scene_values(token_draft),true)
+		Instance.apply_orientation(tokens[-1]["node"],tokens[-1])
 		if tray_placement_id.is_empty():
 			session_party["owners"][tokens[-1]["persistent_id"]] = token_draft.get("owner_member",session_actor)
 		if not tray_placement_id.is_empty():
@@ -424,6 +440,12 @@ func _zoom_camera(direction: float) -> void:
 	_update_camera()
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(turn_control) and turn_control.panel.visible:
+		if turn_control.handle_pointer(event,ui.pointer_on_ui()):
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton and event.pressed and not ui.pointer_on_ui() and event.button_index==MOUSE_BUTTON_LEFT:
+			turn_control.close()
 	# Existing dialogs/popups get Esc before the adventure menu fallback.
 	if event is InputEventKey and event.keycode == KEY_ESCAPE:
 		return
@@ -547,7 +569,12 @@ func _process(delta: float) -> void:
 		var info_zoom := minf(1.0, 52.0 / maxf(depth, 0.1))
 		var screen := camera.unproject_position(name_position)
 		var visible_name: bool = not camera.is_position_behind(name_position) and get_viewport().get_visible_rect().has_point(screen) and surfaces.visible_hit(name_position,screen)
-		ui.show_token_name(index, tokens[index], screen, visible_name, index == selected, tool == Tool.SELECT and can_operate_token(index), info_zoom)
+		ui.show_token_name(index, tokens[index], screen, visible_name, index == selected, tool == Tool.SELECT, info_zoom, can_operate_token(index))
+	if selected>=0 and selected<tokens.size() and tool in [Tool.SELECT,Tool.ROUTE]:
+		turn_control.update_marker(tokens[selected]["node"],tokens[selected],self)
+	else:
+		turn_control.close()
+		turn_control.update_marker(null,{},self)
 	match tool:
 		Tool.SELECT:
 			pass
@@ -782,6 +809,17 @@ func _on_token_action(action: String) -> void:
 		return
 	var data := tokens[ui.displayed_token]
 	if not can_operate_token(ui.displayed_token): return
+	if action == "turn":
+		selected = ui.displayed_token
+		_clear_entity_hover()
+		var token_id: int = data["id"]
+		turn_control.open(data["node"],data,camera,func(point: Vector2): return point,func(quarter: int,offset: float):
+			if not can_operate_token(selected) or tokens[selected]["id"]!=token_id: return
+			data["quarter_turn"] = quarter
+			data["model_yaw_deg"] = offset
+		,func(): return can_operate_token(selected) and tokens[selected]["id"]==token_id,camera.unproject_position(data["node"].position)+Vector2(30,-120))
+		return
+	turn_control.close()
 	if action == "store":
 		token_tray_requested.emit(data.duplicate(true))
 		return
@@ -791,7 +829,9 @@ func _on_token_action(action: String) -> void:
 		full_token_edit_requested.emit(data.duplicate(true))
 		return
 	if action == "copy":
-		_begin_token_placement({"title": data["title"], "size": data["size"], "width": Footprint.dimensions(data).x, "length": Footprint.dimensions(data).y, "base": data["base"], "color": data["color"], "hp": data["hp"], "max_hp": data["max_hp"], "ac": data["ac"], "kind": data.get("kind", "basic"), "tags": data.get("tags", []).duplicate(), "components": data.get("components", {}).duplicate(true), "owner_member":session_party["owners"].get(data["persistent_id"],"dm")})
+		var copy := {"title": data["title"], "size": data["size"], "width": Footprint.dimensions(data).x, "length": Footprint.dimensions(data).y, "base": data["base"], "color": data["color"], "hp": data["hp"], "max_hp": data["max_hp"], "ac": data["ac"], "kind": data.get("kind", "basic"), "tags": data.get("tags", []).duplicate(), "components": data.get("components", {}).duplicate(true), "owner_member":session_party["owners"].get(data["persistent_id"],"dm")}
+		copy.merge(Instance.scene_values(data),true)
+		_begin_token_placement(copy)
 		return
 	if action == "delete":
 		var count := 0
@@ -833,6 +873,7 @@ func _save_token_appearance(token_id: int, parameters: Dictionary) -> void:
 	remove_child(old_actor)
 	old_actor.queue_free()
 	data["node"] = _build_token_actor(data["cell"], int(data["size"]), data["color"], data["base"], index, Footprint.dimensions(data))
+	Instance.apply_orientation(data["node"],data)
 	_refresh_selection()
 
 func _endpoints_bound_to(endpoints: Array, token_id: int) -> bool:
@@ -882,11 +923,12 @@ func _rename_token(index: int, title: String) -> void:
 	if index >= 0 and index < tokens.size() and can_operate_token(index):
 		tokens[index]["title"] = title
 
-func _update_token_stats(index: int, hp: int, maximum: int, ac: int) -> void:
+func _update_token_stats(index: int, hp: int, maximum: int, ac: int, temporary: int) -> void:
 	if index >= 0 and index < tokens.size() and can_operate_token(index):
 		tokens[index]["hp"] = hp
 		tokens[index]["max_hp"] = maximum
 		tokens[index]["ac"] = ac
+		tokens[index]["temp_hp"] = temporary
 
 func _update_route_pointer(mouse: Vector2) -> void:
 	if tool == Tool.MEASURE:
@@ -1150,6 +1192,7 @@ func _clear_lines() -> void:
 	end_marker.hide()
 
 func _on_tool(request: String) -> void:
+	if is_instance_valid(turn_control): turn_control.close()
 	if network_readonly and request!="select": return
 	if (tool == Tool.MEASURE and request == "measure") or (tool == Tool.SHAPE and request == "shape") or (tool == Tool.SELECT and request == "select"):
 		ui.set_tool(request)
@@ -1193,6 +1236,9 @@ func _on_tool(request: String) -> void:
 	_update_status()
 
 func _escape() -> void:
+	if turn_control.panel.visible:
+		turn_control.close()
+		return
 	ui.menu_requested.emit()
 
 func _on_campaign_mode_changed(_index: int) -> void:
@@ -1499,7 +1545,7 @@ func _entity_candidates(mouse: Vector2) -> Array[Dictionary]:
 			var actor: Node3D = data["node"]
 			var count := int(data["size"])
 			if ray_tokens.has(index) or index == card or (Footprint.space(data).has_point(cell) and (surfaces==null or data.get("platform_id","")==surfaces.current)):
-				result.append({"kind": "token", "id": data["id"], "label": "棋子 · " + data["title"], "appearance_available": data.get("components", {}).is_empty(), "anchor": actor.position + Vector3.UP * (_appearance_height(actor, count) + 0.45), "actions": [["move", "移动"], ["more", "⋯"]]})
+				result.append({"kind": "token", "id": data["id"], "label": "棋子 · " + data["title"], "appearance_available": data.get("components", {}).is_empty(), "anchor": actor.position + Vector3.UP * (_appearance_height(actor, count) + 0.45), "actions": [["move", "移动"], ["turn", "转向"], ["more", "更多"]]})
 	for index in range(shape_plan.shapes.size()) if tool == Tool.SHAPE else []:
 		var data := shape_plan.shapes[index]
 		var at := _shape_plane_point(mouse,data)
@@ -1516,7 +1562,7 @@ func _entity_candidates(mouse: Vector2) -> Array[Dictionary]:
 				hit = Geometry2D.get_closest_point_to_segment(mouse, camera.unproject_position(a), camera.unproject_position(b)).distance_squared_to(mouse) <= 49
 		if hit:
 			var names := ["圆形", "扇形", "矩形", "直线"]
-			result.append({"kind": "shape", "id": data["display_id"], "label": "%s %d" % [names[int(data["kind"])], data["display_id"]], "anchor": _shape_vertex(at,data), "actions": [["move", "移动"], ["delete", "删除"], ["more", "⋯"]]})
+			result.append({"kind": "shape", "id": data["display_id"], "label": "%s %d" % [names[int(data["kind"])], data["display_id"]], "anchor": _shape_vertex(at,data), "actions": [["move", "移动"], ["delete", "删除"], ["more", "更多"]]})
 	for candidate in _measurement_candidates(mouse) if tool == Tool.MEASURE else []:
 		var plan := measurements[int(candidate["index"])]
 		var point := int(candidate["point"])
@@ -1788,8 +1834,11 @@ func apply_full_token_edit(token_id: int, parameters: Dictionary) -> void:
 	var old: Node3D = data["node"]
 	remove_child(old)
 	old.queue_free()
+	var scene := Instance.scene_values(data)
 	data.merge(parameters,true)
+	data.merge(scene,true)
 	data["node"] = actor
+	Instance.apply_orientation(actor,data)
 	_refresh_selection()
 	_update_saved_measurements()
 
@@ -1843,10 +1892,48 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 	var incoming := {"maps":[{"id":session_map_id,"data":data}],"trays":{}}
 	export_session_tokens()
 	var same: bool = Wire.canonical(Wire.indexed(current))==Wire.canonical(Wire.indexed(incoming)) and Wire.canonical(preload("res://scripts/adventure_runtime.gd").capture(self))==Wire.canonical(state)
+	var old_layout := session_map.duplicate(true)
+	var new_layout := data.duplicate(true)
+	for platform: Dictionary in old_layout["platforms"]:
+		platform["data"]["tokens"] = []
+		platform["data"] = preload("res://scripts/platform_library_store.gd").signature(platform["data"])
+	for platform: Dictionary in new_layout["platforms"]:
+		platform["data"]["tokens"] = []
+		platform["data"] = preload("res://scripts/platform_library_store.gd").signature(platform["data"])
+	var can_update: bool = Wire.canonical(old_layout)==Wire.canonical(new_layout) and Wire.canonical(preload("res://scripts/adventure_runtime.gd").capture(self))==Wire.canonical(state)
+	var incoming_tokens := {}
+	for platform: Dictionary in data["platforms"]:
+		for token: Dictionary in platform["data"].get("tokens",[]): incoming_tokens[token["id"]] = {"token":token,"platform":platform}
+	can_update = can_update and incoming_tokens.size()==tokens.size()
+	for token: Dictionary in tokens:
+		if not incoming_tokens.has(token["persistent_id"]): can_update = false
 	session_map = data
 	session_party = party
 	surfaces.platforms = data["platforms"]
 	if same: return
+	if can_update:
+		for index in range(tokens.size()):
+			var current_token: Dictionary = tokens[index]
+			var incoming_token: Dictionary = incoming_tokens[current_token["persistent_id"]]["token"]
+			var platform: Dictionary = incoming_tokens[current_token["persistent_id"]]["platform"]
+			var rebuilt: bool = current_token["color"]!=incoming_token["color"] or current_token["base"]!=incoming_token["base"] or Footprint.dimensions(current_token)!=Footprint.dimensions(incoming_token) or Wire.canonical(current_token.get("components",{}))!=Wire.canonical(incoming_token.get("components",{}))
+			if [current_token["hp"],current_token["max_hp"],current_token.get("temp_hp",0)]!=[incoming_token["hp"],incoming_token["max_hp"],incoming_token.get("temp_hp",0)]:
+				ui.get_node("StatsDialog").history.erase(current_token["id"])
+				if ui.get_node("StatsDialog").token_index==index: ui.get_node("StatsDialog").hide()
+			var raw := incoming_token.duplicate(true)
+			raw.erase("id")
+			raw["cell"] += surfaces.origin(platform)
+			current_token.merge(raw,true)
+			current_token["platform_id"] = platform["id"]
+			if rebuilt:
+				turn_control.close()
+				var previous: Node3D = current_token["node"]
+				previous.queue_free()
+				current_token["node"] = _build_token_actor(current_token["cell"],int(current_token["size"]),current_token["color"],current_token["base"],index,Footprint.dimensions(current_token),current_token.get("components",{}))
+			current_token["node"].position = _cell_world(current_token["cell"],Footprint.dimensions(current_token),platform["id"])
+			Instance.apply_orientation(current_token["node"],current_token)
+		_refresh_selection()
+		return
 	var previous_tool: String = ui.current_tool
 	prepare_session_switch()
 	for token: Dictionary in tokens:
@@ -1865,6 +1952,8 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 			if tokens.size()==before:
 				session_load_error = "未能完整生成同步棋子。"
 				continue
+			tokens[-1].merge(Instance.scene_values(token),true)
+			Instance.apply_orientation(tokens[-1]["node"],tokens[-1])
 			tokens[-1]["persistent_id"] = token["id"]
 			tokens[-1]["platform_id"] = platform["id"]
 	shape_plan = ShapePlan.new()

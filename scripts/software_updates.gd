@@ -1,5 +1,6 @@
 extends Node
 signal changed
+signal page_requested
 signal restart_requested(action: String)
 const Paths = preload("res://scripts/storage_paths.gd")
 var status := ""
@@ -11,6 +12,9 @@ var job := ""
 var worker_pid := -1
 var elapsed := 0.0
 var available := false
+var phase := ""
+var downloaded := 0
+var total := 0
 
 func _ready() -> void:
 	available = OS.has_feature("windows") and not OS.has_feature("editor") and FileAccess.file_exists(Paths.install_root().path_join("紫水鸡棋盘.exe"))
@@ -19,6 +23,8 @@ func _ready() -> void:
 	if available and FileAccess.file_exists(staged):
 		var value: Variant = JSON.parse_string(FileAccess.get_file_as_string(staged))
 		if value is Dictionary: state = "staged"; latest = str(value.get("version","")); status = "更新已就绪"
+	if available and state!="staged":
+		get_tree().create_timer(3.0).timeout.connect(func(): start("check"))
 
 func busy() -> bool:
 	return not job.is_empty()
@@ -30,7 +36,7 @@ func start(action: String, package := "") -> void:
 	if action=="import": arguments.append_array(["--package",package])
 	worker_pid = OS.create_process(Paths.install_root().path_join("紫水鸡棋盘.exe"),arguments,false)
 	if worker_pid<0: job = ""; state = "failed"; status = "无法启动更新任务。"
-	else: state = "working"; status = "正在准备更新"; progress = 0
+	else: state = "working"; status = "正在准备更新"; progress = 0; phase = ""; downloaded = 0; total = 0
 	changed.emit()
 
 func _process(delta: float) -> void:
@@ -51,6 +57,9 @@ func _process(delta: float) -> void:
 		state = "failed"
 		status = "更新任务中断，请重试。当前版本已保留。"
 	progress = float(value.get("progress",0))
+	phase = str(value.get("phase",""))
+	downloaded = int(value.get("downloaded",0))
+	total = int(value.get("total",0))
 	latest = str(value.get("version",latest))
 	notes = str(value.get("notes",notes))
 	if state!="working":

@@ -1044,7 +1044,7 @@ func _update_scroll_hint(scroll: ScrollContainer) -> void:
 	var bar := scroll.get_v_scroll_bar()
 	var up := bar.value > 0.5
 	var down := bar.value < bar.max_value - bar.page - 0.5
-	scroll_hints[scroll].text = "↑ 上方还有内容 · 下方还有内容 ↓" if up and down else ("下方还有内容 ↓" if down else ("↑ 上方还有内容" if up else ""))
+	scroll_hints[scroll].text = "上方还有内容 · 下方还有内容" if up and down else ("下方还有内容" if down else ("上方还有内容" if up else ""))
 
 func _percent(text: String) -> Variant:
 	var value: Variant = _number_text(text)

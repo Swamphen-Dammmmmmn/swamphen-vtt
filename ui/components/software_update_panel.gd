@@ -9,6 +9,7 @@ var download_button: Button
 var import_button: Button
 var apply_button: Button
 var rollback_button: Button
+var download_size: Label
 
 func _ready() -> void:
 	add_theme_constant_override("separation",16)
@@ -28,6 +29,8 @@ func _ready() -> void:
 	progress.show_percentage = true
 	progress.custom_minimum_size.y = 24
 	add_child(progress)
+	download_size = Style.text("",14,true)
+	add_child(download_size)
 	status = Style.text("",16,true)
 	add_child(status)
 	notes = Style.text("",16)
@@ -66,7 +69,9 @@ func _refresh() -> void:
 	status.text = Updates.status+(" · "+Updates.latest if not Updates.latest.is_empty() else "")
 	notes.text = Updates.notes
 	notes.visible = not notes.text.is_empty()
-	progress.visible = Updates.busy()
+	progress.visible = Updates.busy() and Updates.phase in ["download","verify"]
+	download_size.visible = Updates.busy() and Updates.phase=="download"
+	download_size.text = "%.1f / %.1f MiB" % [Updates.downloaded/1048576.0,Updates.total/1048576.0]
 	progress.value = Updates.progress
 	check_button.disabled = not Updates.available or Updates.busy()
 	import_button.disabled = check_button.disabled

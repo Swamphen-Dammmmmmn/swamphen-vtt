@@ -23,7 +23,7 @@ func _ready() -> void:
 	heading.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(heading)
 	clear_button = Button.new()
-	clear_button.text = "×"
+	GoStyle.apply_icon(clear_button,GoIconSet.CLOSE,16)
 	clear_button.tooltip_text = "取消选择"
 	clear_button.focus_mode = Control.FOCUS_NONE
 	Style.card_button(clear_button,28)

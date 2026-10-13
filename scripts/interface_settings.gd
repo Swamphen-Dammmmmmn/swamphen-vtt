@@ -1,7 +1,7 @@
 extends Node
 
 const Preferences = preload("res://scripts/ui_preferences.gd")
-const FLOATING_COMPONENTS := ["action_bar.gd", "overlap_actions.gd", "token_actions.gd", "shape_actions.gd", "rename_dialog.gd", "stats_dialog.gd", "token_delete_dialog.gd", "route_card.gd"]
+const FLOATING_COMPONENTS := ["action_bar.gd", "overlap_actions.gd", "token_actions.gd", "shape_actions.gd", "rename_dialog.gd", "stats_dialog.gd", "token_delete_dialog.gd", "route_card.gd", "token_turn_control.gd"]
 const FLOATING_SCENES := ["distance_chip.tscn", "segment_label.tscn"]
 var preferences: RefCounted
 

@@ -173,7 +173,8 @@ func _sync_presets() -> void:
 
 func _details(title: String) -> VBoxContainer:
 	var fold := Button.new()
-	fold.text = "›  "+title
+	fold.text = title
+	GoStyle.apply_icon(fold,GoIconSet.CHEVRON_RIGHT,18)
 	fold.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	fold.toggle_mode = true
 	Style.button(fold)
@@ -182,7 +183,7 @@ func _details(title: String) -> VBoxContainer:
 	add_child(body)
 	body.hide()
 	fold.toggled.connect(func(on: bool):
-		fold.text = ("⌄  " if on else "›  ")+title
+		GoStyle.apply_icon(fold,GoIconSet.CHEVRON_DOWN if on else GoIconSet.CHEVRON_RIGHT,18)
 		body.visible = on
 		if on: Style.Motion.fade_in(body)
 	)

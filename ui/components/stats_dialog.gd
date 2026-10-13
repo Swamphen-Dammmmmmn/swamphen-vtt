@@ -1,11 +1,13 @@
 extends Control
 
-signal stats_saved(index: int, hp: int, maximum: int, ac: int)
+signal stats_saved(index: int, hp: int, maximum: int, ac: int, temporary: int)
 var token_index := -1
 var history_id := -1
 var current_hp := -1
 var maximum_hp := -1
 var current_ac := -1
+var temporary_hp := 0
+var consume_temporary: CheckBox
 var mode := "hp"
 var fields: Dictionary = {}
 var heading: Label
@@ -52,6 +54,15 @@ func _ready() -> void:
 	content.add_child(hp_group)
 	_add_adjustment("decrease", "扣去", -1)
 	_add_adjustment("increase", "增加", 1)
+	consume_temporary = CheckBox.new()
+	consume_temporary.text = "先扣临时生命值"
+	consume_temporary.button_pressed = true
+	hp_group.add_child(consume_temporary)
+	_add_field(hp_group,"temporary","临时生命值")
+	var temp_actions := GoStyle.row(8)
+	hp_group.add_child(temp_actions)
+	temp_actions.add_child(GoStyle.button("设置临时生命值",_save_temporary))
+	temp_actions.add_child(GoStyle.button("清零",func(): fields["temporary"].text = "0"; _save_temporary(),GoStyle.Tone.COMPACT))
 	undo_button = GoStyle.button("撤销最近一次生命值操作", _undo_hp, GoStyle.Tone.COMPACT)
 	hp_group.add_child(undo_button)
 	settings = GoStyle.foldable("修改当前值与最大值", true, null, false)
@@ -112,7 +123,8 @@ func _add_field(parent: Control, key: String, title: String) -> void:
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.max_length = 6
 	field.text_submitted.connect(func(_text: String):
-		if key == "ac": _save_ac()
+		if key == "temporary": _save_temporary()
+		elif key == "ac": _save_ac()
 		else: _save_settings()
 	)
 	row.add_child(field)
@@ -125,6 +137,8 @@ func open(index: int, data: Dictionary, edit_mode: String, at: Rect2) -> void:
 	current_hp = data["hp"]
 	maximum_hp = data["max_hp"]
 	current_ac = data["ac"]
+	temporary_hp = int(data.get("temp_hp",0))
+	if history.has(history_id) and history[history_id]["after"]!=[current_hp,maximum_hp,temporary_hp]: history.erase(history_id)
 	mode = edit_mode
 	heading.text = "%s · %s" % [data["title"], "生命值" if mode == "hp" else "护甲等级"]
 	hp_group.visible = mode == "hp"
@@ -147,6 +161,7 @@ func open(index: int, data: Dictionary, edit_mode: String, at: Rect2) -> void:
 func _refresh_hp() -> void:
 	summary.text = "当前生命值：%d / %d" % [current_hp, maximum_hp] if maximum_hp > 0 else "生命值未填写，请先设置当前值与最大值。"
 	summary.visible = mode == "hp"
+	fields["temporary"].text = str(temporary_hp)
 	fields["current"].text = str(current_hp) if current_hp >= 0 else ""
 	fields["maximum"].text = str(maximum_hp) if maximum_hp > 0 else ""
 	for button in apply_buttons:
@@ -163,13 +178,19 @@ func _adjust_hp(key: String, direction: int) -> void:
 		error_label.text = "本次数量请填写正整数。"
 		return
 	var before := current_hp
-	current_hp = clampi(current_hp + direction * int(amount), 0, maximum_hp)
-	if current_hp != before:
-		history[history_id] = before
-	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac)
+	var previous_temporary := temporary_hp
+	var remaining := int(amount)
+	if direction<0 and consume_temporary.button_pressed:
+		var absorbed := mini(temporary_hp,remaining)
+		temporary_hp -= absorbed
+		remaining -= absorbed
+	current_hp = clampi(current_hp+direction*remaining,0,maximum_hp)
+	if current_hp!=before or temporary_hp!=previous_temporary:
+		history[history_id] = {"before":[before,previous_temporary],"after":[current_hp,maximum_hp,temporary_hp]}
+	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac, temporary_hp)
 	_refresh_hp()
 	error_label.add_theme_color_override("font_color", Color("28785e"))
-	error_label.text = ("已增加 %d 生命" % (current_hp - before) if direction > 0 else "已扣去 %d 生命" % (before - current_hp)) + "，剩余 %d / %d。" % [current_hp, maximum_hp]
+	error_label.text = ("已增加 %d 生命" % (current_hp - before) if direction > 0 else "已扣去 %d 生命" % (before - current_hp + previous_temporary-temporary_hp)) + "，剩余 %d / %d。" % [current_hp, maximum_hp]
 	fields[key].text = ""
 	fields[key].grab_focus()
 
@@ -187,7 +208,7 @@ func _save_settings() -> void:
 		current_hp = int(hp_text)
 		maximum_hp = int(max_text)
 	history.erase(history_id)
-	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac)
+	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac, temporary_hp)
 	_refresh_hp()
 	settings.folded = true
 	error_label.text = "生命值设置已保存。"
@@ -196,9 +217,10 @@ func _save_settings() -> void:
 func _undo_hp() -> void:
 	if not history.has(history_id):
 		return
-	current_hp = int(history[history_id])
+	current_hp = int(history[history_id]["before"][0])
+	temporary_hp = int(history[history_id]["before"][1])
 	history.erase(history_id)
-	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac)
+	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac, temporary_hp)
 	_refresh_hp()
 	error_label.add_theme_color_override("font_color", Color("28785e"))
 	error_label.text = "已撤销最近一次操作，剩余 %d / %d。" % [current_hp, maximum_hp]
@@ -210,10 +232,21 @@ func _save_ac() -> void:
 		error_label.text = "AC 请填写非负整数，留空表示未填写。"
 		return
 	current_ac = -1 if text.is_empty() else int(text)
-	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac)
+	stats_saved.emit(token_index, current_hp, maximum_hp, current_ac, temporary_hp)
 	hide()
 
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		hide()
 		get_viewport().set_input_as_handled()
+
+func _save_temporary() -> void:
+	var text: String = fields["temporary"].text.strip_edges()
+	if not text.is_valid_int() or int(text)<0 or int(text)>999999:
+		error_label.text = "临时生命值请填写不超过六位的非负整数。"
+		return
+	temporary_hp = int(text)
+	history.erase(history_id)
+	stats_saved.emit(token_index,current_hp,maximum_hp,current_ac,temporary_hp)
+	_refresh_hp()
+	error_label.text = ""

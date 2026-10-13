@@ -108,7 +108,8 @@ func _card(record: Dictionary) -> void:
 	row.add_child(edit)
 	edit.pressed.connect(func(): edit_requested.emit(record["id"]))
 	var more := Button.new()
-	more.text = "⋯"
+	GoStyle.apply_icon(more,GoIconSet.MORE,18)
+	more.tooltip_text = "更多操作"
 	more.custom_minimum_size.x = 44
 	Style.card_button(more)
 	row.add_child(more)

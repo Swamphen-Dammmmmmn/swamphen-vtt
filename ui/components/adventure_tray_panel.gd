@@ -60,7 +60,9 @@ func _ready() -> void:
 	row.add_child(selected_label)
 	place_button = _action_button(row,"放置","place",true)
 	transfer_button = _action_button(row,"转移","transfer")
-	more_button = _action_button(row,"⋯","")
+	more_button = _action_button(row,"","")
+	GoStyle.apply_icon(more_button,GoIconSet.MORE,18)
+	more_button.tooltip_text = "更多操作"
 	more_button.custom_minimum_size.x = 44
 	options = CardMenu.new()
 	add_child(options)

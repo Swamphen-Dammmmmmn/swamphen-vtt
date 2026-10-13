@@ -124,7 +124,9 @@ func _card(item: Dictionary) -> void:
 	var edit := _button("编辑地图",func(): _edit_map(item))
 	edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(edit)
-	var more := _button("⋯",func(): pass)
+	var more := _button("",func(): pass)
+	GoStyle.apply_icon(more,GoIconSet.MORE,18)
+	more.tooltip_text = "更多操作"
 	more.custom_minimum_size.x = 44
 	row.add_child(more)
 	var options := CardMenu.new()

@@ -331,6 +331,7 @@ static func _token_customize(page: Page, id := "") -> void:
 
 static func _settings(page: Page) -> void:
 	var settings := SettingsPage.new()
+	page.set_meta("settings_editor",settings)
 	page.use_fullscreen_content(settings)
 	settings.back_requested.connect(func(): page.back_requested.emit())
 

@@ -30,9 +30,14 @@ var footprint_cache := {}
 var modal: Control
 var full_editor: Control
 var active := false
+var turn_control: Control
 
 func _ready() -> void:
 	add_theme_constant_override("separation",12)
+	turn_control = preload("res://ui/components/token_turn_control.gd").new()
+	editor.add_child(turn_control)
+	turn_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	turn_control.z_index = 8
 	current_selection = CurrentSelection.new()
 	add_child(current_selection)
 	current_selection.cleared.connect(cancel)
@@ -55,6 +60,7 @@ func _ready() -> void:
 				_show_actions()
 			"edit": _edit()
 			"move": _move()
+			"turn": _turn()
 			"copy": _copy()
 			"delete": _delete()
 	)
@@ -128,6 +134,7 @@ func begin(parameters: Dictionary) -> void:
 	editor._queue_fit()
 
 func cancel() -> void:
+	if is_instance_valid(turn_control): turn_control.close()
 	if not moving.is_empty(): _finish_move(false)
 	dragging = false
 	moving = ""
@@ -147,9 +154,10 @@ func blocked() -> bool:
 	return (is_instance_valid(modal) and modal.visible) or is_instance_valid(full_editor) or (is_instance_valid(creation) and creation.visible)
 
 func over_ui(point: Vector2) -> bool:
-	return (palette.visible and palette.get_global_rect().has_point(point)) or (creation.visible and creation.get_global_rect().has_point(point)) or (actions.visible and actions.get_global_rect().has_point(point))
+	return (palette.visible and palette.get_global_rect().has_point(point)) or (creation.visible and creation.get_global_rect().has_point(point)) or (actions.visible and actions.get_global_rect().has_point(point)) or turn_control.over_ui(point)
 
 func pause() -> void:
+	turn_control.close()
 	if not moving.is_empty(): _finish_move(false)
 	if is_instance_valid(ghost): ghost.hide()
 	_clear_footprint()
@@ -176,6 +184,7 @@ func _finish_move(commit: bool) -> void:
 
 func handle_pointer(event: InputEvent, on_ui: bool) -> bool:
 	if not active or blocked(): return false
+	if turn_control.handle_pointer(event,on_ui): return true
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT and not moving.is_empty():
 		_finish_move(false)
 		return true
@@ -195,6 +204,7 @@ func handle_pointer(event: InputEvent, on_ui: bool) -> bool:
 			refresh()
 			editor._mark_unsaved()
 		return true
+	turn_control.close()
 	var hits := _picks(event.position)
 	action_target = ""
 	hover_ids = hits
@@ -215,10 +225,10 @@ func _picks(point: Vector2) -> Array[String]:
 		var actor: Node3D = actors.get(data["id"])
 		if actor==null: continue
 		var extent := Footprint.dimensions(data)
-		var bounds: AABB = actor.get_meta("appearance_bounds",AABB(Vector3(-extent.x/2.0,0,-extent.y/2.0),Vector3(extent.x,float(data["size"]),extent.y)))
-		var hit = bounds.intersects_segment(origin-actor.position,end-actor.position)
+		var bounds: AABB = actor.get_meta("oriented_bounds",actor.get_meta("appearance_bounds",AABB(Vector3(-extent.x/2.0,0,-extent.y/2.0),Vector3(extent.x,float(data["size"]),extent.y))))
+		var hit = bounds.intersects_segment(actor.to_local(origin),actor.to_local(end))
 		if hit!=null:
-			var distance := origin.distance_squared_to(hit+actor.position)
+			var distance := origin.distance_squared_to(actor.to_global(hit))
 			hits.append({"id":data["id"],"distance":distance})
 	hits.sort_custom(func(a: Dictionary,b: Dictionary): return a["distance"]<b["distance"])
 	var result: Array[String] = []
@@ -260,6 +270,8 @@ func _process(_delta: float) -> void:
 	if not active or editor._camera_blocked() or editor.rotating:
 		pause()
 		return
+	if not selected.is_empty() and actors.has(selected): turn_control.update_marker(actors[selected],_data(selected),layer)
+	else: turn_control.update_marker(null,{},layer)
 	var point := get_global_mouse_position()
 	if not draft.is_empty() or not moving.is_empty():
 		if not editor._over_ui(point): _update_pointer(point)
@@ -268,6 +280,7 @@ func _process(_delta: float) -> void:
 			valid = false
 			_clear_footprint()
 		return
+	if turn_control.panel.visible: return
 	if not hover_ids.is_empty(): _position_actions()
 	if actions.visible and actions.get_global_rect().grow(12).has_point(point): return
 	action_target = ""
@@ -292,11 +305,12 @@ func _position_actions() -> void:
 		var at := actor.position+Vector3.UP*(bounds.end.y+0.25)
 		if camera.is_position_behind(at): continue
 		if entries.is_empty(): anchor = camera.unproject_position(at)*editor.preview.size/Vector2(editor.preview.viewport.size)+editor.preview.global_position
-		entries.append({"id":id,"label":"棋子 · "+str(data["title"]),"actions": [["select","选择"]] if hover_ids.size()>1 else [["edit","编辑"],["move","移动"],["copy","复制"],["delete","删除"]]})
+		entries.append({"id":id,"label":"棋子 · "+str(data["title"]),"actions": [["select","选择"]] if hover_ids.size()>1 else [["move","移动"],["turn","转向"],["edit","编辑"],["copy","复制"],["delete","删除"]]})
 	if entries.is_empty(): actions.hide(); return
 	actions.present(entries,anchor,editor.size,editor._panel_edge())
 
 func _move() -> void:
+	turn_control.close()
 	moving = selected
 	var data := _data(moving)
 	if data.is_empty(): moving = ""; return
@@ -339,6 +353,7 @@ func _delete() -> void:
 	,false,true,true)
 
 func _edit() -> void:
+	turn_control.close()
 	var data := _data().duplicate(true)
 	if data.is_empty(): return
 	pause()
@@ -355,7 +370,9 @@ func _open_editor(data: Dictionary) -> void:
 	full_editor.applied.connect(func(params: Dictionary):
 		var target := _data(id)
 		if target.is_empty() or Footprint.dimensions(target)!=Footprint.dimensions(params): return
+		var scene := Instance.scene_values(target)
 		target.merge(params,true)
+		target.merge(scene,true)
 		refresh()
 		editor._mark_unsaved()
 	)
@@ -374,3 +391,16 @@ func _highlight() -> void:
 	footprint_cache = cache
 	footprint = editor.preview._rect_overlay(Rect2i(data["cell"],Footprint.dimensions(data)),Color("2563a6"),0.18,true)
 	layer.add_child(footprint)
+
+func _turn() -> void:
+	if selected.is_empty() or not actors.has(selected): return
+	var id := selected
+	var data := _data(id)
+	actions.hide()
+	turn_control.open(actors[id],data,editor.preview.camera,editor.preview.screen_point,func(quarter: int,offset: float):
+		var target := _data(id)
+		if target.is_empty(): return
+		target["quarter_turn"] = quarter
+		target["model_yaw_deg"] = offset
+		editor._mark_unsaved()
+	,func(): return active and selected==id and not _data(id).is_empty(),get_global_mouse_position()+Vector2(20,10))

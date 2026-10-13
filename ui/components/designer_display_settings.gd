@@ -10,7 +10,8 @@ static func populate(body: VBoxContainer, preview: Control, map_mode: bool, norm
 	_toggle(body,"地台参考网格",preview.grid_shown,preview.set_grid_visible)
 	_toggle(body,"可摆放区域高亮",preview.landing_highlight,preview.set_landing_highlight)
 	var fold := Button.new()
-	fold.text = "›  镜头速度"
+	fold.text = "镜头速度"
+	GoStyle.apply_icon(fold,GoIconSet.CHEVRON_RIGHT,18)
 	fold.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	fold.toggle_mode = true
 	Style.button(fold)
@@ -31,7 +32,7 @@ static func populate(body: VBoxContainer, preview: Control, map_mode: bool, norm
 		input.value_changed.connect(func(value: float): speed_changed.call(accelerated,value))
 	section.hide()
 	fold.toggled.connect(func(open: bool):
-		fold.text = "⌄  镜头速度" if open else "›  镜头速度"
+		GoStyle.apply_icon(fold,GoIconSet.CHEVRON_DOWN if open else GoIconSet.CHEVRON_RIGHT,18)
 		section.visible = open
 		if open: Style.Motion.fade_in(section)
 		fit.call_deferred()

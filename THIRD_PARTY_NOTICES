@@ -18,7 +18,11 @@
 - 固定提交：5d48e694d572625dcd3a7d22bd2a2357c6b78c32
 - 安装目录：`addons/gohud`
 - 代码与原创图形：MIT，原文及版权声明保留在 `addons/gohud/LICENSE`。
-- 包含的 Tabler 图标：MIT，版权与许可原文保留在 `addons/gohud/THIRD_PARTY_NOTICES.md`。
+- 包含的 Tabler 图标：MIT，版权与许可原文保留在 `addons/gohud/THIRD_PARTY_NOTICES`。
 - 包含的 Cinzel、Roboto 字体：SIL Open Font License 1.1，原文保留在各字体目录的 `OFL.txt`。
 
-本项目使用系统中文字体，当前没有启用 gohud 的 Cinzel、Roboto 字体预设；随依赖保留字体和许可文件。发布应用时，应随应用附上本说明、gohud LICENSE、第三方资源声明，以及所分发字体的 OFL 文件。当前未重新导出独立应用。
+本项目使用系统中文字体，当前没有启用 gohud 的 Cinzel、Roboto 字体预设；随依赖保留字体和许可文件。发布应用时，应随应用附上本说明、gohud LICENSE、第三方资源声明，以及所分发字体的 OFL 文件。发布包的licenses目录保存第三方许可原文。
+
+## Godot
+
+基于Godot 4.7.2构建，Godot引擎遵循MIT许可证。引擎许可与第三方版权声明保存在发布包licenses目录。项目自身代码使用根LICENSE中的GPL v3.0，不改变第三方许可。

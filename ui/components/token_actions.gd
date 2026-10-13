@@ -8,8 +8,9 @@ func _ready() -> void:
 	theme = GoUi.theme()
 	add_theme_stylebox_override("panel", BoardUiStyle.card_face(BoardUiStyle.ACTION_PADDING))
 	var move := GoStyle.button("移动", func(): action_requested.emit("move"), GoStyle.Tone.COMPACT)
+	var turn := GoStyle.button("转向",func(): action_requested.emit("turn"),GoStyle.Tone.COMPACT)
 	var more := GoStyle.button("", func(): action_requested.emit("more"), GoStyle.Tone.COMPACT)
-	for button in [move, more]:
+	for button in [move, turn, more]:
 		BoardUiStyle.action_button(button)
 		button.autowrap_mode = TextServer.AUTOWRAP_OFF
 		button.focus_mode = Control.FOCUS_NONE

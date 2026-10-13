@@ -25,7 +25,8 @@ signal entity_hovered(target: Dictionary)
 signal entity_selection_requested(mouse: Vector2)
 signal route_action_requested(action: String)
 signal token_renamed(index: int, title: String)
-signal token_stats_changed(index: int, hp: int, maximum: int, ac: int)
+signal token_stats_changed(index: int, hp: int, maximum: int, ac: int, temporary: int)
+signal token_notes_changed(index: int, text: String)
 
 const TOKEN_MENU_ACTIONS := ["rename", "appearance", "copy", "delete", "store"]
 var tray_button: Button
@@ -171,7 +172,7 @@ func _ready() -> void:
 	_populate_token_menu($TokenMenu)
 	$TokenMenu.id_pressed.connect(func(id: int): token_action_requested.emit(TOKEN_MENU_ACTIONS[id]))
 	$RenameDialog.name_saved.connect(func(index: int, title: String): token_renamed.emit(index, title))
-	$StatsDialog.stats_saved.connect(func(index: int, hp: int, maximum: int, ac: int): token_stats_changed.emit(index, hp, maximum, ac))
+	$StatsDialog.stats_saved.connect(func(index: int, hp: int, maximum: int, ac: int, temporary: int): token_stats_changed.emit(index, hp, maximum, ac, temporary))
 
 func rename_open() -> bool:
 	return $RenameDialog.visible or $StatsDialog.visible or delete_dialog.visible or ($TokenCreate.visible and $TokenCreate.editing_id >= 0)
@@ -225,7 +226,7 @@ func reset_after_token_removal(token_id: int) -> void:
 func sidebar_right() -> float:
 	return $Toolbar.position.x + $Toolbar.size.x + 12.0
 
-func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, selected: bool, interactive: bool, info_zoom: float) -> void:
+func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, selected: bool, interactive: bool, info_zoom: float, editable: bool = true) -> void:
 	while $TokenNames.get_child_count() <= index:
 		var new_card := TOKEN_NAME.instantiate()
 		var card_index: int = $TokenNames.get_child_count()
@@ -233,6 +234,7 @@ func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, 
 			displayed_token = card_index
 			_on_token_action(action)
 		)
+		new_card.notes_changed.connect(func(text: String): token_notes_changed.emit(card_index,text))
 		new_card.gui_input.connect(func(event: InputEvent):
 			if current_tool=="select" and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and event.pressed:
 				entity_selection_requested.emit(get_global_mouse_position())
@@ -247,7 +249,8 @@ func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, 
 		$TokenOperations.add_child(actions)
 	var chip := $TokenNames.get_child(index) as Control
 	chip.scale = Vector2.ONE * (8.0 / 9.0) * info_zoom * Interface.preferences.info_scale
-	chip.update_data(data["title"], data["color"], data["hp"], data["max_hp"], data["ac"])
+	chip.update_data(data["title"], data["color"], data["hp"], data["max_hp"], data["ac"], int(data.get("temp_hp",0)), str(data.get("notes","")))
+	chip.set_editable(editable and interactive)
 	chip.set_selected(selected)
 	chip.mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
 	chip.get_node("Content/Header/HP").mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
@@ -669,3 +672,7 @@ func show_network_notice(message: String) -> void:
 	get_tree().create_timer(5.0).timeout.connect(func():
 		if is_instance_valid(network_notice) and revision==network_notice_revision: network_notice.hide()
 	)
+
+func notes_editing() -> bool:
+	var focused := get_viewport().gui_get_focus_owner()
+	return focused is TextEdit and $TokenNames.is_ancestor_of(focused)

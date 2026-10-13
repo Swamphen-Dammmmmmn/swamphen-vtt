@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import io
 import zipfile
 from cryptography.hazmat.primitives import hashes,serialization
 from cryptography.hazmat.primitives.asymmetric import padding,rsa
@@ -25,6 +27,50 @@ class Updates(unittest.TestCase):
         (self.root/"userdata"/"identity.json").write_text('keep identity')
 
     def tearDown(self):self.temporary.cleanup()
+
+    def github_fixture(self, prerelease=False):
+        archive,_,_=self.package()
+        with zipfile.ZipFile(archive) as package:record=json.loads(package.read("release.json"))
+        base="https://github.com/"+core.REPOSITORY+"/releases/download/v0.1.1/"
+        record.update(url=base+"update.zip",package_size=archive.stat().st_size,package_sha256=core.sha(archive))
+        raw=json.dumps(record).encode()
+        signature=base64.b64encode(self.key.sign(raw,padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.DIGEST_LENGTH),hashes.SHA256()))
+        assets=[{"name":name,"state":"uploaded","browser_download_url":base+name,"size":len(value)} for name,value in [("release.json",raw),("release.sig",signature),("update.zip",archive.read_bytes())]]
+        release={"tag_name":"v0.1.1","draft":False,"prerelease":prerelease,"assets":assets}
+        def fetch(url,certificate,limit):
+            if url==core.RELEASE_API:return json.dumps([release]).encode()
+            return raw if url.endswith("release.json") else signature
+        return archive,record,release,fetch
+
+    def test_testing_channel_recognizes_prerelease(self):
+        _,_,_,fetch=self.github_fixture(True)
+        layout=core.read_json(self.root/"installation.json")
+        core.atomic_json(self.root/"installation.json",dict(layout,channel="testing"))
+        with patch.object(core,"fetch",side_effect=fetch):
+            self.assertEqual(core.check(self.root,self.public,None)[0]["version"],"0.1.1")
+
+    def test_stable_channel_excludes_prerelease(self):
+        _,_,_,fetch=self.github_fixture(True)
+        with patch.object(core,"fetch",side_effect=fetch),self.assertRaises(core.UpdateError):core.check(self.root,self.public,None)
+
+    def test_github_asset_mismatch_rejected(self):
+        _,_,release,fetch=self.github_fixture()
+        release["assets"][-1]["size"]+=1
+        with patch.object(core,"fetch",side_effect=fetch),self.assertRaises(core.UpdateError):core.check(self.root,self.public,None)
+
+    def test_download_bytes_and_verification_separate(self):
+        archive,record,_,_=self.github_fixture()
+        stream=io.BytesIO(archive.read_bytes())
+        stream.url=record["url"]
+        events=[]
+        with patch.object(core.urllib.request,"urlopen",return_value=stream):
+            result=core.download(self.root,record,self.public,None,events.append)
+        self.assertEqual(result["version"],"0.1.1")
+        completed=[event for event in events if event["phase"]=="download"][-1]
+        self.assertEqual(completed["downloaded"],archive.stat().st_size)
+        self.assertEqual(completed["progress"],1)
+        self.assertTrue(any(event["phase"]=="verify" for event in events))
+        self.assertEqual((self.root/"userdata"/"identity.json").read_text(),"keep identity")
 
     def package(self,extra=None):
         data={"program/"+core.ENTRY:b"new game","boot/"+core.BOOT:b"new boot"}

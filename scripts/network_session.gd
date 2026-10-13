@@ -208,7 +208,7 @@ func _idle() -> bool:
 	if not hosting and application.current_route not in ["board","session_maps","session_menu"]: return false
 	if is_instance_valid(application.token_edit_layer) or is_instance_valid(application.session_modal) or application.tray_controller.blocked(): return false
 	var board: Node3D = application.board
-	return board.tool not in [2,4] and not board.ui.get_node("TokenCreate").visible and not board.measure_creating and board.measurement.editing_index<0 and not board.shape_plan.dirty() and not board.ui.rename_open()
+	return board.tool not in [2,4] and not board.ui.get_node("TokenCreate").visible and not board.measure_creating and board.measurement.editing_index<0 and not board.shape_plan.dirty() and not board.ui.rename_open() and not board.ui.notes_editing() and not board.turn_control.dragging
 
 func _exit_tree() -> void:
 	if is_instance_valid(transport): transport.stop()

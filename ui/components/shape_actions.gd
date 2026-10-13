@@ -16,7 +16,7 @@ func set_mode(value: String) -> void:
 	for child in $Actions.get_children():
 		$Actions.remove_child(child)
 		child.queue_free()
-	var items: Array = [["move", "移动"], ["delete", "删除"], ["more", "⋯"]]
+	var items: Array = [["move", "移动"], ["delete", "删除"], ["more", "更多"]]
 	if value == "confirm":
 		items = [["confirm", "确认"], ["cancel", "取消"]]
 	elif value == "cancel_preview":
@@ -28,9 +28,9 @@ func set_mode(value: String) -> void:
 	elif value == "undo":
 		items = [["undo_delete", "已删除 · 撤销"]]
 	elif value == "measure_line":
-		items = [["continue", "继续绘制"], ["delete_measure", "删除整条"], ["more", "⋯"]]
+		items = [["continue", "继续绘制"], ["delete_measure", "删除整条"], ["more", "更多"]]
 	elif value == "measure_node":
-		items = [["move_node", "移动"], ["delete_node", "删除节点"], ["more", "⋯"]]
+		items = [["move_node", "移动"], ["delete_node", "删除节点"], ["more", "更多"]]
 	elif value == "measure_confirm":
 		items = [["confirm_node", "确认"], ["cancel_node", "取消"]]
 	elif value == "measure_undo":

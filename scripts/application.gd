@@ -12,6 +12,7 @@ const Runtime = preload("res://scripts/adventure_runtime.gd")
 const MapCollection = preload("res://ui/pages/session_map_collection.gd")
 const Modal = preload("res://ui/components/page_modal.gd")
 var adventure: Dictionary = {}
+var update_badge: PanelContainer
 var adventure_id := ""
 var current_map_id := ""
 var session_modal: CanvasLayer
@@ -65,6 +66,13 @@ func _ready() -> void:
 	if not preload("res://scripts/storage_paths.gd").failure.is_empty(): return
 	get_tree().set_auto_accept_quit(false)
 	Updates.restart_requested.connect(_request_software_restart)
+	Updates.page_requested.connect(_open_updates)
+	var notification_layer := CanvasLayer.new()
+	notification_layer.layer = 102
+	add_child(notification_layer)
+	update_badge = preload("res://ui/components/software_update_badge.gd").new()
+	update_badge.application = self
+	notification_layer.add_child(update_badge)
 	network_session = Network.new()
 	network_session.application = self
 	add_child(network_session)
@@ -429,3 +437,9 @@ func refresh_network_map_collection() -> void:
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_navigate("session_end" if not adventure.is_empty() else "exit")
+
+func _open_updates() -> void:
+	if is_instance_valid(session_modal) or is_instance_valid(token_edit_layer): return
+	_navigate("settings")
+	if current_route=="settings" and current_page!=null and current_page.has_meta("settings_editor"):
+		current_page.get_meta("settings_editor")._select("updates")

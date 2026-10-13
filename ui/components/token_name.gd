@@ -1,9 +1,14 @@
 extends PanelContainer
 
 signal action_requested(action: String)
-var health_tween: Tween
-var previous_hp := -2
-var previous_max := -2
+signal notes_changed(text: String)
+var expanded := false
+var notes_editor: TextEdit
+var expand_button: Button
+var temporary_label: Label
+var health_bar: Control
+var syncing_notes := false
+var cached_notes := ""
 var face: StyleBoxFlat
 var selected := false
 
@@ -34,14 +39,53 @@ func _ready() -> void:
 			button.add_theme_color_override("icon_" + state + "_color", Color.WHITE)
 	$Content/Header/HP.pressed.connect(func(): action_requested.emit("hp"))
 	$Content/Header/AC.pressed.connect(func(): action_requested.emit("ac"))
-	var background := StyleBoxFlat.new()
-	background.bg_color = Color("e2e7ed")
-	background.set_corner_radius_all(3)
-	background.set_content_margin_all(0)
-	$Content/Health.add_theme_stylebox_override("background", background)
-	var fill := background.duplicate() as StyleBoxFlat
-	fill.bg_color = Color("429d86")
-	$Content/Health.add_theme_stylebox_override("fill", fill)
+	temporary_label = Label.new()
+	temporary_label.add_theme_color_override("font_color",Color("168de1"))
+	temporary_label.add_theme_font_size_override("font_size",13)
+	temporary_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Content/Header.add_child(temporary_label)
+	$Content/Header.move_child(temporary_label,4)
+	expand_button = GoStyle.button("",_toggle_notes,GoStyle.Tone.COMPACT)
+	GoStyle.apply_icon(expand_button,GoIconSet.CHEVRON_DOWN,16)
+	expand_button.tooltip_text = "展开备注"
+	expand_button.custom_minimum_size = Vector2(26,26)
+	expand_button.focus_mode = Control.FOCUS_NONE
+	BoardUiStyle.action_button(expand_button,26)
+	$Content/Header.add_child(expand_button)
+	$Content/Health.hide()
+	health_bar = preload("res://ui/components/token_health_bar.gd").new()
+	health_bar.custom_minimum_size.y = 5
+	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Content.add_child(health_bar)
+	notes_editor = TextEdit.new()
+	notes_editor.placeholder_text = "备注"
+	notes_editor.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	notes_editor.custom_minimum_size = Vector2(300,120)
+	notes_editor.add_theme_font_size_override("font_size",16)
+	$Content.add_child(notes_editor)
+	notes_editor.hide()
+	notes_editor.text_changed.connect(func():
+		if syncing_notes: return
+		var text := notes_editor.text
+		if text.length()>8000:
+			text = text.left(8000)
+			syncing_notes = true
+			notes_editor.text = text
+			syncing_notes = false
+		cached_notes = text
+		notes_changed.emit(text)
+	)
+
+func _toggle_notes() -> void:
+	expanded = not expanded
+	notes_editor.visible = expanded
+	GoStyle.apply_icon(expand_button,GoIconSet.CHEVRON_UP if expanded else GoIconSet.CHEVRON_DOWN,16)
+	expand_button.tooltip_text = "收起备注" if expanded else "展开备注"
+	reset_size()
+
+func set_editable(value: bool) -> void:
+	if notes_editor.editable!=value: notes_editor.editable = value
+	for button in [$Content/Header/HP,$Content/Header/AC]: button.disabled = not value
 
 func set_selected(value: bool) -> void:
 	if selected == value:
@@ -50,7 +94,7 @@ func set_selected(value: bool) -> void:
 	face.border_color = Color("3973bc") if value else BoardUiStyle.BORDER_COLOR
 	queue_redraw()
 
-func update_data(title: String, color: Color, hp: int, maximum: int, ac: int) -> void:
+func update_data(title: String, color: Color, hp: int, maximum: int, ac: int, temporary: int = 0, notes: String = "") -> void:
 	$Content/Header/Name.text = title
 	$Content/Header/Name.tooltip_text = title
 	var name_label := $Content/Header/Name as Label
@@ -60,17 +104,13 @@ func update_data(title: String, color: Color, hp: int, maximum: int, ac: int) ->
 	$Content/Header/Swatch.color = color
 	$Content/Header/HP.text = "%d/%d" % [hp, maximum] if maximum > 0 else "—"
 	$Content/Header/AC.text = str(ac) if ac >= 0 else "—"
-	if hp != previous_hp or maximum != previous_max:
-		if health_tween:
-			health_tween.kill()
-		var target := 100.0 * hp / maximum if maximum > 0 else 0.0
-		if previous_hp == -2:
-			$Content/Health.value = target
-		else:
-			health_tween = create_tween()
-			health_tween.tween_property($Content/Health, "value", target, preload("res://ui/components/page_motion.gd").duration(0.25)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			if hp >= 0 and previous_hp >= 0 and hp != previous_hp:
-				$Content/Header/HP.modulate = Color("bd4949") if hp < previous_hp else Color("28876a")
-				health_tween.parallel().tween_property($Content/Header/HP, "modulate", Color.WHITE, preload("res://ui/components/page_motion.gd").duration(0.3))
-		previous_hp = hp
-		previous_max = maximum
+	temporary_label.text = "+%d" % temporary
+	temporary_label.visible = temporary>0
+	health_bar.set_values(hp,maximum,temporary)
+	if notes!=cached_notes:
+		cached_notes = notes
+		syncing_notes = true
+		var vertical := notes_editor.scroll_vertical
+		notes_editor.text = notes
+		notes_editor.scroll_vertical = vertical
+		syncing_notes = false

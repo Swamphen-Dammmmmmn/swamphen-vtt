@@ -11,6 +11,7 @@ import ssl
 import tempfile
 import time
 import urllib.request
+import urllib.error
 import uuid
 import zipfile
 from cryptography.hazmat.primitives import hashes, serialization
@@ -24,6 +25,8 @@ MAX_MANIFEST = 4 * 1024 * 1024
 ENTRY = "棋盘.exe"
 BOOT = "紫水鸡棋盘.exe"
 UPDATE_URL = ""
+REPOSITORY = "Swamphen-Dammmmmmn/swamphen-vtt"
+RELEASE_API = "https://api.github.com/repos/"+REPOSITORY+"/releases?per_page=50"
 
 class UpdateError(Exception):
     pass
@@ -46,7 +49,7 @@ def version(value):
     if not isinstance(value, str): raise UpdateError("版本号无效。")
     parts = value.split(".")
     if len(parts) != 3 or any(not s.isascii() or not s.isdecimal() or len(s)>5 for s in parts):
-        raise UpdateError("仅支持三段数字的正式版本号。")
+        raise UpdateError("版本号须为三段数字。")
     return tuple(map(int, parts))
 
 def child(root: Path, relative: str) -> Path:
@@ -172,12 +175,12 @@ def assert_idle(root: Path):
 
 def ssl_context(certificate: Path):
     context=ssl.create_default_context()
-    context.load_verify_locations(cafile=str(certificate))
+    if certificate is not None: context.load_verify_locations(cafile=str(certificate))
     return context
 
 def fetch(url: str, certificate: Path, limit: int):
     if not isinstance(url,str) or not url.startswith("https://"): raise UpdateError("更新地址必须使用HTTPS。")
-    with urllib.request.urlopen(url,context=ssl_context(certificate),timeout=30) as response:
+    with urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"Swamphen-VTT-Updater","Accept":"application/vnd.github+json"}),context=ssl_context(certificate),timeout=30) as response:
         if not response.url.startswith("https://"):raise UpdateError("更新跳转至非HTTPS地址。")
         data=response.read(limit+1)
         if len(data)>limit:raise UpdateError("下载内容超过限制。")
@@ -186,11 +189,39 @@ def fetch(url: str, certificate: Path, limit: int):
 def check(root: Path, public: bytes, certificate: Path):
     config=root/"userdata"/"updates.json"
     url=read_json(config).get("url",UPDATE_URL) if config.exists() else UPDATE_URL
-    if not url: raise UpdateError("未配置程序分发地址，可使用离线更新ZIP。")
-    if not url.endswith("release.json"):raise UpdateError("更新清单地址无效。")
-    raw=fetch(url,certificate,MAX_MANIFEST)
-    signature=fetch(url[:-4]+"sig",certificate,4096)
+    if url:
+        if not url.endswith("release.json"):raise UpdateError("更新清单地址无效。")
+        raw=fetch(url,certificate,MAX_MANIFEST)
+        signature=fetch(url[:-4]+"sig",certificate,4096)
+        return verified(raw,signature,public),raw,signature
+    layout=read_json(root/"installation.json")
+    testing=layout.get("channel","stable")=="testing"
+    try: releases=json.loads(fetch(RELEASE_API,None,MAX_MANIFEST))
+    except urllib.error.HTTPError as error:
+        if error.code==404:raise UpdateError("仓库暂未发布可用更新。") from error
+        raise
+    if not isinstance(releases,list):raise UpdateError("仓库版本信息无效。")
+    candidates=[]
+    for release in releases:
+        if not isinstance(release,dict) or release.get("draft") or (release.get("prerelease") and not testing):continue
+        try: tag=release["tag_name"].removeprefix("v"); number=version(tag)
+        except (KeyError,AttributeError,UpdateError):continue
+        assets={asset.get("name"):asset for asset in release.get("assets",[]) if isinstance(asset,dict) and asset.get("state")=="uploaded"}
+        if "release.json" not in assets or "release.sig" not in assets:continue
+        candidates.append((number,tag,assets))
+    if not candidates:raise UpdateError("仓库暂未发布可用更新。")
+    _,tag,assets=max(candidates,key=lambda item:item[0])
+    prefix="https://github.com/"+REPOSITORY+"/releases/download/"
+    def asset_url(name):
+        value=assets[name].get("browser_download_url","")
+        if not isinstance(value,str) or not value.startswith(prefix):raise UpdateError("仓库附件地址无效。")
+        return value
+    raw=fetch(asset_url("release.json"),None,MAX_MANIFEST)
+    signature=fetch(asset_url("release.sig"),None,4096)
     record=verified(raw,signature,public)
+    matching=[asset for asset in assets.values() if asset.get("browser_download_url")==record.get("url")]
+    if record["version"]!=tag or len(matching)!=1 or not record.get("url","").startswith(prefix) or matching[0].get("size")!=record.get("package_size"):
+        raise UpdateError("仓库附件与签名清单不一致。")
     return record,raw,signature
 
 def stage(root: Path, archive: Path, public: bytes, progress=lambda value:None):
@@ -253,9 +284,9 @@ def download(root: Path, record, public: bytes, certificate: Path, progress=lamb
             for block in iter(lambda:source.read(256*1024),b""):
                 done+=len(block)
                 if done>size:raise UpdateError("下载超过发布大小。")
-                destination.write(block);h.update(block);progress(done/size*.65)
+                destination.write(block);h.update(block);progress({"phase":"download","progress":done/size,"downloaded":done,"total":size})
         if done!=size or h.hexdigest()!=digest:raise UpdateError("下载未完成或校验失败。")
-        result=stage(root,path,public,lambda value:progress(.65+value*.35))
+        result=stage(root,path,public,lambda value:progress({"phase":"verify","progress":value,"downloaded":done,"total":size}))
         if result["version"]!=record["version"]:raise UpdateError("在线清单与包版本不符。")
         return result
 
@@ -284,7 +315,7 @@ def apply(root: Path, public: bytes):
         for source in (target/"boot").iterdir():
             old=root/source.name
             # Boot names are publisher-signed, but user data cannot be a boot file.
-            if source.name not in (BOOT,"_internal","licenses","THIRD_PARTY_NOTICES.md"):raise UpdateError("启动器文件布局无效。")
+            if source.name not in (BOOT,"_internal","licenses","THIRD_PARTY_NOTICES.md","THIRD_PARTY_NOTICES","LICENSE","README.md"):raise UpdateError("启动器文件布局无效。")
             changes.append((source,old))
         backup.mkdir(parents=True)
         journal=root/"cache"/"updates"/"transaction.json"
@@ -296,7 +327,7 @@ def apply(root: Path, public: bytes):
             for source,old in changes:
                 if old.exists():os.replace(old,backup/old.name)
                 os.replace(source,old)
-            next_layout=dict(layout,current=record["version"],previous=layout["current"],pending=True)
+            next_layout=dict(layout,current=record["version"],previous=layout["current"],channel=record.get("channel",layout.get("channel","stable")),pending=True)
             atomic_json(root/"installation.json",next_layout)
         except Exception:
             recover(root)
@@ -311,7 +342,7 @@ def recover(root: Path):
     version(record["version"])
     backup=root/"cache"/"updates"/"boot-backup"
     for name in record["boot"]:
-        if name not in (BOOT,"_internal","licenses","THIRD_PARTY_NOTICES.md"):raise UpdateError("恢复清单无效。")
+        if name not in (BOOT,"_internal","licenses","THIRD_PARTY_NOTICES.md","THIRD_PARTY_NOTICES","LICENSE","README.md"):raise UpdateError("恢复清单无效。")
         saved=backup/name;current=root/name
         if saved.exists():
             if current.is_dir():shutil.rmtree(current)

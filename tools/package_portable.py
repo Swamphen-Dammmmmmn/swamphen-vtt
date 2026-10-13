@@ -28,7 +28,9 @@ def main():
     parser.add_argument("--version",default="0.1.1")
     parser.add_argument("--private-key",type=Path,default=ROOT/"artifacts"/"release-signing"/"private.pem")
     parser.add_argument("--output",type=Path,default=ROOT/"build"/"releases")
-    parser.add_argument("--base-url",default="")
+    parser.add_argument("--base-url",default="https://github.com/Swamphen-Dammmmmmn/swamphen-vtt/releases/download/v0.1.1/")
+    parser.add_argument("--channel",choices=["stable","testing"],default="testing")
+    parser.add_argument("--notes",default="临时生命值、棋子备注与转向；GitHub更新下载、手动导入及版本恢复。")
     args=parser.parse_args()
     core.version(args.version)
     if args.init_key:
@@ -53,12 +55,12 @@ def main():
     files={}
     for file in sorted(stage.rglob("*")):
         if file.is_file():files[file.relative_to(stage).as_posix()]={"size":file.stat().st_size,"sha256":core.sha(file)}
-    record={"schema":1,"app":core.APP,"version":args.version,"platform":"win-x64","launcher_format":1,"protocol":1,
+    record={"schema":1,"app":core.APP,"version":args.version,"platform":"win-x64","launcher_format":1,"protocol":1,"channel":args.channel,
             "data_formats":{"tokens":[1,2],"platforms":[1,2],"maps":[1],"adventures":[1]},
             "unpacked_size":sum(value["size"] for value in files.values()),"files":files,
-            "notes":"ZIP便携存储、统一用户目录、签名更新与版本恢复。"}
+            "notes":args.notes}
     write_signed(stage,record,key)
-    update=args.output/("purplehen-"+args.version+"-update.zip")
+    update=args.output/("svtt-"+args.version+"-windows-update.zip")
     with zipfile.ZipFile(update,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as package:
         for file in sorted(stage.rglob("*")):
             if file.is_file():package.write(file,file.relative_to(stage).as_posix())
@@ -70,12 +72,13 @@ def main():
     version=portable/"versions"/args.version
     shutil.copytree(stage/"program",version)
     shutil.copy2(stage/"release.json",version/"release.json");shutil.copy2(stage/"release.sig",version/"release.sig")
-    core.atomic_json(portable/"installation.json",{"schema":1,"app":core.APP,"current":args.version,"previous":"","pending":False})
-    (portable/"使用说明.txt").write_text("解压整个目录到可写位置，双击紫水鸡棋盘.exe。\n用户资料在userdata；更新不替换该目录。\n现有AppData资料首次运行时复制迁入，原件保留。\n软件设置的关于与更新可检查或导入更新包。\n移动时请移动整个目录，身份码也随目录移动。\n",encoding="utf-8")
-    initial=args.output/("purplehen-"+args.version+"-portable.zip")
+    core.atomic_json(portable/"installation.json",{"schema":1,"app":core.APP,"current":args.version,"previous":"","pending":False,"channel":args.channel})
+    (portable/"README.md").write_text("解压整个目录到可写位置，双击紫水鸡棋盘.exe。\n用户资料在userdata；更新不替换该目录。\n现有AppData资料首次运行时复制迁入，原件保留。\n软件设置的关于与更新可检查或导入更新包。\n移动时请移动整个目录，身份码也随目录移动。\n",encoding="utf-8")
+    initial=args.output/("svtt-"+args.version+"-windows-portable.zip")
     with zipfile.ZipFile(initial,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as package:
         for file in sorted(portable.rglob("*")):
             if file.is_file():package.write(file,"紫水鸡棋盘/"+file.relative_to(portable).as_posix())
+    if not args.base_url.startswith("https://") or not args.base_url.endswith("/"):raise SystemExit("Provide HTTPS release download base URL ending in /")
     online=dict(record,url=args.base_url+update.name,package_size=update.stat().st_size,package_sha256=core.sha(update))
     write_signed(args.output,online,key)
     print(json.dumps({"portable":str(initial),"update":str(update),"portable_bytes":initial.stat().st_size,"update_bytes":update.stat().st_size}))
