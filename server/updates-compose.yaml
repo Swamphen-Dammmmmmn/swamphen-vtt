@@ -1,0 +1,19 @@
+services:
+  downloads:
+    image: python:3.12-slim
+    user: "65534:65534"
+    command: ["python", "-B", "/service.py"]
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PORT: "10132"
+    volumes:
+      - ./update_downloads.py:/service.py:ro
+      - ./releases:/releases:ro
+      - /opt/purplehen-relay/certs:/certs:ro
+    logging:
+      driver: none
+    mem_limit: 128m

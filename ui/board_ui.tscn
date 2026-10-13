@@ -1,0 +1,179 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://ui/board_ui.gd" id="1"]
+[ext_resource type="Theme" path="res://ui/theme/modern.tres" id="2"]
+[ext_resource type="PackedScene" path="res://ui/components/toolbar.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://ui/components/action_bar.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://ui/components/route_card.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://ui/components/distance_chip.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://ui/components/rename_dialog.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://ui/components/stats_dialog.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://ui/components/campaign_settings.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://ui/components/calculator.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://ui/components/shape_settings.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://ui/components/shape_actions.tscn" id="12"]
+
+[ext_resource type="PackedScene" path="res://ui/components/measure_settings.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://ui/components/token_create.tscn" id="14"]
+
+[node name="BoardUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Title" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 22.0
+offset_right = 300.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_type_variation = &"OnDarkLabel"
+theme_override_font_sizes/font_size = 22
+text = "冒险"
+
+[node name="BoardInfo" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -450.0
+offset_top = 26.0
+offset_right = -155.0
+offset_bottom = 52.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"OnDarkLabel"
+text = "每格 5 英尺"
+horizontal_alignment = 2
+
+[node name="HomeCard" type="PanelContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 18.0
+offset_right = -20.0
+offset_bottom = 64.0
+grow_horizontal = 0
+
+[node name="Home" type="Button" parent="HomeCard"]
+layout_mode = 2
+text = "菜单"
+tooltip_text = "冒险菜单 · Esc"
+
+[node name="SelectCard" type="PanelContainer" parent="."]
+z_index = 1
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 205.0
+offset_bottom = 72.0
+
+[node name="Select" type="Button" parent="SelectCard"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+text = "选择"
+toggle_mode = true
+focus_mode = 0
+
+[node name="Toolbar" parent="." instance=ExtResource("3")]
+z_index = 1
+offset_left = 20.0
+offset_top = 84.0
+offset_right = 205.0
+offset_bottom = 278.0
+
+[node name="SegmentLabels" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="SavedMeasurement" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="PathPoints" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="TokenNames" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="TokenOperations" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="PointActions" parent="." instance=ExtResource("4")]
+visible = false
+
+[node name="RouteCard" parent="." instance=ExtResource("5")]
+visible = false
+
+[node name="DistanceChip" parent="." instance=ExtResource("6")]
+visible = false
+
+[node name="CampaignSettings" parent="." instance=ExtResource("9")]
+offset_left = 217.0
+offset_top = 20.0
+offset_right = 517.0
+offset_bottom = 268.0
+
+[node name="TokenMenu" type="PopupMenu" parent="."]
+theme = ExtResource("2")
+
+[node name="Calculator" parent="." instance=ExtResource("10")]
+
+[node name="ShapeSettings" parent="." instance=ExtResource("11")]
+
+[node name="ShapeActions" parent="." instance=ExtResource("12")]
+
+[node name="ShapeUndo" parent="." instance=ExtResource("12")]
+
+[node name="ShapeMenu" type="PopupMenu" parent="."]
+
+[node name="ShapeUndoTimer" type="Timer" parent="."]
+wait_time = 6.0
+one_shot = true
+
+[node name="MeasurementActions" parent="." instance=ExtResource("12")]
+
+[node name="MeasurementUndo" parent="." instance=ExtResource("12")]
+
+[node name="MeasurementUndoTimer" type="Timer" parent="."]
+wait_time = 6.0
+one_shot = true
+
+[node name="SavedMeasureNodes" type="Control" parent="."]
+mouse_filter = 2
+
+[node name="RenameDialog" parent="." instance=ExtResource("7")]
+z_index = 20
+
+[node name="StatsDialog" parent="." instance=ExtResource("8")]
+z_index = 20
+
+[node name="Status" type="Label" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -42.0
+offset_right = 1200.0
+offset_bottom = -16.0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"OnDarkLabel"
+theme_override_font_sizes/font_size = 13
+visible = false
+text = ""
+
+[node name="MeasureSettings" parent="." instance=ExtResource("13")]
+
+[node name="TokenCreate" parent="." instance=ExtResource("14")]
+
+[node name="TokenPlacementActions" parent="." instance=ExtResource("12")]
+z_index = 5

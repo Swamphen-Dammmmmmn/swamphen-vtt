@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://ui/components/utility_panel.tscn" id="1"]
+[ext_resource type="Script" path="res://ui/components/campaign_settings.gd" id="2"]
+
+[node name="CampaignSettings" instance=ExtResource("1")]
+script = ExtResource("2")
+panel_title = "团内设置"
+
+[node name="Label" type="Label" parent="Shell/Body/Content" index="0"]
+layout_mode = 2
+text = "全团距离计算方式"
+
+[node name="Algorithm" type="OptionButton" parent="Shell/Body/Content" index="1"]
+custom_minimum_size = Vector2(278, 38)
+layout_mode = 2
+item_count = 3
+selected = 0
+popup/item_0/text = "每格 5 英尺（含斜向）"
+popup/item_0/id = 0
+popup/item_1/text = "斜向交替 5 / 10 英尺"
+popup/item_1/id = 1
+popup/item_2/text = "实际直线距离"
+popup/item_2/id = 2
+
+[node name="Scope" type="Label" parent="Shell/Body/Content" index="2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "尺子与棋子移动共用此规则。"
+
+[node name="Storage" type="Label" parent="Shell/Body/Content" index="3"]
+custom_minimum_size = Vector2(278, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+text = "更改后自动保存在本机。"

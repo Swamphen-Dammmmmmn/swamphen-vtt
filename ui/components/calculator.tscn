@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://ui/components/utility_panel.tscn" id="1"]
+[ext_resource type="Script" path="res://ui/components/calculator.gd" id="2"]
+
+[node name="Calculator" instance=ExtResource("1")]
+script = ExtResource("2")
+panel_title = "计算器"
+preferred_width = 360.0

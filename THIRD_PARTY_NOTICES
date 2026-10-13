@@ -1,0 +1,24 @@
+# 第三方资源声明
+
+## 便携启动器运行库
+
+启动器通过PyInstaller 6.22.3目录模式打包Python 3.12运行时及cryptography 50.0.2等依赖。所分发运行库许可收集在ZIP中的licenses目录；保留Python、PyInstaller及cryptography、cffi、pycparser等对应声明。用户无需安装这些开发依赖。启动器源码位于launcher。
+
+## webrtc-native
+
+- 来源：https://github.com/godotengine/webrtc-native
+- 版本：1.2.2-stable，官方发行包。
+- 安装目录：`addons/webrtc_native`。
+- 扩展及其依赖许可原文保留在该目录的`LICENSE.webrtc-native`、`LICENSE.libdatachannel`、`LICENSE.libjuice`、`LICENSE.libsrtp`、`LICENSE.mbedtls`、`LICENSE.plog`与`LICENSE.usrsctp`。发布时保留相应许可声明。
+
+## gohud
+
+- 来源：https://github.com/thruthesky/gohud
+- 版本：v1.3.0
+- 固定提交：5d48e694d572625dcd3a7d22bd2a2357c6b78c32
+- 安装目录：`addons/gohud`
+- 代码与原创图形：MIT，原文及版权声明保留在 `addons/gohud/LICENSE`。
+- 包含的 Tabler 图标：MIT，版权与许可原文保留在 `addons/gohud/THIRD_PARTY_NOTICES.md`。
+- 包含的 Cinzel、Roboto 字体：SIL Open Font License 1.1，原文保留在各字体目录的 `OFL.txt`。
+
+本项目使用系统中文字体，当前没有启用 gohud 的 Cinzel、Roboto 字体预设；随依赖保留字体和许可文件。发布应用时，应随应用附上本说明、gohud LICENSE、第三方资源声明，以及所分发字体的 OFL 文件。当前未重新导出独立应用。

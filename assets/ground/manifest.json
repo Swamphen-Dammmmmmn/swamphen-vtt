@@ -1,0 +1,46 @@
+{
+  "version": 3,
+  "size": 512,
+  "variants_per_type": 4,
+  "generator": "dev/generate_ground_textures.py",
+  "units": "RGB masks; not color artwork",
+  "channels": {
+    "R": "light flecks",
+    "G": "soft mottling",
+    "B": "dark grains"
+  },
+  "microstructure": {
+    "file": "sand_microstructure.png",
+    "size": 1024,
+    "generator": "dev/generate_sand_microstructure.py",
+    "seed": 470241,
+    "tile_feet": 6,
+    "channels": {
+      "RG": "grain facet slopes",
+      "B": "roughness",
+      "A": "crystal rank; data, not opacity"
+    },
+    "import": "lossless; no alpha border correction; runtime RGBA mipmaps",
+    "tile_feet_range": [
+      0.5,
+      10
+    ]
+  },
+  "grain_color": {
+    "file": "sand_grain_color.png",
+    "size": 1024,
+    "generator": "dev/generate_sand_microstructure.py",
+    "color_seed": 470242,
+    "channels": {
+      "R": "grain tone centered at 0.5",
+      "G": "grain warmth centered at 0.5",
+      "B": "grain coverage"
+    },
+    "default_tile_feet": 6,
+    "tile_feet_range": [
+      0.5,
+      10
+    ],
+    "default_color_strength": 0.7
+  }
+}

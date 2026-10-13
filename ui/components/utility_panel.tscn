@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/components/utility_panel.gd" id="1"]
+
+[node name="UtilityPanel" type="PanelContainer"]
+visible = false
+z_index = 10
+focus_mode = 2
+script = ExtResource("1")
+
+[node name="Shell" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="Control" parent="Shell"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+mouse_filter = 0
+
+[node name="Row" type="HBoxContainer" parent="Shell/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Title" type="Label" parent="Shell/Header/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "辅助面板"
+clip_text = true
+mouse_filter = 2
+
+[node name="Close" type="Button" parent="Shell/Header/Row"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+focus_mode = 0
+tooltip_text = "关闭 · Esc"
+
+[node name="Body" type="ScrollContainer" parent="Shell"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 1
+
+[node name="Content" type="VBoxContainer" parent="Shell/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12

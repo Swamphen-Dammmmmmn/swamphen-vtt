@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://ui/components/distance_chip.tscn" id="1"]
+[ext_resource type="StyleBox" path="res://ui/theme/segment_panel.tres" id="2"]
+
+[node name="SegmentLabel" instance=ExtResource("1")]
+theme_override_styles/panel = ExtResource("2")
+
+[node name="Amount" parent="." index="0"]
+theme_override_font_sizes/font_size = 13

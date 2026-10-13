@@ -1,0 +1,55 @@
+services:
+  signaling:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PUBLIC_ADDRESS: ${PUBLIC_ADDRESS}
+      TURN_SECRET: ${TURN_SECRET}
+      SIGNAL_PORT: "10130"
+      TURN_PORT: "10131"
+    volumes:
+      - ./certs:/certs:ro
+    logging:
+      driver: none
+    mem_limit: 192m
+  turn:
+    image: coturn/coturn:4.6.3
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    entrypoint: ["turnserver"]
+    command:
+      - --listening-port=10131
+      - --listening-ip=${LOCAL_ADDRESS}
+      - --relay-ip=${LOCAL_ADDRESS}
+      - --external-ip=${PUBLIC_ADDRESS}/${LOCAL_ADDRESS}
+      - --userdb=/tmp/turndb
+      - --min-port=49160
+      - --max-port=49223
+      - --realm=purple-swamp-hen
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET}
+      - --no-tls
+      - --no-dtls
+      - --no-cli
+      - --no-multicast-peers
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --no-software-attribute
+      - --user-quota=32
+      - --total-quota=256
+      - --max-bps=1250000
+      - --bps-capacity=10000000
+      - --log-file=/dev/null
+      - --no-stdout-log
+      - --pidfile=/tmp/turn.pid
+    tmpfs: [/tmp, /var/lib/coturn]
+    logging:
+      driver: none
+    mem_limit: 256m

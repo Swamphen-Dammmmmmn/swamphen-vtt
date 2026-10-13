@@ -1,0 +1,22 @@
+.godot/
+build/
+artifacts/
+userdata/
+cache/
+logs/
+launcher/dist/
+launcher/build/
+*.spec
+*.tmp
+__pycache__/
+*.pyc
+*.translation
+
+# 本地文档由docs内独立仓库管理
+/docs/
+*.md
+*.rst
+*.pdf
+*.docx
+!/**/LICENSE.md
+!/README.md
