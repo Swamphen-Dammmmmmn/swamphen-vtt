@@ -86,6 +86,66 @@ class Updates(unittest.TestCase):
             for name,value in data.items():package.writestr(name,value)
         return path,raw,sig
 
+    def portable_package(self):
+        import hashlib
+        archive,_,_=self.package()
+        with zipfile.ZipFile(archive) as z:
+            record=json.loads(z.read('release.json'))
+            contents={n:z.read(n) for n in record['files']}
+        layout=json.dumps({'app':core.APP,'current':'0.1.1','pending':False}).encode()
+        record.update(package_format='portable-v1',portable_metadata={'installation.json':{'size':len(layout),'sha256':hashlib.sha256(layout).hexdigest()}})
+        raw=json.dumps(record).encode()
+        sig=base64.b64encode(self.key.sign(raw,padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.DIGEST_LENGTH),hashes.SHA256()))
+        data={'紫水鸡棋盘/installation.json':layout,'紫水鸡棋盘/versions/0.1.1/release.json':raw,'紫水鸡棋盘/versions/0.1.1/release.sig':sig}
+        for n,value in contents.items():data['紫水鸡棋盘/'+(n[5:] if n.startswith('boot/') else 'versions/0.1.1/'+n[8:])]=value
+        path=self.root/'portable.zip'
+        self.write_archive(path,data)
+        return path,data
+
+    def write_archive(self,path,data):
+        with zipfile.ZipFile(path,'w') as z:
+            for n,value in data.items():z.writestr(n,value)
+
+    def test_portable_apply_preserves_installation_and_userdata(self):
+        archive,_=self.portable_package()
+        original=core.read_json(self.root/'installation.json')
+        core.atomic_json(self.root/'installation.json',dict(original,channel='stable',custom='keep'))
+        core.stage(self.root,archive,self.public)
+        self.assertEqual(core.read_json(self.root/'installation.json')['current'],'0.1.0')
+        core.apply(self.root,self.public);core.confirm(self.root)
+        layout=core.read_json(self.root/'installation.json')
+        self.assertEqual(layout['current'],'0.1.1');self.assertEqual(layout['previous'],'0.1.0')
+        self.assertEqual(layout['custom'],'keep');self.assertEqual(layout['channel'],'stable')
+        self.assertEqual((self.root/'userdata/identity.json').read_text(),'keep identity')
+
+    def test_portable_pending_recovery(self):
+        archive,_=self.portable_package()
+        core.stage(self.root,archive,self.public);core.apply(self.root,self.public);core.recover(self.root)
+        self.assertEqual(core.read_json(self.root/'installation.json')['current'],'0.1.0')
+        self.assertEqual((self.root/core.BOOT).read_bytes(),b'old')
+
+    def test_portable_missing_and_tampered_files_rejected(self):
+        archive,data=self.portable_package()
+        for change in ['missing','tamper','metadata','extra']:
+            altered=dict(data)
+            name='紫水鸡棋盘/versions/0.1.1/'+core.ENTRY
+            if change=='missing':del altered[name]
+            elif change=='tamper':altered[name]=b'bad'
+            elif change=='metadata':altered['紫水鸡棋盘/installation.json']=b'{}'
+            else:altered['紫水鸡棋盘/userdata/identity.json']=b'bad'
+            self.write_archive(archive,altered)
+            with self.assertRaises(core.UpdateError):core.stage(self.root,archive,self.public)
+        self.assertEqual((self.root/'userdata/identity.json').read_text(),'keep identity')
+
+    def test_portable_signature_and_downgrade_rejected(self):
+        archive,data=self.portable_package()
+        data['紫水鸡棋盘/versions/0.1.1/release.sig']=b'bad'
+        self.write_archive(archive,data)
+        with self.assertRaises(core.UpdateError):core.stage(self.root,archive,self.public)
+        archive,_=self.portable_package()
+        core.atomic_json(self.root/'installation.json',{'current':'0.1.2','app':core.APP})
+        with self.assertRaises(core.UpdateError):core.stage(self.root,archive,self.public)
+
     def test_signature_rejected(self):
         _,raw,sig=self.package()
         with self.assertRaises(core.UpdateError):core.verified(raw+b" ",sig,self.public)

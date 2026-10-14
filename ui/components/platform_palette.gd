@@ -26,11 +26,14 @@ func open(margin: float, key: String = "platform") -> void:
 func _render_slots() -> void:
 	super._render_slots()
 	status.text = "%d 块地台" % filtered.size()
-	if filtered.is_empty(): status.text = "尚无地台，请先在地台库保存地台。" if entries[category].is_empty() else "没有符合搜索的地台。"
+	if filtered.is_empty(): status.text = "" if entries[category].is_empty() else "没有符合搜索的地台。"
+	status.visible = not status.text.is_empty()
 	status.tooltip_text = status.text
 	if not library_error.is_empty():
+		status.visible = true
 		status.text = "地台库读取失败"
 		status.tooltip_text = library_error
 	elif not library_warnings.is_empty():
-		status.text += " · %d 个文件未能读取" % library_warnings.size()
+		status.visible = true
+		status.text += (" · " if not status.text.is_empty() else "") + "%d 个文件未能读取" % library_warnings.size()
 		status.tooltip_text += "\n"+"\n".join(PackedStringArray(library_warnings))

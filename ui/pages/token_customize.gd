@@ -1,4 +1,5 @@
 extends Control
+var mobile_touch: Node
 
 const Layout = preload("res://ui/components/editor_layout.gd")
 const Style = preload("res://ui/components/page_style.gd")
@@ -49,6 +50,7 @@ var basic_open := true
 var basic_tween: Tween
 
 func _ready() -> void:
+	_mobile_attach.call_deferred()
 	persisted_id = "" if instance_mode else str(editing_record.get("id",""))
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -83,7 +85,6 @@ func _ready() -> void:
 	form_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	container.add_child(form_scroll)
 	Layout.scroll(form_scroll)
-	if kind == "basic": Layout.scroll_hint(form_scroll, container)
 	form = Style.column(12)
 	form_scroll.add_child(form)
 	_add_field(form, "title", "名称", "棋子名称", 40, "棋子")
@@ -118,7 +119,7 @@ func _ready() -> void:
 	actions.add_theme_constant_override("separation", 12)
 	container.add_child(actions)
 	var cancel := Button.new()
-	cancel.text = instance_return_title if instance_mode else "返回棋子库"
+	cancel.text = "返回" if Mobile.enabled else (instance_return_title if instance_mode else "返回棋子库")
 	Style.button(cancel)
 	cancel.pressed.connect(func(): return_requested.emit())
 	actions.add_child(cancel)
@@ -133,7 +134,7 @@ func _ready() -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(spacer)
 	save_button = Button.new()
-	save_button.text = instance_apply_title if instance_mode else ("保存修改" if not editing_record.is_empty() else "保存到棋子库")
+	save_button.text = ("应用" if instance_mode else "保存") if Mobile.enabled else (instance_apply_title if instance_mode else ("保存修改" if not editing_record.is_empty() else "保存到棋子库"))
 	Style.button(save_button, true)
 	save_button.custom_minimum_size.x = 128
 	save_button.pressed.connect(_save)
@@ -259,7 +260,7 @@ func _save() -> bool:
 	editing_record = {"id": result["id"], "kind": kind, "title": title, "parameters": params, "tags": editing_record.get("tags", []).duplicate()}
 	initial_values = _raw().duplicate(true)
 	heading_title.text = "编辑" + _type_name()
-	save_button.text = "保存修改"
+	save_button.text = "保存" if Mobile.enabled else "保存修改"
 	save_button.disabled = false
 	_set_status("已保存", Color("28785e"), "", true)
 	saved.emit(result["id"])
@@ -295,12 +296,13 @@ func _queue_fit() -> void:
 
 func _fit() -> void:
 	fit_queued = false
-	var bounds := size
+	var safe := Mobile.safe_rect(size)
+	var bounds := safe.size
 	var margin := 24.0
-	var width := minf(Style.CUSTOMIZE_PANEL_WIDTH, maxf(1, bounds.x - margin * 2))
+	var width := minf(320.0 if Mobile.enabled else Style.CUSTOMIZE_PANEL_WIDTH, maxf(1, bounds.x - margin * 2))
 	var height_limit := maxf(1, bounds.y - margin * 2)
 	var animating := basic_tween != null and basic_tween.is_running()
-	if not animating: options_panel.position = Vector2(margin if basic_open else -width, margin)
+	if not animating: options_panel.position = Vector2(safe.position.x+margin if basic_open else -width, safe.position.y+margin)
 	options_panel.size.x = width
 	var chrome := options_panel.get_theme_stylebox("panel").get_minimum_size().y
 	var visible_count := 0
@@ -313,13 +315,14 @@ func _fit() -> void:
 	form_scroll.custom_minimum_size.y = minf(body_height, maxf(1, height_limit - chrome))
 	options_panel.size = Vector2(width, minf(height_limit, chrome + body_height))
 	if is_instance_valid(basic_handle) and not animating:
-		basic_handle.position = Vector2(margin + 16 if basic_open else 0, margin + 16)
+		basic_handle.position = Vector2(safe.position.x+margin + 16 if basic_open else safe.position.x, safe.position.y+margin + 16)
 		basic_handle.icon = preload("res://ui/icons/chevron_left.svg") if basic_open else preload("res://ui/icons/chevron_right.svg")
 
 func _popup_open() -> bool:
 	return (is_instance_valid(discard_modal) and discard_modal.visible) or (is_instance_valid(tags_modal) and tags_modal.visible) or (is_instance_valid(save_error_modal) and save_error_modal.visible) or _appearance_popup_open()
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
 	if _popup_open():
 		rotating = false
 		return
@@ -416,11 +419,15 @@ func _toggle_basic() -> void:
 	Layout.enabled(options_panel, basic_open)
 	if is_instance_valid(tags_modal): tags_modal.dismiss()
 	basic_handle.icon = preload("res://ui/icons/chevron_left.svg") if basic_open else preload("res://ui/icons/chevron_right.svg")
-	var margin := 24.0
+	var margin := 24.0+Mobile.safe_rect(size).position.x
 	basic_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	basic_tween.tween_property(options_panel, "position:x", margin if basic_open else -options_panel.size.x, preload("res://ui/components/page_motion.gd").duration(0.16))
-	basic_tween.tween_property(options_panel, "modulate:a", 1.0 if basic_open else 0.0, preload("res://ui/components/page_motion.gd").duration(0.16))
-	basic_tween.tween_property(basic_handle, "position:x", margin + 16 if basic_open else 0.0, preload("res://ui/components/page_motion.gd").duration(0.16))
+	basic_tween.tween_property(options_panel, "modulate:a", 1.0 if basic_open else Mobile.safe_rect(size).position.x, preload("res://ui/components/page_motion.gd").duration(0.16))
+	basic_tween.tween_property(basic_handle, "position:x", margin + 16 if basic_open else Mobile.safe_rect(size).position.x, preload("res://ui/components/page_motion.gd").duration(0.16))
 	basic_tween.finished.connect(func():
 		if not basic_open: options_panel.hide()
 	)
+
+func _mobile_attach() -> void:
+	if Mobile.enabled: Mobile.changed.connect(_queue_fit)
+	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self)

@@ -22,6 +22,7 @@ func _ready() -> void:
 	add_theme_constant_override("separation", 12)
 	_choice("preset", "画质预设", ["流畅", "标准", "高"] if Graphics.mobile else ["流畅", "标准", "高", "极高"])
 	_section("显示")
+	if Mobile.enabled: add_child(preload("res://ui/components/mobile_display_panel.gd").new())
 	if not Graphics.mobile:
 		actual_size = Style.text("", 14, true)
 		add_child(actual_size)

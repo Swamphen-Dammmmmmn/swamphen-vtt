@@ -19,6 +19,9 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
+Mobile="*res://scripts/mobile_layout.gd"
+TokenPreviews="*res://scripts/token_thumbnail_cache.gd"
+
 Storage="*res://scripts/storage_bootstrap.gd"
 Interface="*res://scripts/interface_settings.gd"
 Graphics="*res://scripts/graphics_settings.gd"

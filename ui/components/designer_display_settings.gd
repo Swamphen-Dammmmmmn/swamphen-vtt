@@ -26,7 +26,7 @@ static func populate(body: VBoxContainer, preview: Control, map_mode: bool, norm
 		input.value = fast if accelerated else normal
 		input.custom_minimum_size.y = 44
 		input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var field := Layout.field(section,"Shift 加速速度 · 英尺/秒" if accelerated else "正常速度 · 英尺/秒")
+		var field := Layout.field(section,("加速速度 · 英尺/秒" if Mobile.enabled else "Shift 加速速度 · 英尺/秒") if accelerated else "正常速度 · 英尺/秒")
 		field.get_child(0).autowrap_mode = TextServer.AUTOWRAP_OFF
 		field.add_child(input)
 		input.value_changed.connect(func(value: float): speed_changed.call(accelerated,value))

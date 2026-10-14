@@ -24,6 +24,9 @@ func _ready() -> void:
 	heading_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(heading_label)
 	preset_status = Style.text("", 14)
+	preset_status.autowrap_mode = TextServer.AUTOWRAP_OFF
+	preset_status.custom_minimum_size.x = 72
+	preset_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(preset_status)
 	var grid := GridContainer.new()
 	grid.columns = 3

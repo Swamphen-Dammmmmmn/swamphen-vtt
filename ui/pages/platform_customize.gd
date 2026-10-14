@@ -1,4 +1,7 @@
 extends Control
+var mobile_touch: Node
+var mobile_previous_tool := ""
+var mobile_tool_state: Dictionary = {}
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 const DisplaySettings = preload("res://ui/components/designer_display_settings.gd")
@@ -79,6 +82,7 @@ var saving := false
 var save_error: Control
 
 func _ready() -> void:
+	_mobile_attach.call_deferred()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview = supplied_preview if embedded else Preview.new()
@@ -157,7 +161,6 @@ func _ready() -> void:
 	paint_tool.hide()
 	paint_tool.state_changed.connect(_queue_fit)
 	preview.paint.changed.connect(_sync_paint_data)
-	Layout.scroll_hint(scroll,content)
 	status = Layout.status()
 	content.add_child(status)
 	expansion_actions = Layout.pair(content)
@@ -399,8 +402,8 @@ func _fit() -> void:
 	fit_pending = false
 	if tween != null and tween.is_running(): return
 	_fit_common_bar()
-	var width := minf(Style.CUSTOMIZE_PANEL_WIDTH,maxf(1,size.x-(_panel_edge()+24 if created else 112)))
-	var limit := maxf(1,size.y-48)
+	var width := minf(320.0 if Mobile.enabled else Style.CUSTOMIZE_PANEL_WIDTH,maxf(1,size.x-(_panel_edge()+24 if created else 112)))
+	var limit := maxf(1,Mobile.safe_rect(size).size.y-48)
 	var chrome := panel.get_theme_stylebox("panel").get_minimum_size().y
 	var count := 0
 	for child in content.get_children():
@@ -412,13 +415,13 @@ func _fit() -> void:
 	scroll.custom_minimum_size.y = minf(body,maxf(1,limit-chrome))
 	panel.size = Vector2(width,minf(limit,chrome+body))
 	if not created:
-		panel.position = (size-panel.size)/2.0
+		panel.position = Mobile.safe_rect(size).position+(Mobile.safe_rect(size).size-panel.size)/2.0
 		return
 	tools.fit(maxf(1,common_bar.position.y-24-16))
-	tools.position = Vector2(24,24)
+	tools.position = Mobile.safe_rect(size).position+Vector2(24,24)
 	var edge := _panel_edge()
-	panel.position = Vector2(edge if expanded else -width,24)
-	handle.position = Vector2(edge+16 if expanded else edge-12,40)
+	panel.position = Vector2(edge if expanded else -width,Mobile.safe_rect(size).position.y+24)
+	handle.position = Vector2(edge+16 if expanded else edge-12,Mobile.safe_rect(size).position.y+40)
 	handle.icon = preload("res://ui/icons/chevron_left.svg") if expanded else preload("res://ui/icons/chevron_right.svg")
 	_fit_display_panel()
 
@@ -461,6 +464,7 @@ func _save_shortcut(event: InputEvent) -> bool:
 	return true
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
 	if _save_shortcut(event): return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed and rotating:
 		_release_camera()
@@ -534,7 +538,7 @@ func _exit_tree() -> void:
 	_release_camera()
 
 func _panel_edge() -> float:
-	return 24.0+maxf(tools.toolbar_width(),152)+12.0
+	return Mobile.safe_rect(size).position.x+24.0+maxf(tools.toolbar_width(),152)+12.0
 
 func _build_expansion_form() -> void:
 	expansion_form = Style.column(12)
@@ -567,6 +571,32 @@ func _expansion_number(parent: Control,title: String,key: String,interval: float
 	)
 
 func _select_tool(key: String, open_panel := true) -> void:
+	if key == "mobile_camera":
+		if active_tool == key:
+			_select_tool(mobile_previous_tool)
+			for field in mobile_tool_state.get("expansion",{}):
+				expansion_values[field] = mobile_tool_state["expansion"][field]
+				expansion_inputs[field].set_value_no_signal(expansion_values[field])
+			if mobile_previous_tool=="expand": _refresh_expansion()
+			if not mobile_tool_state.get("draft",{}).is_empty(): token_tool.begin(mobile_tool_state["draft"])
+			elif not str(mobile_tool_state.get("moving","")).is_empty():
+				token_tool.selected = mobile_tool_state["moving"]
+				token_tool._move()
+			else: token_tool.selected = str(mobile_tool_state.get("selected",""))
+			mobile_tool_state.clear()
+			if tools.buttons.has(mobile_previous_tool): tools.buttons[mobile_previous_tool].button_pressed = true
+			return
+		mobile_previous_tool = active_tool
+		mobile_tool_state = {"draft":token_tool.draft.duplicate(true),"moving":token_tool.moving,"selected":token_tool.selected,"expansion":expansion_values.duplicate()}
+		_pause_tools()
+		paint_tool.set_active(false)
+		landing_tool.set_active(false)
+		token_tool.active = false
+		token_tool.hide()
+		preview.show_expansion({},false)
+		active_tool = key
+		if expanded: _toggle()
+		return
 	_pause_tools()
 	if active_tool == key:
 		if key in ["token_basic","token_advanced"]: token_tool.set_active(key)
@@ -733,7 +763,7 @@ func _build_common_bar() -> void:
 
 func _fit_common_bar() -> void:
 	common_bar.size = common_bar.get_combined_minimum_size()
-	common_bar.position = Vector2(24,maxf(24,size.y-common_bar.size.y-24))
+	common_bar.position = Vector2(Mobile.safe_rect(size).position.x+24,maxf(24,Mobile.safe_rect(size).end.y-common_bar.size.y-24))
 
 func _toggle_display_panel() -> void:
 	_pause_tools()
@@ -762,3 +792,7 @@ func _sync_paint_data() -> void:
 	values["paint_origin_feet"] = preview.paint.origin_feet
 	preview.values["paint_overlay"] = preview.paint.coverage
 	preview.values["paint_origin_feet"] = preview.paint.origin_feet
+
+func _mobile_attach() -> void:
+	if Mobile.enabled: Mobile.changed.connect(_queue_fit)
+	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self)

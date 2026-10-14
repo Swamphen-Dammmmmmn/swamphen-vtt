@@ -31,6 +31,9 @@ func _ready() -> void:
 	panel = UtilityPopup.new()
 	panel.title = "转向"
 	add_child(panel)
+	panel.visibility_changed.connect(func():
+		if not panel.visible: _cancel_drag()
+	)
 	var body: VBoxContainer = panel.body
 	close_button = body.get_child(0).get_child(1)
 	body.add_child(_label("棋子朝向",Color("187ed4")))
@@ -150,6 +153,7 @@ func update_marker(target: Node3D, values: Dictionary, parent: Node3D) -> void:
 	if panel.visible:
 		_refresh_direction()
 		var enabled := _can_edit()
+		if not enabled: _cancel_drag()
 		if enabled!=editing_enabled:
 			editing_enabled = enabled
 			for button in panel.find_children("*","Button",true,false):
@@ -214,7 +218,9 @@ func _plane(point: Vector2) -> Variant:
 	return Plane(Vector3.UP,center.y).intersects_ray(camera.project_ray_origin(position),camera.project_ray_normal(position))
 
 func handle_pointer(event: InputEvent, on_ui: bool) -> bool:
-	if not panel.visible or not rotating or not _can_edit(): return false
+	if not panel.visible or not rotating or not _can_edit():
+		_cancel_drag()
+		return false
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT and dragging:
 		_cancel_drag()
 		return true
@@ -254,6 +260,7 @@ func _cancel_drag() -> void:
 	dragging = false
 
 func _exit_tree() -> void:
+	_cancel_drag()
 	if is_instance_valid(marker): marker.queue_free()
 	if is_instance_valid(ring): ring.queue_free()
 	if is_instance_valid(model_marker): model_marker.queue_free()

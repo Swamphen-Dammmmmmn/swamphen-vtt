@@ -30,6 +30,7 @@ func _ready() -> void:
 	content = Style.column(16)
 	scroll.add_child(content)
 	resized.connect(_fit)
+	if Mobile.enabled: Mobile.changed.connect(_fit)
 	content.minimum_size_changed.connect(func(): _fit.call_deferred())
 	grab_focus()
 	Style.Motion.fade_in(panel)
@@ -58,10 +59,11 @@ func dismiss() -> void:
 	queue_free()
 
 func _fit() -> void:
-	panel.custom_minimum_size.x = minf(460, maxf(1, size.x - 32))
-	scroll.custom_minimum_size.y = minf(content.get_combined_minimum_size().y, maxf(1, size.y - 72))
+	var safe := Mobile.safe_rect(size)
+	panel.custom_minimum_size.x = minf(460, maxf(1,safe.size.x-32))
+	scroll.custom_minimum_size.y = minf(content.get_combined_minimum_size().y, maxf(1,safe.size.y-72))
 	panel.reset_size()
-	panel.position = (size - panel.size) / 2
+	panel.position = safe.position+(safe.size-panel.size)/2
 
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:

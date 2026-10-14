@@ -48,4 +48,5 @@ func _walk(node: Node) -> void:
 
 func apply() -> void:
 	get_tree().root.content_scale_factor = preferences.ui_scale
+	if Mobile.enabled: Mobile.refresh.call_deferred()
 	_walk(get_tree().root)

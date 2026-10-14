@@ -55,7 +55,7 @@ def version(value):
 def child(root: Path, relative: str) -> Path:
     if not isinstance(relative, str) or not relative or "\\" in relative or ":" in relative:
         raise UpdateError("文件路径无效。")
-    parts = PurePosixPath(relative).parts
+    parts = relative.split("/")
     if relative.startswith("/") or any(s in (".", "..", "") or s.endswith((" ",".")) for s in parts):
         raise UpdateError("更新包含越界路径。")
     for part in parts:
@@ -224,36 +224,71 @@ def check(root: Path, public: bytes, certificate: Path):
         raise UpdateError("仓库附件与签名清单不一致。")
     return record,raw,signature
 
+def archive_layout(package, public):
+    entries=package.infolist()
+    if len(entries)>20005:raise UpdateError("更新ZIP文件过多。")
+    names=[e.filename for e in entries if not e.is_dir()]
+    if len(names)!=len(set(n.casefold() for n in names)):raise UpdateError("更新ZIP包含重复路径。")
+    for entry in entries:
+        child(Path.cwd(),entry.filename.rstrip("/"))
+        if ((entry.external_attr>>16)&0o170000)==0o120000:raise UpdateError("更新ZIP包含链接。")
+    portable='release.json' not in names
+    if portable:
+        candidates=[n for n in names if n.startswith('紫水鸡棋盘/versions/') and n.endswith('/release.json')]
+        if len(candidates)!=1:raise UpdateError("请导入本软件发布的完整便携ZIP。")
+        manifest=candidates[0]
+    else:manifest='release.json'
+    signature=manifest[:-4]+'sig'
+    try:
+        if package.getinfo(manifest).file_size>MAX_MANIFEST or package.getinfo(signature).file_size>4096:
+            raise UpdateError("清单超过预算。")
+        raw=package.read(manifest);sig=package.read(signature)
+    except KeyError as error:raise UpdateError("更新ZIP缺少签名清单。") from error
+    record=verified(raw,sig,public)
+    mapping={n:n for n in record['files']}
+    metadata={}
+    if portable:
+        prefix='紫水鸡棋盘/'
+        version_prefix=prefix+'versions/'+record['version']+'/'
+        if record.get('package_format')!='portable-v1' or manifest!=version_prefix+'release.json':
+            raise UpdateError("便携ZIP布局或版本不符。")
+        mapping={prefix+n[5:] if n.startswith('boot/') else version_prefix+n[8:]:n for n in record['files']}
+        metadata=record.get('portable_metadata')
+        if not isinstance(metadata,dict) or set(metadata)!={'installation.json'}:raise UpdateError("便携ZIP安装清单无效。")
+        entry=metadata['installation.json']
+        if not isinstance(entry,dict) or type(entry.get('size')) is not int or not 1<=entry['size']<=MAX_MANIFEST:
+            raise UpdateError("便携ZIP安装信息无效。")
+        metadata={prefix+'installation.json':entry}
+    expected=set(mapping)|set(metadata)|{manifest,signature}
+    if len(mapping)!=len(record['files']) or set(names)!=expected:raise UpdateError("更新ZIP与发布清单不符。")
+    for name,info in metadata.items():
+        if package.getinfo(name).file_size!=info['size']:raise UpdateError("安装信息大小不符。")
+        data=package.read(name)
+        if hashlib.sha256(data).hexdigest()!=info.get('sha256'):raise UpdateError("安装信息校验失败。")
+        layout=json.loads(data)
+        if layout.get('app')!=APP or layout.get('current')!=record['version'] or layout.get('pending') is not False:
+            raise UpdateError("便携ZIP初始版本信息不符。")
+    return record,raw,sig,mapping
+
+
 def stage(root: Path, archive: Path, public: bytes, progress=lambda value:None):
     if archive.stat().st_size>MAX_PACKAGE:raise UpdateError("更新ZIP超过大小限制。")
     with exclusive(root/"cache"/"updates"/"work.lock"):
         with zipfile.ZipFile(archive) as package:
-            entries=package.infolist()
-            if len(entries)>20002:raise UpdateError("更新ZIP文件过多。")
-            if package.getinfo("release.json").file_size>MAX_MANIFEST or package.getinfo("release.sig").file_size>4096:
-                raise UpdateError("清单超过预算。")
-            raw=package.read("release.json"); signature=package.read("release.sig")
-            record=verified(raw,signature,public)
+            record,raw,signature,mapping=archive_layout(package,public)
             layout=read_json(root/"installation.json")
             if version(record["version"])<=version(layout["current"]):raise UpdateError("更新版本不高于当前版本。")
             assert_compatible(root,record)
-            actual=[entry for entry in entries if not entry.is_dir()]
-            names=[entry.filename for entry in actual]
-            if len(names)!=len(set(names)) or set(names)!=set(record["files"])|{"release.json","release.sig"}:
-                raise UpdateError("更新ZIP与发布清单不符。")
-            for entry in entries:
-                child(root,entry.filename.rstrip("/"))
-                if ((entry.external_attr>>16)&0o170000)==0o120000:raise UpdateError("更新ZIP包含链接。")
             space(root,record["unpacked_size"]*2)
             target=root/"cache"/"updates"/"staged"/uuid.uuid4().hex
             target.mkdir(parents=True)
             try:
                 done=0
-                for entry in actual:
-                    if entry.filename in ("release.json","release.sig"):continue
-                    expected=record["files"][entry.filename]
+                for archive_name,canonical in mapping.items():
+                    entry=package.getinfo(archive_name)
+                    expected=record["files"][canonical]
                     if entry.file_size!=expected["size"]:raise UpdateError("ZIP声明的文件大小不符。")
-                    destination=child(target,entry.filename)
+                    destination=child(target,canonical)
                     destination.parent.mkdir(parents=True,exist_ok=True)
                     digest=hashlib.sha256();written=0
                     with package.open(entry) as source,destination.open("wb") as output:
@@ -327,7 +362,7 @@ def apply(root: Path, public: bytes):
             for source,old in changes:
                 if old.exists():os.replace(old,backup/old.name)
                 os.replace(source,old)
-            next_layout=dict(layout,current=record["version"],previous=layout["current"],channel=record.get("channel",layout.get("channel","stable")),pending=True)
+            next_layout=dict(layout,current=record["version"],previous=layout["current"],channel=layout.get("channel",record.get("channel","stable")),pending=True)
             atomic_json(root/"installation.json",next_layout)
         except Exception:
             recover(root)

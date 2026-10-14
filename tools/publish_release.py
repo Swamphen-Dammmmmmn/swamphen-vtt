@@ -28,8 +28,9 @@ def gh(*args):return subprocess.check_output(['gh',*map(str,args),'--repo',REPO]
 def main():
  global release_env
  release_env=publishing_environment()
- p=argparse.ArgumentParser();p.add_argument('--version',required=True);p.add_argument('--source-commit',required=True);p.add_argument('--notes-file',type=Path,required=True);p.add_argument('--publish',action='store_true');args=p.parse_args()
- core.version(args.version);directory=ROOT/'build/releases'/('v'+args.version)
+ p=argparse.ArgumentParser();p.add_argument('--version',required=True);p.add_argument('--source-commit',required=True);p.add_argument('--notes-file',type=Path,required=True);p.add_argument('--publish',action='store_true');p.add_argument('--directory',type=Path);p.add_argument('--progress',action='store_true');args=p.parse_args()
+ core.version(args.version);directory=(args.directory or ROOT/'build/releases'/('v'+args.version)).resolve()
+ if not directory.is_relative_to((ROOT/'build').resolve()):raise SystemExit('Release directory must be inside build output.')
  checks=json.loads((directory/'build-check.json').read_text(encoding='utf-8'))
  public=(ROOT/'assets/updates/release-public.pem').read_bytes()
  manifest=core.verified((directory/'release.json').read_bytes(),(directory/'release.sig').read_bytes(),public)
@@ -45,13 +46,25 @@ def main():
   assets.append(file)
  assets.append(directory/'SHA256SUMS.txt')
  tag='v'+args.version
- gh('release','create',tag,*assets,'--draft','--prerelease','--target',args.source_commit,'--title',tag+' · Windows / Android 测试版','--notes-file',args.notes_file)
+ probe=subprocess.run(['gh','release','view',tag,'--repo',REPO,'--json','isDraft'],cwd=ROOT,env=release_env,capture_output=True,text=True,encoding='utf-8')
+ if probe.returncode==0:
+  if not json.loads(probe.stdout)['isDraft']:raise SystemExit('Existing release is public; replacement refused.')
+  gh('release','edit',tag,'--draft=true','--prerelease','--target',args.source_commit,'--title',tag+' · Windows / Android 测试版','--notes-file',args.notes_file)
+  if not args.progress:gh('release','upload',tag,*assets,'--clobber')
+ else:
+  gh('release','create',tag,*([] if args.progress else assets),'--draft','--prerelease','--target',args.source_commit,'--title',tag+' · Windows / Android 测试版','--notes-file',args.notes_file)
+ if args.progress:
+  from release_upload_progress import upload
+  upload(assets,REPO,tag,release_env)
  view=json.loads(gh('release','view',tag,'--json','assets,isDraft,isPrerelease,url'))
  assert view['isDraft'] and view['isPrerelease']
  remote={a['name']:a for a in view['assets']}
  for file in assets:
   assert remote[file.name]['size']==file.stat().st_size
   assert remote[file.name].get('digest')=='sha256:'+core.sha(file)
+ # New attachments have been fully checked before removing obsolete draft assets.
+ for name in set(remote)-{file.name for file in assets}:
+  gh('release','delete-asset',tag,name,'--yes')
  if args.publish:
   gh('release','edit',tag,'--draft=false','--prerelease')
   final=json.loads(gh('release','view',tag,'--json','isDraft,isPrerelease,url'))

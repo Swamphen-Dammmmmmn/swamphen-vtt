@@ -51,7 +51,7 @@ func _ready() -> void:
 		add_child(save_button)
 		save_button.hide()
 		save_button.pressed.connect(func(): save_requested.emit())
-	row.minimum_size_changed.connect(func(): offset_left = -20-row.get_combined_minimum_size().x)
+	row.minimum_size_changed.connect(func(): offset_left = -20-Mobile.margins.z-row.get_combined_minimum_size().x)
 
 func open_menu() -> void:
 	if is_instance_valid(modal): return
@@ -148,6 +148,11 @@ func is_open() -> bool:
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(state_label): return
+	if Mobile.enabled:
+		offset_right = -20-Mobile.margins.z
+		offset_left = offset_right-get_child(0).get_combined_minimum_size().x
+		offset_top = 18+Mobile.margins.y
+		offset_bottom = offset_top+48
 	var state := state_label.text
 	if state!=last_state:
 		last_state = state

@@ -57,7 +57,7 @@ static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margi
 	menu.popup(Rect2i(Vector2i(at), Vector2i(dimensions)))
 
 static func action_button(button: Button, height: float = ACTION_HEIGHT, primary := false, danger := false) -> void:
-	button.custom_minimum_size.y = height
+	button.custom_minimum_size.y = maxf(48,height) if OS.has_feature("android") or OS.get_cmdline_user_args().has("--mobile-preview") else height
 	button.add_theme_font_size_override("font_size", 14)
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 		var face := StyleBoxFlat.new()
@@ -99,10 +99,10 @@ static func style_controls(root: Node, height: float = CONTROL_HEIGHT) -> void:
 		var primary: bool = root.theme_type_variation == &"PrimaryButton" or (face != null and face.bg_color.a > 0.5 and face.bg_color.r < 0.45 and face.bg_color.b > 0.4)
 		action_button(root, height, primary)
 	elif root is LineEdit:
-		root.custom_minimum_size.y = height
+		root.custom_minimum_size.y = maxf(48,height) if OS.has_feature("android") or OS.get_cmdline_user_args().has("--mobile-preview") else height
 		root.add_theme_font_size_override("font_size", 14)
 	elif root is OptionButton:
-		root.custom_minimum_size.y = height
+		root.custom_minimum_size.y = maxf(48,height) if OS.has_feature("android") or OS.get_cmdline_user_args().has("--mobile-preview") else height
 		root.add_theme_font_size_override("font_size", 14)
 	for child in root.get_children():
 		style_controls(child, height)

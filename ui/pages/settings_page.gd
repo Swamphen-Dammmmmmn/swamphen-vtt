@@ -18,6 +18,9 @@ var preferences: RefCounted
 var interface_inputs: Dictionary = {}
 
 func _ready() -> void:
+	if Mobile.enabled:
+		Mobile.changed.connect(_fit_mobile)
+		_fit_mobile.call_deferred()
 	for edge in ["left", "right", "top", "bottom"]: add_theme_constant_override("margin_" + edge, 24)
 	var page := Style.column(16)
 	add_child(page)
@@ -50,7 +53,7 @@ func _ready() -> void:
 	navigation.add_child(list)
 	for entry in CATEGORIES:
 		var button := Button.new()
-		button.text = entry[1]
+		button.text = "关于" if entry[0]=="updates" and Mobile.enabled else entry[1]
 		button.toggle_mode = true
 		# Keep the native pressed face persistent for the selected category.
 		button.set_meta("page_motion_prepared", true)
@@ -69,7 +72,6 @@ func _ready() -> void:
 	body = Style.column(12)
 	body.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	scroll.add_child(body)
-	Layout.scroll_hint(scroll, right)
 	footer = Layout.status()
 	right.add_child(footer)
 	preferences = Preferences.shared()
@@ -108,7 +110,11 @@ func _select(key: String) -> void:
 		preload("res://ui/pages/network_page.gd").add_settings(body)
 		Layout.set_status(footer, "")
 	elif key == "updates":
-		body.add_child(preload("res://ui/components/software_update_panel.gd").new())
+		if Mobile.enabled:
+			body.add_child(Style.text("紫水鸡棋盘",24))
+			body.add_child(Style.text(str(ProjectSettings.get_setting("application/config/version","")),16,true))
+			body.add_child(Style.text("GNU GPL v3.0",16,true))
+		else: body.add_child(preload("res://ui/components/software_update_panel.gd").new())
 		Layout.set_status(footer, "")
 	elif key == "camera":
 		_build_camera()
@@ -137,7 +143,6 @@ func _build_camera() -> void:
 	var strength := _option("平滑强度", ["轻微", "标准", "明显"])
 	camera_inputs["strength"] = strength
 	strength.item_selected.connect(func(index: int): camera_preferences.set_value("strength", index))
-	body.add_child(Style.text("用于冒险棋盘。默认保持当前操作手感；平滑强度越高，镜头跟随越柔缓。", 14, true))
 	var reset := Button.new()
 	reset.text = "恢复镜头默认"
 	Style.card_button(reset)
@@ -228,3 +233,10 @@ func _exit_tree() -> void:
 	if Graphics.changed.is_connected(_video_status): Graphics.changed.disconnect(_video_status)
 	if preferences != null and preferences.storage_status_changed.is_connected(_interface_status): preferences.storage_status_changed.disconnect(_interface_status)
 	if preferences != null and preferences.changed.is_connected(_sync_interface): preferences.changed.disconnect(_sync_interface)
+
+func _fit_mobile() -> void:
+	var safe := Mobile.safe_rect(size)
+	add_theme_constant_override("margin_left",roundi(safe.position.x)+24)
+	add_theme_constant_override("margin_top",roundi(safe.position.y)+24)
+	add_theme_constant_override("margin_right",roundi(size.x-safe.end.x)+24)
+	add_theme_constant_override("margin_bottom",roundi(size.y-safe.end.y)+24)

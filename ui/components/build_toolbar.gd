@@ -101,6 +101,7 @@ func _build_body() -> void:
 		0: items = [["select","地台属性",GoIconSet.TARGET,true],["expand","扩展",GoIconSet.EXPAND,true],["paint","地面绘制",GoIconSet.EDIT,true],["landing","摆放区域",GoIconSet.MAP,true]]
 		1: items = [["object_select","选择物件",GoIconSet.TARGET,true],["token_basic","基础棋子",GoIconSet.PLUS,true],["token_advanced","高级棋子",GoIconSet.PLUS,true],["scenery_create","创建景观",GoIconSet.PLUS,false],["floor_create","铺设地板",GoIconSet.MAP,false],["wall_create","搭建墙壁",GoIconSet.MAP,false]]
 	var group := ButtonGroup.new()
+	if Mobile.enabled: items.append(["mobile_camera","镜头",GoIconSet.TARGET,true])
 	for item in items:
 		var button := _button(item[1],item[2],body)
 		button.toggle_mode = true

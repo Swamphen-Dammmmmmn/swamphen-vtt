@@ -3,6 +3,7 @@ extends MarginContainer
 const Style = preload("res://ui/components/page_style.gd")
 signal back_requested
 signal navigation_requested(page: String, detail: String)
+var fullscreen_content := false
 var overlay_layer: CanvasLayer
 
 @onready var content: VBoxContainer = $Layout/Scroll/Content
@@ -15,6 +16,7 @@ func _ready() -> void:
 	GoStyle.apply_icon($Layout/Header/Back, GoIconSet.BACK, 20)
 	$Layout/Header/Back.pressed.connect(func(): back_requested.emit())
 	resized.connect(_fit)
+	if Mobile.enabled: Mobile.changed.connect(_fit)
 	_fit()
 
 func configure(title: String, subtitle := "", allow_back := true) -> void:
@@ -22,7 +24,7 @@ func configure(title: String, subtitle := "", allow_back := true) -> void:
 	$Layout/Header/Titles/Title.text = title
 	$Layout/Header/Titles/Subtitle.text = subtitle
 	$Layout/Header/Titles/Subtitle.visible = not subtitle.is_empty()
-	$Layout/Header/Titles/Title.add_theme_font_size_override("font_size", Style.TITLE_SIZE)
+	$Layout/Header/Titles/Title.add_theme_font_size_override("font_size", 26 if Mobile.enabled else Style.TITLE_SIZE)
 	$Layout/Header/Titles/Subtitle.add_theme_font_size_override("font_size", Style.BODY_SIZE)
 	$Layout/Header/Titles/Subtitle.add_theme_color_override("font_color", Color("64748b"))
 
@@ -39,13 +41,16 @@ func add_overlay(control: Control) -> void:
 	overlay_layer.add_child(control)
 
 func _fit() -> void:
-	var margin := maxi(Style.PAGE_MARGIN, int((size.x - Style.MAX_WIDTH) / 2.0))
-	add_theme_constant_override("margin_left", margin)
-	add_theme_constant_override("margin_right", margin)
-	add_theme_constant_override("margin_top", Style.PAGE_MARGIN)
-	add_theme_constant_override("margin_bottom", Style.PAGE_MARGIN)
+	if fullscreen_content: return
+	var safe := Mobile.safe_rect(size)
+	var margin := maxi(16 if Mobile.enabled else Style.PAGE_MARGIN, int((safe.size.x - Style.MAX_WIDTH) / 2.0))
+	add_theme_constant_override("margin_left", margin+roundi(safe.position.x))
+	add_theme_constant_override("margin_right", margin+roundi(size.x-safe.end.x))
+	add_theme_constant_override("margin_top", roundi(safe.position.y)+(16 if Mobile.enabled else Style.PAGE_MARGIN))
+	add_theme_constant_override("margin_bottom", roundi(size.y-safe.end.y)+(16 if Mobile.enabled else Style.PAGE_MARGIN))
 
 func use_fullscreen_content(control: Control) -> void:
+	fullscreen_content = true
 	$Layout.hide()
 	for edge in ["left", "right", "top", "bottom"]:
 		add_theme_constant_override("margin_" + edge, 0)

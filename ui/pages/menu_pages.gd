@@ -89,6 +89,9 @@ static func _narrow(page: Page, width: float) -> VBoxContainer:
 	return column
 
 static func _home(page: Page, has_board: bool) -> void:
+	if Mobile.enabled:
+		_mobile_home(page)
+		return
 	page.configure("紫水鸡棋盘", "三维跑团棋盘", false)
 	var box := _narrow(page, 440)
 	var panel := Style.card()
@@ -476,3 +479,28 @@ static func _network_room(page: Page) -> void:
 static func _network_settings(page: Page) -> void:
 	page.configure("连接设置")
 	preload("res://ui/pages/network_page.gd").add_settings(page.content)
+
+static func _mobile_home(page: Page) -> void:
+	page.configure("紫水鸡棋盘","",false)
+	var panel := Style.card()
+	panel.add_theme_stylebox_override("panel",BoardUiStyle.card_face(16))
+	page.content.add_child(panel)
+	var menu := Style.column(12)
+	panel.add_child(menu)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation",12)
+	grid.add_theme_constant_override("v_separation",12)
+	menu.add_child(grid)
+	for item in [["开团","adventures",GoIconSet.PLAY],["加团","join",GoIconSet.USERS],["身份","identity",GoIconSet.USER],["定制","customize",GoIconSet.EDIT],["软件设置","settings",GoIconSet.SETTINGS],["教程","tutorials",GoIconSet.HELP]]:
+		var button := _button(item[0],_route(page,item[1]),item[1]=="adventures",item[2],56)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(button)
+	var exit_button := _button("退出",_route(page,"quit"),false,GoIconSet.POWER,56,true)
+	for state in ["normal","hover","pressed","hover_pressed"]:
+		var face := exit_button.get_theme_stylebox(state).duplicate() as StyleBoxFlat
+		face.bg_color = Color("b33c3c")
+		exit_button.add_theme_stylebox_override(state,face)
+		exit_button.add_theme_color_override("font_"+("color" if state=="normal" else state+"_color"),Color.WHITE)
+		exit_button.add_theme_color_override("icon_"+state+"_color",Color.WHITE)
+	menu.add_child(exit_button)

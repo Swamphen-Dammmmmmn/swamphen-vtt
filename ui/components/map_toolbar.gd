@@ -11,6 +11,7 @@ func _build_body() -> void:
 	buttons.clear()
 	var group := ButtonGroup.new()
 	var items: Array = [["map_select","选择地台",GoIconSet.TARGET],["map_properties","地图属性",GoIconSet.EDIT],["add_platform","添加地台",GoIconSet.PLUS],["platforms","地台列表",GoIconSet.MAP]] if category_index==0 else [["weather_atmosphere","氛围",GoIconSet.GRID],["weather_light","光照",GoIconSet.SUN],["weather_sky","天空",GoIconSet.MAP],["weather_wind","风",GoIconSet.SETTINGS]]
+	if Mobile.enabled: items.append(["mobile_camera","镜头",GoIconSet.TARGET])
 	for item in items:
 		var button := _button(item[1],item[2],body)
 		button.toggle_mode = true

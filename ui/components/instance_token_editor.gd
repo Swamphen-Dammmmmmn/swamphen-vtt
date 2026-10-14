@@ -40,3 +40,8 @@ func _return() -> void:
 	hide()
 	closed.emit()
 	queue_free()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Mobile.enabled and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_return()
+		get_viewport().set_input_as_handled()

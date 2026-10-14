@@ -64,11 +64,17 @@ func _add_action(title: String, action: String, primary := false, icon: StringNa
 	button.pressed.connect(func(): action_requested.emit(action))
 
 func _fit() -> void:
+	if Mobile.enabled:
+		var safe := Mobile.safe_rect(size)
+		add_theme_constant_override("margin_left",roundi(safe.position.x)+24)
+		add_theme_constant_override("margin_top",roundi(safe.position.y)+24)
+		add_theme_constant_override("margin_right",roundi(size.x-safe.end.x)+24)
+		add_theme_constant_override("margin_bottom",roundi(size.y-safe.end.y)+24)
 	if panel == null:
 		return
-	panel.custom_minimum_size.x = minf(440, maxf(0, size.x - 64))
+	panel.custom_minimum_size.x = minf(440, maxf(0,Mobile.safe_rect(size).size.x-64))
 	var natural := content.get_combined_minimum_size().y
-	scroll.custom_minimum_size.y = minf(natural, maxf(0, size.y - 104))
+	scroll.custom_minimum_size.y = minf(natural, maxf(0,Mobile.safe_rect(size).size.y-104))
 
 func configure_editor(return_title: String) -> void:
 	content.add_child(Style.text("编辑器菜单",24))
@@ -77,5 +83,4 @@ func configure_editor(return_title: String) -> void:
 	_add_action("软件设置","settings",false,GoIconSet.SETTINGS)
 	content.add_child(HSeparator.new())
 	_add_action(return_title,"return_library",false,GoIconSet.LOGOUT)
-	content.add_child(Style.text("Esc 关闭菜单并继续编辑。",14,true))
 	Style.Motion.fade_in(self)

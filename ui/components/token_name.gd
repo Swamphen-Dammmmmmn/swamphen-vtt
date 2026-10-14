@@ -106,6 +106,7 @@ func update_data(title: String, color: Color, hp: int, maximum: int, ac: int, te
 	$Content/Header/AC.text = str(ac) if ac >= 0 else "—"
 	temporary_label.text = "+%d" % temporary
 	temporary_label.visible = temporary>0
+	health_bar.visible = maximum>0
 	health_bar.set_values(hp,maximum,temporary)
 	if notes!=cached_notes:
 		cached_notes = notes

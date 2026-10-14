@@ -16,10 +16,13 @@ func configure(data: Dictionary) -> void:
 	add_theme_stylebox_override("panel", BoardUiStyle.card_face(12))
 	var column := Style.column(10)
 	add_child(column)
-	var preview := Thumbnail.new()
+	var preview := TextureRect.new()
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview.custom_minimum_size.y = Style.LIBRARY_PREVIEW_HEIGHT
 	column.add_child(preview)
-	preview.configure(data["parameters"])
+	TokenPreviews.request(data["parameters"],preview)
 	var title := Style.text(data["title"], 20)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS

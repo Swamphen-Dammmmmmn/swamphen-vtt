@@ -142,7 +142,6 @@ func configure_editor() -> void:
 	$Shell/Header/Row/Close.custom_minimum_size = Vector2(44, 44)
 	content().add_theme_constant_override("separation", EditorLayout.GAP)
 	EditorLayout.scroll($Shell/Body)
-	EditorLayout.scroll_hint($Shell/Body, $Shell)
 	editor_footer = EditorStyle.column(EditorLayout.ROW_GAP)
 	$Shell.add_child(editor_footer)
 	editor_status = EditorLayout.status()

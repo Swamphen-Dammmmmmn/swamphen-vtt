@@ -1,4 +1,7 @@
 extends Control
+var mobile_touch: Node
+var mobile_previous_tool := ""
+var mobile_tool_state: Dictionary = {}
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 const DisplaySettings = preload("res://ui/components/designer_display_settings.gd")
@@ -79,6 +82,7 @@ var camera_transition: Tween
 var weather_panel: VBoxContainer
 
 func _ready() -> void:
+	_mobile_attach.call_deferred()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview = Preview.new()
@@ -221,6 +225,25 @@ func _item(id: String) -> Dictionary:
 	return {}
 
 func _select_tool(key: String) -> void:
+	if key == "mobile_camera":
+		if active_tool == key:
+			_select_tool(mobile_previous_tool)
+			if not mobile_tool_state.get("draft",{}).is_empty():
+				draft = mobile_tool_state["draft"].duplicate(true)
+				source_record = mobile_tool_state["source"].duplicate(true)
+				palette.close()
+				_refresh_panel()
+			elif not str(mobile_tool_state.get("moving","")).is_empty(): _start_move(mobile_tool_state["moving"])
+			mobile_tool_state.clear()
+			if tools.buttons.has(mobile_previous_tool): tools.buttons[mobile_previous_tool].button_pressed = true
+			return
+		mobile_previous_tool = active_tool
+		mobile_tool_state = {"draft":draft.duplicate(true),"source":source_record.duplicate(true),"moving":moving}
+		_cancel_operation()
+		palette.close()
+		active_tool = key
+		if expanded: _toggle_panel()
+		return
 	_cancel_operation()
 	palette.close()
 	active_tool = key
@@ -591,7 +614,7 @@ func guard_leave(action: Callable) -> bool:
 	return true
 
 func _panel_edge() -> float:
-	return 24+maxf(152,tools.toolbar_width())+12
+	return Mobile.safe_rect(size).position.x+24+maxf(152,tools.toolbar_width())+12
 
 func _queue_fit() -> void:
 	if fit_pending: return
@@ -602,14 +625,14 @@ func _fit() -> void:
 	fit_pending = false
 	if not is_instance_valid(common_bar): return
 	common_bar.size = common_bar.get_combined_minimum_size()
-	common_bar.position = Vector2(24,maxf(24,size.y-common_bar.size.y-24))
-	tools.position = Vector2(24,24)
+	common_bar.position = Vector2(Mobile.safe_rect(size).position.x+24,maxf(24,Mobile.safe_rect(size).end.y-common_bar.size.y-24))
+	tools.position = Mobile.safe_rect(size).position+Vector2(24,24)
 	tools.fit(common_bar.position.y-36)
 	panel.custom_minimum_size.x = minf(340,maxf(180,size.x-_panel_edge()-24))
-	panel_scroll.custom_minimum_size.y = minf(panel_body.get_combined_minimum_size().y,maxf(44,size.y-150))
+	panel_scroll.custom_minimum_size.y = minf(panel_body.get_combined_minimum_size().y,maxf(44,Mobile.safe_rect(size).size.y-150))
 	panel.size = Vector2(panel.custom_minimum_size.x,0)
-	if panel_tween==null or not panel_tween.is_valid(): panel.position = Vector2(_panel_edge() if expanded else -panel.size.x-16,24)
-	handle.position = Vector2(_panel_edge()+16,40)
+	if panel_tween==null or not panel_tween.is_valid(): panel.position = Vector2(_panel_edge() if expanded else -panel.size.x-16,Mobile.safe_rect(size).position.y+24)
+	handle.position = Vector2(_panel_edge()+16,Mobile.safe_rect(size).position.y+40)
 	handle.icon = preload("res://ui/icons/chevron_left.svg") if expanded else preload("res://ui/icons/chevron_right.svg")
 	if is_instance_valid(display_panel): display_panel.fit_at(size,common_bar.position)
 
@@ -639,6 +662,7 @@ func _save_shortcut(event: InputEvent) -> bool:
 	return true
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
 	if is_instance_valid(platform_editor): return
 	if _save_shortcut(event): return
 	if is_instance_valid(menu) and _blocked():
@@ -850,3 +874,7 @@ func _return_to_combination() -> void:
 	_refresh_list()
 	_refresh_panel()
 	_mark_unsaved()
+
+func _mobile_attach() -> void:
+	if Mobile.enabled: Mobile.changed.connect(_queue_fit)
+	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self)

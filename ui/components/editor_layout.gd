@@ -98,20 +98,3 @@ static func pair(parent: Control, threshold := 280.0) -> BoxContainer:
 	parent.add_child(row)
 	row.resized.connect(func(): row.vertical = row.size.x < threshold)
 	return row
-
-static func scroll_hint(scroll: ScrollContainer, parent: VBoxContainer) -> Label:
-	var hint := Style.text("", 12, true)
-	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.hide()
-	parent.add_child(hint)
-	parent.move_child(hint, scroll.get_index() + 1)
-	var bar := scroll.get_v_scroll_bar()
-	var update := func():
-		var up := bar.value > 0.5
-		var down := bar.value < bar.max_value - bar.page - 0.5
-		hint.visible = up or down
-		hint.text = "上方还有内容 · 下方还有内容" if up and down else ("下方还有内容" if down else "上方还有内容")
-	bar.changed.connect(update)
-	bar.value_changed.connect(func(_value: float): update.call())
-	return hint

@@ -9,7 +9,6 @@ var image_modal: Control
 var sticker_inputs: Dictionary = {}
 var sticker_adjustment_actions: BoxContainer
 var visibility_row: HBoxContainer
-var visibility_note: Label
 var smoothing_slider: HSlider
 var smoothing_sync := false
 var sticker_rows: Control
@@ -86,7 +85,6 @@ var error_components: Array = []
 var list_arrow: TextureRect
 var list_arrow_tween: Tween
 var component_marks: Dictionary = {}
-var scroll_hints: Dictionary = {}
 const LeftIcon = preload("res://ui/icons/chevron_left.svg")
 const RightIcon = preload("res://ui/icons/chevron_right.svg")
 const DownIcon = preload("res://ui/icons/chevron_down.svg")
@@ -245,10 +243,7 @@ func _build_appearance_form(parent: Control) -> void:
 	visibility_row.add_child(visibility_label)
 	visibility_row.add_child(visible_input)
 	display_body.add_child(visibility_row)
-	visibility_note = Style.text("保存后及冒险中是否显示", 14, true)
-	display_body.add_child(visibility_note)
 	_build_sticker_form(attribute_bodies["image"])
-	_separator(editor_content)
 	boundary_notice = Layout.status()
 	editor_content.add_child(boundary_notice)
 	var actions := Layout.pair(editor_content)
@@ -562,7 +557,6 @@ func _show_attribute(animate: bool) -> void:
 	var visibility_parent: Control = attribute_bodies["display"]
 	if visibility_row.get_parent() != visibility_parent:
 		visibility_row.reparent(visibility_parent)
-		visibility_note.reparent(visibility_parent)
 	_sync_attribute_edges()
 	var selected: String = attribute_page[component_kind]
 	adjustment_actions.visible = selected == "shape"
@@ -662,10 +656,7 @@ func _refresh_preview_internal(material_only: bool) -> void:
 		error_component = "standee"
 		if not "standee" in error_components: error_components.append("standee")
 	var current_error := component_kind in error_components
-	boundary_notice.text = "图片资源有误" if component_kind == "standee" and not sticker_error.is_empty() else ("参数有误" if not report.get("ok", false) else ("轮廓待生成" if error_component == "standee" and not ready else "超出可用范围")) if current_error else ("设计器中隐藏" if not designer_visibility[component_kind] else ("实际隐藏 · 编辑轮廓" if not component_values[component_kind]["visible"] else "范围正常"))
-	if current_error: boundary_notice.text = message
-	boundary_notice.tooltip_text = message if current_error else ""
-	boundary_notice.add_theme_color_override("font_color", Color("b33c3c") if current_error else Color("64748b"))
+	Layout.set_status(boundary_notice, message if current_error else "", current_error)
 	component_message = message
 	_mark_component_errors(report)
 	_update_list()
@@ -782,6 +773,7 @@ func _pointer_on_ui(at: Vector2) -> bool:
 	return (edge_open["left"] and options_panel.get_global_rect().has_point(at)) or (edge_open["right"] and editor_panel.get_global_rect().has_point(at))
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
 	var active_gizmo: Node3D = preview.sticker_gizmo if not sticker_mode.is_empty() else preview.gizmo
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		if active_gizmo.dragged >= 0 or rotating:
@@ -842,7 +834,7 @@ func _set_ui_enabled(root: Control, enabled: bool) -> void:
 
 func _toggle_edge(side: String) -> void:
 	edge_open[side] = not edge_open[side]
-	if edge_open[side] and size.x < 320 + 344 + 480 + 72:
+	if edge_open[side] and (Mobile.enabled or size.x < 320 + 344 + 480 + 72):
 		var other := "right" if side == "left" else "left"
 		if edge_open[other]:
 			edge_open[other] = false
@@ -865,7 +857,8 @@ func _close_owned_popups(side: String) -> void:
 
 func _edge_position(side: String, expanded: bool) -> Vector2:
 	var panel: PanelContainer = options_panel if side == "left" else editor_panel
-	return Vector2(24 if expanded else -panel.size.x, 24) if side == "left" else Vector2(size.x - panel.size.x - 24 if expanded else size.x, 24)
+	var safe := Mobile.safe_rect(size)
+	return Vector2(safe.position.x+24 if expanded else -panel.size.x,safe.position.y+24) if side=="left" else Vector2(safe.end.x-panel.size.x-24 if expanded else size.x,safe.position.y+24)
 
 func _animate_edge(side: String) -> void:
 	var panel: PanelContainer = options_panel if side == "left" else editor_panel
@@ -893,29 +886,24 @@ func _fit_card(panel: PanelContainer, content: VBoxContainer, scroll: ScrollCont
 	for child in content.get_children():
 		if child is Control and child.visible:
 			count += 1
-			if child != scroll and child != scroll_hints.get(scroll): chrome += child.get_combined_minimum_size().y
-	var hint: Label = scroll_hints.get(scroll)
-	if hint != null and hint.visible: count -= 1
+			if child != scroll: chrome += child.get_combined_minimum_size().y
 	chrome += maxi(0, count - 1) * content.get_theme_constant("separation")
 	var body_height := body.get_combined_minimum_size().y
-	if hint != null:
-		hint.visible = body_height > maxf(1, height_limit - chrome) + 0.5
-		if hint.visible: chrome += hint.get_combined_minimum_size().y + content.get_theme_constant("separation")
-		_update_scroll_hint.call_deferred(scroll)
 	scroll.custom_minimum_size.y = minf(body_height, maxf(1, height_limit - chrome))
 	panel.size = Vector2(width, minf(height_limit, chrome + body_height))
 
 func _fit() -> void:
 	fit_queued = false
 	if not is_instance_valid(left_handle) or not is_instance_valid(editor_panel): return
-	var available := maxf(1, size.y - 48)
-	var width_left := minf(320, maxf(1, size.x - 48))
-	var width_right := minf(344, maxf(1, size.x - 48))
+	var safe := Mobile.safe_rect(size)
+	var available := maxf(1,safe.size.y-48)
+	var width_left := minf(320, maxf(1,safe.size.x-48))
+	var width_right := minf(344, maxf(1,safe.size.x-48))
 	_fit_card(options_panel, options_content, form_scroll, form, width_left, available)
 	_fit_card(editor_panel, editor_content, editor_scroll, attribute_bodies[attribute_page[component_kind]], width_right, available)
 	left_handle.size = Vector2(44, 44)
 	right_handle.size = Vector2(44, 44)
-	if edge_open["left"] and edge_open["right"] and size.x < width_left + width_right + 480 + 72:
+	if edge_open["left"] and edge_open["right"] and (Mobile.enabled or size.x < width_left + width_right + 480 + 72):
 		edge_open["left"] = false
 		_close_owned_popups("left")
 	for side in ["left", "right"]:
@@ -956,28 +944,12 @@ func _add_choice(parent: Control, title: String, choices: Array) -> OptionButton
 	return choice
 
 func _handle_position(side: String, expanded: bool) -> Vector2:
-	if side == "left": return Vector2(40 if expanded else 0, 40)
-	return Vector2(size.x - 84 if expanded else size.x - 44, 40)
+	var safe := Mobile.safe_rect(size)
+	if side=="left": return Vector2(safe.position.x+(40 if expanded else 0),safe.position.y+40)
+	return Vector2(safe.end.x-(84 if expanded else 48),safe.position.y+40)
 
-func _prepare_scroll(scroll: ScrollContainer, content: VBoxContainer) -> void:
+func _prepare_scroll(scroll: ScrollContainer, _content: VBoxContainer) -> void:
 	Layout.scroll(scroll)
-	var bar := scroll.get_v_scroll_bar()
-	var hint := Style.text("", 12, true)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.autowrap_mode = TextServer.AUTOWRAP_OFF
-	hint.hide()
-	content.add_child(hint)
-	content.move_child(hint, scroll.get_index() + 1)
-	scroll_hints[scroll] = hint
-	bar.value_changed.connect(func(_value: float): _update_scroll_hint(scroll))
-	bar.changed.connect(func(): _update_scroll_hint(scroll))
-
-func _update_scroll_hint(scroll: ScrollContainer) -> void:
-	if not scroll_hints.has(scroll): return
-	var bar := scroll.get_v_scroll_bar()
-	var up := bar.value > 0.5
-	var down := bar.value < bar.max_value - bar.page - 0.5
-	scroll_hints[scroll].text = "上方还有内容 · 下方还有内容" if up and down else ("下方还有内容" if down else ("上方还有内容" if up else ""))
 
 func _percent(text: String) -> Variant:
 	var value: Variant = _number_text(text)

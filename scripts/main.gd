@@ -1,4 +1,5 @@
 extends Node3D
+var mobile_touch: Node
 signal full_token_edit_requested(data: Dictionary)
 signal token_tray_requested(data: Dictionary)
 signal tray_placement_completed(id: String)
@@ -96,6 +97,7 @@ var start_marker: MeshInstance3D
 var end_marker: MeshInstance3D
 
 func _ready() -> void:
+	_mobile_attach.call_deferred()
 	campaign_settings.persist_to_file = false
 	campaign_settings.distance_mode = session_distance_mode
 	campaign_settings.storage_message = "计距方式随当前冒险保存。"
@@ -159,6 +161,7 @@ func _material(color: Color, unshaded: bool = false) -> StandardMaterial3D:
 	return mat
 
 func set_application_active(active: bool, keep_visible := false) -> void:
+	if is_instance_valid(mobile_touch): mobile_touch.reset()
 	# Navigation pauses editing without cancelling drafts or changing board data.
 	camera_button = 0
 	left_pan_pending = false
@@ -444,6 +447,7 @@ func _zoom_camera(direction: float) -> void:
 	_update_camera()
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
 	if is_instance_valid(turn_control) and turn_control.panel.visible:
 		if turn_control.handle_pointer(event,ui.pointer_on_ui()):
 			get_viewport().set_input_as_handled()
@@ -504,6 +508,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if Mobile.enabled and event is InputEventMouse and event.device in [InputEvent.DEVICE_ID_EMULATION,-421]: return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
 		_escape()
@@ -529,7 +534,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_LEFT:
 				if camera_button != 0:
 					return
-				if _can_start_left_pan(event.position):
+				if not (Mobile.enabled and event.device == -420) and _can_start_left_pan(event.position):
 					left_pan_pending = true
 					left_press_position = event.position
 				else:
@@ -1985,3 +1990,6 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 	preload("res://scripts/adventure_runtime.gd").restore(self,state)
 	_refresh_selection()
 	_on_tool(previous_tool if previous_tool in ["select","measure","shape"] else "select")
+
+func _mobile_attach() -> void:
+	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self)

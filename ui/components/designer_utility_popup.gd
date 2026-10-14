@@ -25,6 +25,7 @@ func _ready() -> void:
 	body.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	scroll.add_child(body)
 	body.minimum_size_changed.connect(_queue_fit)
+	if Mobile.enabled: Mobile.changed.connect(_queue_fit)
 	var header := HBoxContainer.new()
 	body.add_child(header)
 	var label := Style.text(title,20)
@@ -41,7 +42,8 @@ func _ready() -> void:
 	header.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT)!=0:
 			dragged = true
-			position = (position+event.relative).clamp(Vector2.ZERO,(get_parent().size-size).max(Vector2.ZERO))
+			var safe := Mobile.safe_rect(get_parent().size)
+			position = (position+event.relative).clamp(safe.position,(safe.end-size).max(safe.position))
 	)
 
 func reveal_at(available: Vector2, anchor: Vector2) -> void:
@@ -58,15 +60,16 @@ func fit_at(available: Vector2, anchor: Vector2) -> void:
 	last_available = available
 	last_anchor = anchor
 	var chrome := get_theme_stylebox("panel").get_minimum_size()
-	custom_minimum_size.x = minf(320,maxf(1,available.x-48))
+	var safe := Mobile.safe_rect(available)
+	custom_minimum_size.x = minf(320,maxf(1,safe.size.x-48))
 	size.x = custom_minimum_size.x
 	scroll.size.x = maxf(1,size.x-chrome.x)
 	body.size.x = scroll.size.x
-	var height := minf(body.get_combined_minimum_size().y,maxf(1,available.y-48-chrome.y))
+	var height := minf(body.get_combined_minimum_size().y,maxf(1,safe.size.y-48-chrome.y))
 	scroll.custom_minimum_size.y = height
 	size = Vector2(custom_minimum_size.x,height+chrome.y)
 	if not dragged: position = Vector2(anchor.x,maxf(24,anchor.y-size.y-12))
-	position = position.clamp(Vector2.ZERO,(available-size).max(Vector2.ZERO))
+	position = position.clamp(safe.position,(safe.end-size).max(safe.position))
 
 func _queue_fit() -> void:
 	if fit_pending: return

@@ -163,6 +163,7 @@ static func _write_record(record: Dictionary, final_path: String) -> Dictionary:
 	if error!=OK:
 		var recovered := not original or DirAccess.rename_absolute(backup,final_path)==OK
 		return _invalid("保存棋子失败，修改已保留。"+("原文件已恢复。" if recovered else "原文件保留在备份中。"))
+	TokenPreviews.refresh_saved.call_deferred(str(record["id"]))
 	return {"ok": true, "id": record["id"]}
 
 static func read_all() -> Dictionary:

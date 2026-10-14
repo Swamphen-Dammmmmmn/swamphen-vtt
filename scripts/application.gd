@@ -309,6 +309,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif current_route=="session_maps":
 			get_viewport().set_input_as_handled()
 			_back()
+		elif Mobile.enabled and event.device == -420:
+			get_viewport().set_input_as_handled()
+			if current_route == "home": _request_window_close()
+			else: _back()
 
 func _current_map() -> Dictionary:
 	for map: Dictionary in adventure.get("maps",[]):
@@ -439,6 +443,16 @@ func refresh_network_map_collection() -> void:
 				child._refresh()
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and Mobile.enabled and is_node_ready():
+		if Mobile._keyboard_height() > 0:
+			DisplayServer.virtual_keyboard_hide()
+			return
+		var back := InputEventKey.new()
+		back.keycode = KEY_ESCAPE
+		back.pressed = true
+		back.device = -420
+		Input.parse_input_event(back)
+		return
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_window_close()
 

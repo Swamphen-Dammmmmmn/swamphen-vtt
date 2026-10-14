@@ -11,6 +11,7 @@ param(
     [ValidateRange(0,2)][int]$RockCategory = 0,
     [string]$PortableExecutable = '',
     [int]$QuitAfter = 0,
+    [switch]$MobilePreview,
     [switch]$AdvancedToken
 )
 $ErrorActionPreference = 'Stop'
@@ -50,10 +51,12 @@ if (-not $LogFile) {
 }
 $taskArguments += ' --log-file "' + $LogFile + '"'
 if ($QuitAfter -gt 0) { $taskArguments += ' --quit-after ' + $QuitAfter }
+if ($MobilePreview -and -not $Page) { $Page = "home" }
 if ($Page) {
     if ($Page -notin @('home','join','network_settings','identity','map_library','map_create','platform_library','platform_create','token_library','token_customize','settings','adventure_library','adventure_create','adventures','adventure_play')) { throw 'Unknown startup page.' }
     $taskArguments += ' -- --page=' + $Page
 }
+if ($MobilePreview) { $taskArguments += " --mobile-preview" }
 if ($AdvancedToken) {
     if ($Page -ne 'token_customize') { throw 'AdvancedToken requires token_customize page.' }
     $taskArguments += ' --advanced-token'

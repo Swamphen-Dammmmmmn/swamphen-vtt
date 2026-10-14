@@ -47,6 +47,7 @@ func _enter_tree() -> void:
 	BoardUiStyle.configure()
 
 func _ready() -> void:
+	Mobile.register_root(self)
 	network_notice = Label.new()
 	add_child(network_notice)
 	network_notice.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
