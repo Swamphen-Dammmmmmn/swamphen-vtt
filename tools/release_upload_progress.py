@@ -2,10 +2,16 @@
 import http.client,json,ssl,subprocess,time
 from urllib.parse import urlsplit,quote
 
+def locate_release(repo,tag,env):
+    # The REST tag endpoint can return 404 for a draft; the CLI resolves drafts.
+    identity=json.loads(subprocess.check_output(['gh','release','view',tag,'--repo',repo,'--json','databaseId,isDraft'],env=env,text=True,encoding='utf-8'))
+    if not identity['isDraft']:raise RuntimeError('Refusing to replace public release attachments.')
+    release=json.loads(subprocess.check_output(['gh','api',f"repos/{repo}/releases/{identity['databaseId']}"],env=env,text=True,encoding='utf-8'))
+    if release['tag_name']!=tag or not release['draft']:raise RuntimeError('Draft release identity mismatch.')
+    return release
+
 def upload(assets,repo,tag,env):
-    def api(path):
-        return json.loads(subprocess.check_output(['gh','api',path],env=env,text=True,encoding='utf-8'))
-    release=api(f'repos/{repo}/releases/tags/{tag}')
+    release=locate_release(repo,tag,env)
     if not release['draft']:raise RuntimeError('Refusing to replace public release attachments.')
     token=env.get('GH_TOKEN') or env.get('GITHUB_TOKEN')
     if not token:token=subprocess.check_output(['gh','auth','token'],env=env,text=True).strip()

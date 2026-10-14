@@ -8,7 +8,7 @@ $env:PYTHONUNBUFFERED = '1'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 Set-Location -LiteralPath $taskProject
 if ($CheckOnly) {
-    & $taskPython -c "import sys;sys.path.insert(0,'tools');import build_release;from pathlib import Path;build_release.verify(Path(sys.argv[1]),'0.1.2');print('Release files verified; no upload.')" $taskPlan.directory
+    & $taskPython -c "import sys;sys.path.insert(0,'tools');import build_release;from pathlib import Path;build_release.verify(Path(sys.argv[1]),'0.1.2');import publish_release as p;from release_upload_progress import locate_release;locate_release(p.REPO,'v0.1.2',p.publishing_environment());print('Release files and draft lookup verified; no upload.')" $taskPlan.directory
 } else {
     & $taskPython tools/publish_release.py --version 0.1.2 --source-commit $taskPlan.source_commit --directory $taskPlan.directory --notes-file $taskPlan.notes --progress --publish
 }
