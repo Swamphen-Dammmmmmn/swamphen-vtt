@@ -15,13 +15,13 @@
 
 目前主要在 **Windows电脑**上开发，仍处于早期阶段。已提供ARM64安卓启动测试包；Android触控适配、跨设备体验与联机稳定性验证仍在后续计划中。
 
-**当前提供 Windows v0.1.2 测试版。** 从 [GitHub 发版页面](https://github.com/Swamphen-Dammmmmmn/swamphen-vtt/releases/tag/v0.1.2) 下载 `svtt-0.1.2-windows-portable.zip`，解压整个目录后运行“紫水鸡棋盘.exe”，无需安装Godot、Python或.NET。它是早期测试版本，界面和功能仍可能调整，请备份重要存档。
+**当前公开提供 Windows v0.1.1 测试版。** 从 [GitHub 发版页面](https://github.com/Swamphen-Dammmmmmn/swamphen-vtt/releases/tag/v0.1.1) 下载 `svtt-0.1.1-windows-portable.zip`，解压整个目录后运行“紫水鸡棋盘.exe”，无需安装Godot、Python或.NET。它是早期测试版本，请备份重要存档。
 
-安卓附件 `swamphen-vtt-0.1.1-android-arm64-test.apk` 为本轮首个手机测试包，保留内置版本 `0.1.1-android-test.1`；可传到ARM64手机安装，暂用默认图标。它用于验证安装、启动及页面显示，尚未进行触屏操作适配，也不支持内置更新。手机资料独立保存，不自动同步电脑存档。
+v0.1.2 已暂时撤回，将在合并界面修复、手机适配和更新方式改进后重新发布。安卓测试包随本次发行一并撤回，暂不提供公开下载。
 
 采用ZIP便携包，用户资料放在软件目录的`userdata`文件夹中。搬迁时复制整个目录。软件设置的“关于与更新”可以从GitHub Releases检查和下载更新，显示进度；也可以手动导入我们发布的签名更新ZIP。发现新版本时，左上方提示可直接跳转更新页面。不会自动下载或安装，用户确认后更新并重启。测试版会接收预发布更新。
 
-首次安装选择`portable.zip`，已有便携版升级选择`update.zip`并在程序内导入；GitHub自动生成的源码ZIP不能用作更新包。源码运行不会替换开发文件。已有v0.1.1便携版可通过更新包升级；旧的0.1.0源码或旧EXE需要先使用完整便携包。
+首次安装选择`portable.zip`，已有便携版升级选择`update.zip`并在程序内导入；GitHub自动生成的源码ZIP不能用作更新包。源码运行不会替换开发文件。后续版本会提供已有便携版的升级途径；旧的0.1.0源码或旧EXE需要先使用完整便携包。
 
 ## 基本使用流程
 
