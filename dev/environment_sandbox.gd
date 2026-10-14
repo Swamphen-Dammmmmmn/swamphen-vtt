@@ -1,4 +1,5 @@
 extends Node3D
+const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
@@ -437,6 +438,7 @@ func _fit_panel() -> void:
 	panel.fit_to_window()
 
 func _update_camera() -> void:
+	orbit.y = OrbitCamera.clamp_pitch(orbit.y)
 	var direction := Vector3(sin(orbit.x) * cos(orbit.y), sin(orbit.y), cos(orbit.x) * cos(orbit.y))
 	camera.position = target + direction * distance
 	camera.look_at(target)
@@ -463,7 +465,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and rotating:
 		orbit.x -= event.relative.x * 0.006
-		orbit.y = clampf(orbit.y + event.relative.y * 0.006, 0.08, 1.45)
+		orbit.y = OrbitCamera.clamp_pitch(orbit.y + event.relative.y * 0.006)
 		_update_camera()
 		get_viewport().set_input_as_handled()
 

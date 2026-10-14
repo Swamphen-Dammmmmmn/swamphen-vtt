@@ -1,4 +1,5 @@
 extends Node3D
+const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 
 const Ground = preload("res://scripts/ground_material.gd")
 const Appearance = preload("res://scripts/token_appearance.gd")
@@ -670,6 +671,7 @@ func _color_popup_visible() -> bool:
 	return color_input.get_popup().visible or grass_color.get_popup().visible
 
 func _update_camera() -> void:
+	orbit.y = OrbitCamera.clamp_pitch(orbit.y)
 	var direction := Vector3(sin(orbit.x) * cos(orbit.y), sin(orbit.y), cos(orbit.x) * cos(orbit.y))
 	camera.position = target + direction * distance
 	camera.look_at(target)
@@ -788,7 +790,7 @@ func _input(event: InputEvent) -> void:
 			rotating = false
 			return
 		orbit.x -= event.relative.x * 0.006
-		orbit.y = clampf(orbit.y + event.relative.y * 0.006, -1.45, 1.45)
+		orbit.y = OrbitCamera.clamp_pitch(orbit.y + event.relative.y * 0.006)
 		_update_camera()
 		get_viewport().set_input_as_handled()
 

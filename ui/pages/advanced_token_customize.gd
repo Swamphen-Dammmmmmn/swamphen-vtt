@@ -52,18 +52,14 @@ var editor_title: Label
 var presentation_bar: HBoxContainer
 var presentation_buttons: Dictionary = {}
 const ContourData = preload("res://scripts/token_contour.gd")
-const AcrylicData = preload("res://scripts/token_acrylic.gd")
-var acrylic_inputs: Dictionary = {}
-var acrylic_sliders: Dictionary = {}
-var acrylic_color: ColorWell
-var acrylic_sync := false
+var material_editor: MaterialEditor
+var mode_materials: Dictionary = {}
 var contour_body: VBoxContainer
 var contour_inputs: Dictionary = {}
 var contour_button: Button
 var contour_status: Label
 var dimension_label: Label
 var thickness_label: Label
-var color_label: Label
 var sticker_notice: Label
 var attribute_bodies: Dictionary = {}
 var attribute_buttons: Dictionary = {}
@@ -201,7 +197,7 @@ func _build_appearance_form(parent: Control) -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 0)
 	editor_content.add_child(tabs)
-	for item in [["shape", "形状与尺寸"], ["display", "外观与显示"], ["image", "图片"]]:
+	for item in [["shape", "形状与尺寸"], ["display", "材质与显示"], ["image", "图片"]]:
 		var key: String = item[0]
 		var button := _button(item[1], func(): _switch_attribute(key), 36)
 		button.add_theme_font_size_override("font_size", 14)
@@ -235,13 +231,10 @@ func _build_appearance_form(parent: Control) -> void:
 	component_inputs["thickness_ft"] = _numeric_input(shape_body)
 	_build_contour_form(shape_body)
 	var display_body: VBoxContainer = attribute_bodies["display"]
-	color_label = Style.text("颜色", 14, true)
-	display_body.add_child(color_label)
-	component_color = ColorWell.new()
-	component_color.popup_host = self
-	component_color.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	display_body.add_child(component_color)
-	Style.card_button(component_color)
+	material_editor = MaterialEditor.new()
+	material_editor.popup_host = self
+	display_body.add_child(material_editor)
+	component_color = material_editor.color_input
 	visible_input = CheckButton.new()
 	visible_input.text = ""
 	Style.button(visible_input)
@@ -349,7 +342,8 @@ func _connect_appearance() -> void:
 	)
 	sides_input.item_selected.connect(func(_index: int): _refresh_preview())
 	visible_input.toggled.connect(func(_value: bool): _refresh_preview())
-	component_color.color_changed.connect(func(_color: Color): _refresh_preview())
+	material_editor.changed.connect(func():
+		if not loading_component: _refresh_material_preview())
 	for input in [component_inputs["width_ft"], component_inputs["length_ft"], component_inputs["thickness_ft"]]:
 		input.text_changed.connect(func(_text: String):
 			if not loading_component:
@@ -373,7 +367,8 @@ func _capture_component() -> void:
 		if (component_kind == "base" and key == "height_ft") or (component_kind == "standee" and key == "length_ft"): continue
 		data[key] = _number_text(component_inputs[key].text)
 	if data["shape"] == "circle": data["length_ft"] = data["width_ft"]
-	data["color"] = component_color.color.to_html(false)
+	data["material"] = material_editor.value.duplicate(true)
+	data["color"] = str(data["material"]["color"])
 	if component_kind == "standee" and not sticker_inputs.is_empty():
 		var specification := _sticker_spec()
 		specification["faces"][sticker_face]["scale"] = _percent(sticker_inputs["scale"].text)
@@ -382,8 +377,6 @@ func _capture_component() -> void:
 			var options := {}
 			for key in contour_inputs: options[key] = _number_text(contour_inputs[key].text)
 			data["contour_options"] = options
-		if not acrylic_inputs.is_empty():
-			data["acrylic"] = {"opacity": _percent(acrylic_inputs["opacity"].text), "roughness": _percent(acrylic_inputs["roughness"].text), "color": acrylic_color.color.to_html(false)}
 
 func _load_component() -> void:
 	loading_component = true
@@ -391,19 +384,16 @@ func _load_component() -> void:
 	shape_choice.select(maxi(0, ["circle", "ellipse", "rectangle", "polygon"].find(data["shape"])))
 	sides_input.select(int(data.get("sides", 6)) - 3)
 	visible_input.set_pressed_no_signal(data["visible"])
-	component_color.color = Color(data["color"])
+	var image_mode: bool = component_kind == "standee" and data.get("presentation", "solid") == "image"
+	var defaults := Surface.defaults("acrylic", "f1f7fa") if image_mode else Surface.defaults("matte", ComponentData.defaults()[component_kind]["color"])
+	defaults.board_visible = data.has("contour") if image_mode else true
+	material_editor.configure(Surface.for_component(data, component_kind), defaults, image_mode)
 	component_inputs["width_ft"].text = str(data["width_ft"])
 	component_inputs["length_ft"].text = str(data["length_ft"] if component_kind == "base" else data["height_ft"])
 	component_inputs["thickness_ft"].text = str(data["thickness_ft"])
 	var options: Dictionary = component_values["standee"].get("contour_options", ContourData.defaults())
 	for key in contour_inputs: contour_inputs[key].text = str(options.get(key, 0.0 if key == "smooth_pct" else ContourData.defaults()[key]))
 	_sync_smoothing_slider()
-	var acrylic: Dictionary = component_values["standee"].get("acrylic", AcrylicData.defaults())
-	for key in acrylic_inputs:
-		var value: Variant = acrylic[key]
-		acrylic_inputs[key].text = str(float(value) * 100.0) if value is float or value is int else str(value)
-	acrylic_color.color = Color(acrylic["color"])
-	_sync_acrylic_sliders()
 	_load_sticker()
 	_adjust_rows()
 	loading_component = false
@@ -418,8 +408,6 @@ func _adjust_rows() -> void:
 	thickness_label.visible = true
 	component_inputs["thickness_ft"].visible = true
 	contour_body.visible = image_mode
-	color_label.visible = not image_mode
-	component_color.visible = not image_mode
 	component_rows["sides"].visible = is_base and shape_choice.selected == 3
 	component_rows["length_ft"].visible = not is_base or shape_choice.selected != 0
 	component_rows["width_ft"].get_child(0).text = "直径" if is_base and shape_choice.selected == 0 else "宽"
@@ -467,65 +455,6 @@ func _build_contour_form(parent: Control) -> void:
 	contour_status = Layout.status()
 	contour_status.text = "尚未生成"
 	contour_body.add_child(contour_status)
-	_build_acrylic_form(contour_body)
-
-func _build_acrylic_form(parent: Control) -> void:
-	_separator(parent)
-	parent.add_child(Style.text("亚克力材质", 16))
-	for entry in [["opacity", "板体不透明度 · %", 0.0, 60.0], ["roughness", "表面粗糙度 · %", 5.0, 80.0]]:
-		parent.add_child(Style.text(entry[1], 14, true))
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		parent.add_child(row)
-		var slider := HSlider.new()
-		slider.min_value = entry[2]
-		slider.max_value = entry[3]
-		slider.step = 1.0
-		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		slider.custom_minimum_size.y = 28
-		row.add_child(slider)
-		var input := _numeric_input(row)
-		input.size_flags_horizontal = Control.SIZE_FILL
-		input.custom_minimum_size.x = 72
-		acrylic_inputs[entry[0]] = input
-		acrylic_sliders[entry[0]] = slider
-		input.text = str(float(AcrylicData.defaults()[entry[0]]) * 100.0)
-		slider.value_changed.connect(_acrylic_slide.bind(entry[0]))
-		input.text_changed.connect(func(_text: String):
-			_sync_acrylic_sliders()
-			if not loading_component: _refresh_material_preview()
-		)
-	parent.add_child(Style.text("板体颜色", 14, true))
-	acrylic_color = ColorWell.new()
-	acrylic_color.color = Color(AcrylicData.defaults()["color"])
-	acrylic_color.popup_host = self
-	parent.add_child(acrylic_color)
-	Style.card_button(acrylic_color)
-	acrylic_color.color_changed.connect(func(_value: Color):
-		if not loading_component: _refresh_material_preview()
-	)
-	parent.add_child(_button("恢复材质默认", _reset_acrylic))
-	_sync_acrylic_sliders()
-
-func _acrylic_slide(value: float, key: String) -> void:
-	if not acrylic_sync and not loading_component: acrylic_inputs[key].text = str(value)
-
-func _sync_acrylic_sliders() -> void:
-	acrylic_sync = true
-	for key in acrylic_inputs:
-		var raw: String = acrylic_inputs[key].text.strip_edges()
-		if raw.is_valid_float() and is_finite(raw.to_float()): acrylic_sliders[key].set_value_no_signal(raw.to_float())
-	acrylic_sync = false
-
-func _reset_acrylic() -> void:
-	acrylic_color.get_popup().hide()
-	loading_component = true
-	for key in acrylic_inputs: acrylic_inputs[key].text = str(float(AcrylicData.defaults()[key]) * 100.0)
-	acrylic_color.color = Color(AcrylicData.defaults()["color"])
-	_sync_acrylic_sliders()
-	loading_component = false
-	_refresh_material_preview()
 
 func _generate_contour() -> void:
 	_capture_component()
@@ -566,6 +495,8 @@ func _finish_contour(prepared: Dictionary, connect: bool) -> void:
 		_show_contour_error(result["message"])
 		return
 	component_values["standee"]["contour"] = result["contour"]
+	material_editor.value.board_visible = true
+	material_editor.configure(material_editor.value, material_editor.default_value, true)
 	_refresh_preview()
 
 func _show_contour_error(message: String) -> void:
@@ -582,8 +513,13 @@ func _select_presentation(mode: String) -> void:
 	_close_sticker_adjustment()
 	component_color.get_popup().hide()
 	sticker_backing.get_popup().hide()
-	acrylic_color.get_popup().hide()
+	var previous: String = component_values["standee"].get("presentation", "solid")
+	mode_materials[previous] = material_editor.value.duplicate(true)
 	component_values["standee"]["presentation"] = mode
+	var legacy: Dictionary = component_values["standee"].duplicate(true)
+	legacy.erase("material")
+	component_values["standee"]["material"] = mode_materials.get(mode, Surface.for_component(legacy, "standee")).duplicate(true)
+	_load_component()
 	attribute_page["standee"] = "image" if mode == "image" else "shape"
 	_adjust_rows()
 	_sync_sticker_buttons()
@@ -597,7 +533,6 @@ func _switch_component(name: String) -> void:
 		_close_sticker_adjustment()
 		component_color.get_popup().hide()
 		sticker_backing.get_popup().hide()
-		acrylic_color.get_popup().hide()
 		component_kind = name
 		_load_component()
 		_show_attribute(true)
@@ -612,21 +547,19 @@ func _switch_attribute(key: String) -> void:
 	_close_adjustment()
 	component_color.get_popup().hide()
 	sticker_backing.get_popup().hide()
-	acrylic_color.get_popup().hide()
 	_show_attribute(true)
 	_refresh_preview()
 
 func _show_attribute(animate: bool) -> void:
 	var image_mode: bool = component_kind == "standee" and component_values["standee"].get("presentation", "solid") == "image"
 	attribute_buttons["image"].visible = component_kind == "standee"
-	attribute_buttons["display"].visible = not image_mode
+	attribute_buttons["display"].visible = true
 	attribute_buttons["shape"].text = "板体与轮廓" if image_mode else "形状与尺寸"
 	attribute_buttons["image"].text = "图片与布局" if image_mode else "图片"
 	# Image task comes first; other modes keep shape/display/image order.
 	var tab_bar: HBoxContainer = attribute_buttons["shape"].get_parent()
 	tab_bar.move_child(attribute_buttons["image"], 0 if image_mode else tab_bar.get_child_count() - 1)
-	if image_mode and attribute_page[component_kind] == "display": attribute_page[component_kind] = "image"
-	var visibility_parent: Control = attribute_bodies["shape"] if image_mode else attribute_bodies["display"]
+	var visibility_parent: Control = attribute_bodies["display"]
 	if visibility_row.get_parent() != visibility_parent:
 		visibility_row.reparent(visibility_parent)
 		visibility_note.reparent(visibility_parent)
@@ -742,7 +675,8 @@ func _locate_error() -> void:
 	if error_component in ["base", "standee"]:
 		_switch_component(error_component)
 		var image_error := error_component == "standee" and (not sticker_error.is_empty() or str(preview.validation.get("field", "")).begins_with("standee.sticker"))
-		_switch_attribute("image" if image_error else "shape")
+		var material_error: bool = str(preview.validation.get("field", "")).ends_with(".material")
+		_switch_attribute("display" if material_error else ("image" if image_error else "shape"))
 		if image_error:
 			var face_name := sticker_error_face
 			if face_name.is_empty(): face_name = "back" if str(preview.validation.get("message", "")).begins_with("背面") else "front"
@@ -762,7 +696,7 @@ func _save() -> bool:
 	return result
 
 func _appearance_popup_open() -> bool:
-	return acrylic_color.get_popup().visible or component_color.get_popup().visible or sticker_backing.get_popup().visible or shape_choice.get_popup().visible or sides_input.get_popup().visible or file_picker_active or (is_instance_valid(image_dialog) and image_dialog.visible) or (is_instance_valid(image_modal) and image_modal.visible)
+	return component_color.get_popup().visible or sticker_backing.get_popup().visible or shape_choice.get_popup().visible or sides_input.get_popup().visible or file_picker_active or (is_instance_valid(image_dialog) and image_dialog.visible) or (is_instance_valid(image_modal) and image_modal.visible)
 
 func _numeric_input(parent: Control) -> LineEdit:
 	var input := LineEdit.new()
@@ -925,7 +859,6 @@ func _close_owned_popups(side: String) -> void:
 		_close_adjustment()
 		component_color.get_popup().hide()
 		sticker_backing.get_popup().hide()
-		acrylic_color.get_popup().hide()
 		shape_choice.get_popup().hide()
 		sides_input.get_popup().hide()
 	elif is_instance_valid(tags_modal): tags_modal.dismiss()
@@ -1278,7 +1211,6 @@ func _select_sticker_face(name: String) -> void:
 	_capture_component()
 	_close_sticker_adjustment()
 	sticker_backing.get_popup().hide()
-	acrylic_color.get_popup().hide()
 	sticker_face = name
 	_reload_sticker()
 	Style.Motion.fade_in(sticker_picture, 0.12)
@@ -1289,7 +1221,6 @@ func _mirror_sticker() -> void:
 	_close_adjustment()
 	_close_sticker_adjustment()
 	sticker_backing.get_popup().hide()
-	acrylic_color.get_popup().hide()
 	var checked := StickerData._validate_face(_sticker_face_data())
 	if not checked["ok"]:
 		_show_mirror_error(checked["message"])
@@ -1386,7 +1317,6 @@ func _select_image() -> void:
 	_close_sticker_adjustment()
 	_close_adjustment()
 	sticker_backing.get_popup().hide()
-	acrylic_color.get_popup().hide()
 	file_picker_active = true
 	image_dialog.popup_file_dialog()
 
@@ -1438,7 +1368,6 @@ func _show_input_problem() -> void:
 func _mark_component_errors(report: Dictionary) -> void:
 	for input in component_inputs.values(): Layout.field_error(input, "")
 	for input in contour_inputs.values(): Layout.field_error(input, "")
-	for input in acrylic_inputs.values(): Layout.field_error(input, "")
 	for input in [width_input, length_input]: Layout.field_error(input, "")
 	if report.get("ok", false): return
 	var field: String = report.get("field", "")
@@ -1451,5 +1380,3 @@ func _mark_component_errors(report: Dictionary) -> void:
 		if component_inputs.has(key): Layout.field_error(component_inputs[key], message)
 		elif key == "contour":
 			for input in contour_inputs.values(): Layout.field_error(input, message)
-		elif key == "acrylic":
-			for input in acrylic_inputs.values(): Layout.field_error(input, message)

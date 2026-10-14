@@ -29,6 +29,7 @@ func _ready() -> void:
 	settings.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	settings.ambient_light_color = Color.WHITE
 	settings.ambient_light_energy = 0.65
+	preload("res://scripts/token_surface.gd").preview_reflection(settings)
 	environment.environment = settings
 	model_root.add_child(environment)
 	var light := DirectionalLight3D.new()
@@ -59,7 +60,7 @@ func configure(data: Dictionary) -> void:
 		if not checked["ok"]: return
 		actor = Components.build(checked)
 	else:
-		actor = Appearance.build(count, data.get("color", Color("2e7ae0")), data.get("base", "circle"))
+		actor = Appearance.build(count, data.get("color", Color("2e7ae0")), data.get("base", "circle"), false, data.get("materials", {}))
 	model_root.add_child(actor)
 	var standee := actor.get_node_or_null("Standee")
 	image_warning.visible = standee != null and standee.has_meta("missing_image")

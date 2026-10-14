@@ -301,6 +301,11 @@ func _create() -> void:
 	var shade_tween := Style.Motion.fade_to(shade,0.0)
 	shade_tween.finished.connect(func(): shade.hide())
 
+func has_unsaved_changes() -> bool:
+	if is_instance_valid(token_tool) and is_instance_valid(token_tool.full_editor) and token_tool.full_editor.editor.has_unsaved_changes(): return true
+	if not created and values == Parameters.defaults(): return false
+	return not created or saved_signature.is_empty() or Store.signature(values) != saved_signature
+
 func guard_leave(action: Callable) -> bool:
 	if saving: return true
 	if is_instance_valid(token_tool) and is_instance_valid(token_tool.full_editor): return true

@@ -64,7 +64,6 @@ static func populate(page: Page, route: String, detail: String, has_board: bool)
 		"settings": _settings(page)
 		"tutorials": _tutorials(page)
 		"tutorial": _tutorial(page, detail)
-		"exit": _exit(page)
 
 static func _button(title: String, action: Callable, primary := false, icon: StringName = &"", height := Style.BUTTON_HEIGHT, danger := false) -> Button:
 	var button := Button.new()
@@ -105,7 +104,7 @@ static func _home(page: Page, has_board: bool) -> void:
 	menu.add_child(_button("定制", _route(page, "customize"), false, GoIconSet.EDIT))
 	menu.add_child(_button("软件设置", _route(page, "settings"), false, GoIconSet.SETTINGS))
 	menu.add_child(_button("教程", _route(page, "tutorials"), false, GoIconSet.HELP))
-	var exit_button := _button("退出", _route(page, "exit"), false, GoIconSet.POWER, Style.BUTTON_HEIGHT, true)
+	var exit_button := _button("退出", _route(page, "quit"), false, GoIconSet.POWER, Style.BUTTON_HEIGHT, true)
 	for state in ["normal","hover","pressed","hover_pressed"]:
 		var face := exit_button.get_theme_stylebox(state).duplicate() as StyleBoxFlat
 		face.bg_color = Color("942f2f") if state in ["pressed","hover_pressed"] else (Color("c74b4b") if state=="hover" else Color("b33c3c"))
@@ -377,17 +376,6 @@ static func _flush_paragraph(page: Page, lines: PackedStringArray) -> void:
 	var panel := Style.card()
 	panel.add_child(Style.text("\n".join(lines)))
 	page.content.add_child(panel)
-
-static func _exit(page: Page) -> void:
-	page.configure("退出软件", "关闭紫水鸡棋盘。")
-	var box := _narrow(page, 480)
-	var panel := Style.card()
-	box.add_child(panel)
-	var content := Style.column()
-	panel.add_child(content)
-	content.add_child(Style.text("确认退出紫水鸡棋盘？", 20))
-	content.add_child(_button("退出软件", _route(page, "quit"), false, GoIconSet.POWER))
-	content.add_child(_button("返回首页", _route(page, "home")))
 
 static func _refresh_token_library(page: Page) -> void:
 	var loaded := TokenStore.read_all()

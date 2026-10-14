@@ -5,6 +5,7 @@ const Handles = preload("res://ui/components/range_handles.gd")
 const Landing = preload("res://scripts/platform_landing.gd")
 const Model = preload("res://scripts/platform_model.gd")
 const EnvironmentProfile = preload("res://scripts/environment_profile.gd")
+const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 var paint := Paint.new()
 var brush: MeshInstance3D
 var brush_mesh: ImmediateMesh
@@ -122,6 +123,7 @@ func move_free(direction: Vector3, speed_feet: float, delta: float) -> void:
 	camera.position += direction.normalized()*(speed_feet/5.0)*minf(delta,0.1)
 
 func _position_camera() -> void:
+	pitch = OrbitCamera.clamp_pitch(pitch)
 	camera.position = target+Vector3(sin(yaw)*cos(pitch),sin(pitch),cos(yaw)*cos(pitch))*distance
 	camera.look_at(target)
 	free_yaw = camera.rotation.y

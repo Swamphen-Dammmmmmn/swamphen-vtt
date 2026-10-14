@@ -1,4 +1,5 @@
 extends "res://ui/components/token_thumbnail.gd"
+const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 
 var yaw := 0.6
 var pitch := 0.45
@@ -41,10 +42,11 @@ func configure(data: Dictionary) -> void:
 
 func rotate_view(relative: Vector2) -> void:
 	yaw -= relative.x * 0.008
-	pitch = clampf(pitch + relative.y * 0.006, 0.1, 1.35)
+	pitch = OrbitCamera.clamp_pitch(pitch + relative.y * 0.006)
 	_position_camera()
 
 func _position_camera() -> void:
+	pitch = OrbitCamera.clamp_pitch(pitch)
 	camera.position = target + Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance
 	camera.look_at(target)
 	var side := camera.global_basis.x

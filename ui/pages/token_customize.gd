@@ -10,6 +10,9 @@ const Parameters = preload("res://scripts/token_parameters.gd")
 const Store = preload("res://scripts/token_library_store.gd")
 const ColorWell = preload("res://ui/components/color_well.gd")
 const Appearance = preload("res://scripts/token_appearance.gd")
+const Surface = preload("res://scripts/token_surface.gd")
+const MaterialEditor = preload("res://ui/components/token_material_editor.gd")
+var material_editors: Dictionary = {}
 signal return_requested
 signal saved(token_id: String)
 signal instance_applied(parameters: Dictionary)
@@ -187,7 +190,7 @@ func _show_tags() -> void:
 	tags_modal.dismissed.connect(func(): tags_modal = null)
 
 func _appearance() -> Dictionary:
-	return {"size": size_input.selected + 1, "base": Appearance.BASES[base_input.selected], "color": color_input.color}
+	return {"size": size_input.selected + 1, "base": Appearance.BASES[base_input.selected], "color": color_input.color, "materials": {"base": material_editors.base.value.duplicate(true), "standee": material_editors.standee.value.duplicate(true)}}
 
 func _raw() -> Dictionary:
 	var raw := _appearance()
@@ -261,6 +264,9 @@ func _save() -> bool:
 	_set_status("已保存", Color("28785e"), "", true)
 	saved.emit(result["id"])
 	return true
+
+func has_unsaved_changes() -> bool:
+	return _raw() != initial_values
 
 func guard_leave(next_action: Callable) -> bool:
 	if accepted_leave or _raw() == initial_values:
@@ -353,17 +359,39 @@ func _build_appearance_form(parent: Control) -> void:
 	color_row.add_child(color_input)
 	Style.card_button(color_input)
 
+	for part in ["base", "standee"]:
+		var fold := GoStyle.foldable("底座材质" if part == "base" else "立牌材质", true, null, false)
+		Layout.fold(fold)
+		parent.add_child(fold)
+		var editor := MaterialEditor.new()
+		editor.popup_host = self
+		fold.add_child(editor)
+		material_editors[part] = editor
+		editor.configure(Surface.basic_defaults(color_input.color)[part], Surface.basic_defaults(color_input.color)[part])
+		editor.changed.connect(_refresh_preview)
+
 func _load_appearance(params: Dictionary) -> void:
 	size_input.select(int(params["size"]) - 1)
 	base_input.select(Appearance.BASES.find(params["base"]))
 	color_input.color = params["color"]
+	var defaults := Surface.basic_defaults(color_input.color)
+	for part in material_editors:
+		material_editors[part].configure(params.get("materials", defaults)[part], defaults[part])
 
 func _connect_appearance() -> void:
 	size_input.item_selected.connect(func(_index: int): _refresh_preview())
 	base_input.item_selected.connect(func(_index: int): _refresh_preview())
-	color_input.color_changed.connect(func(_color: Color): _refresh_preview())
+	color_input.color_changed.connect(func(color: Color):
+		var colors := Surface.basic_defaults(color)
+		for part in material_editors:
+			var settings: Dictionary = material_editors[part].value.duplicate(true)
+			settings.color = colors[part].color
+			material_editors[part].configure(settings, colors[part])
+		_refresh_preview())
 
 func _appearance_popup_open() -> bool:
+	for editor in material_editors.values():
+		if editor.color_input.get_popup().visible: return true
 	return color_input.get_popup().visible or size_input.get_popup().visible or base_input.get_popup().visible
 
 func _show_input_problem() -> void:
@@ -379,6 +407,7 @@ func _show_input_problem() -> void:
 func _toggle_basic() -> void:
 	basic_open = not basic_open
 	rotating = false
+	for editor in material_editors.values(): editor.color_input.get_popup().hide()
 	color_input.get_popup().hide()
 	size_input.get_popup().hide()
 	base_input.get_popup().hide()

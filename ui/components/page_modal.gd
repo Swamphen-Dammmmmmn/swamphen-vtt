@@ -6,6 +6,7 @@ var content: VBoxContainer
 var panel: PanelContainer
 var scroll: ScrollContainer
 var previous_focus: WeakRef
+var dismiss_enabled := true
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -48,6 +49,7 @@ func add_action(title: String, action: Callable, primary := false, enabled := tr
 	return button
 
 func dismiss() -> void:
+	if not dismiss_enabled: return
 	hide()
 	if previous_focus != null:
 		var focused = previous_focus.get_ref()

@@ -6,6 +6,7 @@ const Sticker = preload("res://scripts/token_sticker.gd")
 const Footprint = preload("res://scripts/token_footprint.gd")
 const Appearance = preload("res://scripts/token_appearance.gd")
 const Acrylic = preload("res://scripts/token_acrylic.gd")
+const Surface = preload("res://scripts/token_surface.gd")
 const FEET_PER_CELL := 5.0
 const BOUNDARY_EPSILON := 0.000001
 
@@ -84,6 +85,11 @@ static func validate(raw: Dictionary, extent: Vector2i, enforce_bounds := true) 
 				return _error("standee.sticker", "图片立牌至少需要一面的图片。")
 			if enforce_bounds and component["presentation"] == "image" and component.has("contour") and not Contour.current(component):
 				return _error("standee.contour", "轮廓需要重新生成。")
+		if source.has("material") and not Surface.valid(source.material):
+			return _error(name + ".material", "材质参数无效，请检查颜色、不透明度、粗糙度和颗粒强度。")
+		component.material = Surface.for_component(component, name)
+		component.color = Color(component.material.color).to_html(false)
+		component.material.color = component.color
 		components[name] = component
 	# Generate once; bounds inspect the same vertices and transforms used to render.
 	for name in ["base", "standee"]:
@@ -110,6 +116,10 @@ static func _mesh(component: Dictionary, name: String) -> Mesh:
 	var thickness := float(component["thickness_ft"]) / FEET_PER_CELL
 	if name == "standee" and component.get("presentation", "solid") == "image":
 		if component.has("contour"): return Contour.mesh(component["contour"], float(component["thickness_ft"]))
+		if component.get("material", {}).get("board_visible", false):
+			var board := BoxMesh.new()
+			board.size = Vector3(width, float(component["height_ft"]) / FEET_PER_CELL, thickness)
+			return board
 		var plane := QuadMesh.new()
 		plane.size = Vector2(width, float(component["height_ft"]) / FEET_PER_CELL)
 		return plane
@@ -171,18 +181,13 @@ static func build(validated: Dictionary, preview := false) -> Node3D:
 		node.mesh = _mesh(component, name)
 		node.transform = _transform(component, name, components)
 		node.visible = component["visible"]
-		node.material_override = Appearance.material(Color("ce5353") if validated.get("outside", []).has(name) else Color(component["color"]), preview)
+		node.material_override = Appearance.material(Color("ce5353"), preview) if validated.get("outside", []).has(name) else Surface.material(component.material, name, preview)
 		if preview:
 			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if name == "standee":
 			if component.get("presentation", "solid") == "image":
-				if component.has("contour"):
-					node.material_override = Acrylic.material(component.get("acrylic", Acrylic.defaults()), preview)
-				else:
-					var carrier := ShaderMaterial.new()
-					carrier.shader = InvisibleSurface
-					node.material_override = carrier
-				node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				if preview or not component.material.board_visible or float(component.material.opacity) < 0.9999:
+					node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			Sticker.attach(node, component, preview)
 		root.add_child(node)
 	root.set_meta("appearance_bounds", validated["bounds"])

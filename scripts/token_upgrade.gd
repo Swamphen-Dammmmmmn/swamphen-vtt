@@ -30,6 +30,10 @@ static func from_basic(record: Dictionary) -> Dictionary:
 	plate["thickness_ft"] = standee_bounds.size.z * 5.0
 	plate["offset_ft"] = [standee_center.x * 5.0, (standee_center.y - base_bounds.size.y - standee_bounds.size.y / 2.0) * 5.0, standee_center.z * 5.0]
 	plate["color"] = (standee.material_override as StandardMaterial3D).albedo_color.to_html(false)
+	for part in ["base", "standee"]:
+		if params.get("materials", {}).has(part):
+			components[part]["material"] = params.materials[part].duplicate(true)
+			components[part]["color"] = components[part].material.color
 	model.free()
 	var raw := {"title": record["title"], "kind": "advanced", "width": count, "length": count, "components": components}
 	for key in ["hp", "max_hp", "ac"]:

@@ -1,0 +1,2563 @@
+{
+	"asset_count": 75,
+	"assets": [
+		{
+			"bounds": {
+				"position": [
+					-1.05000007152557,
+					-0.109999999403954,
+					-1.14999997615814
+				],
+				"size": [
+					2.10000014305115,
+					1.09999990463257,
+					2.29999995231628
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_01",
+			"mesh": "res://assets/scenery/rocks/rock_0_01.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.5,
+				"height": 5.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.65,
+				"seed": 1001,
+				"shape": 0,
+				"variation": 0.48,
+				"width": 10.5
+			},
+			"structure": "自然块体",
+			"title": "风化 01",
+			"triangles": 272
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.14999997615814,
+					-0.140000000596046,
+					-1.10000002384186
+				],
+				"size": [
+					2.29999995231628,
+					1.39999997615814,
+					2.20000004768372
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_02",
+			"mesh": "res://assets/scenery/rocks/rock_0_02.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.0,
+				"height": 7.0,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.71,
+				"seed": 1138,
+				"shape": 0,
+				"variation": 0.59,
+				"width": 11.5
+			},
+			"structure": "自然块体",
+			"title": "风化 02",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.20000004768372,
+					-0.170000001788139,
+					-1.0
+				],
+				"size": [
+					2.40000009536743,
+					1.70000004768372,
+					2.0
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_03",
+			"mesh": "res://assets/scenery/rocks/rock_0_03.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.0,
+				"height": 8.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.77,
+				"seed": 1275,
+				"shape": 0,
+				"variation": 0.7,
+				"width": 12.0
+			},
+			"structure": "自然块体",
+			"title": "风化 03",
+			"triangles": 256
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.30000007152557,
+					-0.13000001013279,
+					-0.949999988079071
+				],
+				"size": [
+					2.60000014305115,
+					1.30000007152557,
+					1.89999997615814
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_04",
+			"mesh": "res://assets/scenery/rocks/rock_0_04.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 6.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.83,
+				"seed": 1412,
+				"shape": 0,
+				"variation": 0.81,
+				"width": 13.0
+			},
+			"structure": "自然块体",
+			"title": "风化 04",
+			"triangles": 267
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.39999997615814,
+					-0.150000005960464,
+					-0.850000023841858
+				],
+				"size": [
+					2.79999995231628,
+					1.5,
+					1.70000004768372
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_05",
+			"mesh": "res://assets/scenery/rocks/rock_0_05.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 7.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.89,
+				"seed": 1549,
+				"shape": 0,
+				"variation": 0.92,
+				"width": 14.0
+			},
+			"structure": "自然块体",
+			"title": "风化 05",
+			"triangles": 240
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.30000007152557,
+					-0.109999999403954,
+					-0.949999988079071
+				],
+				"size": [
+					2.60000014305115,
+					1.10000002384186,
+					1.89999997615814
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_06",
+			"mesh": "res://assets/scenery/rocks/rock_0_06.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 5.5,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.625,
+				"seed": 1998,
+				"shape": 0,
+				"variation": 0.59,
+				"width": 13.0
+			},
+			"structure": "斜顶楔形",
+			"title": "风化 06",
+			"triangles": 263
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.45000004768372,
+					-0.13000001013279,
+					-0.850000023841858
+				],
+				"size": [
+					2.90000009536743,
+					1.29999995231628,
+					1.70000004768372
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_07",
+			"mesh": "res://assets/scenery/rocks/rock_0_07.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 6.5,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.685,
+				"seed": 2135,
+				"shape": 0,
+				"variation": 0.7,
+				"width": 14.5
+			},
+			"structure": "斜顶楔形",
+			"title": "风化 07",
+			"triangles": 256
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.55000007152557,
+					-0.100000001490116,
+					-0.800000011920929
+				],
+				"size": [
+					3.10000014305115,
+					1.0,
+					1.60000002384186
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_08",
+			"mesh": "res://assets/scenery/rocks/rock_0_08.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.0,
+				"height": 5.0,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.745,
+				"seed": 2272,
+				"shape": 0,
+				"variation": 0.81,
+				"width": 15.5
+			},
+			"structure": "斜顶楔形",
+			"title": "风化 08",
+			"triangles": 250
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.64999997615814,
+					-0.120000004768372,
+					-0.75
+				],
+				"size": [
+					3.29999995231628,
+					1.20000004768372,
+					1.5
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_09",
+			"mesh": "res://assets/scenery/rocks/rock_0_09.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 6.0,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.805,
+				"seed": 2409,
+				"shape": 0,
+				"variation": 0.92,
+				"width": 16.5
+			},
+			"structure": "斜顶楔形",
+			"title": "风化 09",
+			"triangles": 244
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.75,
+					-0.140000000596046,
+					-0.699999988079071
+				],
+				"size": [
+					3.5,
+					1.39999997615814,
+					1.39999997615814
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_10",
+			"mesh": "res://assets/scenery/rocks/rock_0_10.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.0,
+				"height": 7.0,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.865,
+				"seed": 2546,
+				"shape": 0,
+				"variation": 0.48,
+				"width": 17.5
+			},
+			"structure": "斜顶楔形",
+			"title": "风化 10",
+			"triangles": 226
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.900000035762787,
+					-0.200000002980232,
+					-1.05000007152557
+				],
+				"size": [
+					1.80000007152557,
+					2.0,
+					2.10000014305115
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_11",
+			"mesh": "res://assets/scenery/rocks/rock_0_11.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.5,
+				"height": 10.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.6,
+				"seed": 2995,
+				"shape": 0,
+				"variation": 0.7,
+				"width": 9.0
+			},
+			"structure": "偏侧肩部",
+			"title": "风化 11",
+			"triangles": 248
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.949999988079071,
+					-0.240000009536743,
+					-1.0
+				],
+				"size": [
+					1.89999997615814,
+					2.40000009536743,
+					2.0
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_12",
+			"mesh": "res://assets/scenery/rocks/rock_0_12.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.0,
+				"height": 12.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.66,
+				"seed": 3132,
+				"shape": 0,
+				"variation": 0.81,
+				"width": 9.5
+			},
+			"structure": "偏侧肩部",
+			"title": "风化 12",
+			"triangles": 280
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.0,
+					-0.180000007152557,
+					-0.900000035762787
+				],
+				"size": [
+					2.0,
+					1.80000019073486,
+					1.80000007152557
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_13",
+			"mesh": "res://assets/scenery/rocks/rock_0_13.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.0,
+				"height": 9.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.72,
+				"seed": 3269,
+				"shape": 0,
+				"variation": 0.92,
+				"width": 10.0
+			},
+			"structure": "偏侧肩部",
+			"title": "风化 13",
+			"triangles": 244
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.10000002384186,
+					-0.219999998807907,
+					-0.850000023841858
+				],
+				"size": [
+					2.20000004768372,
+					2.20000004768372,
+					1.70000004768372
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_14",
+			"mesh": "res://assets/scenery/rocks/rock_0_14.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 11.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.78,
+				"seed": 3406,
+				"shape": 0,
+				"variation": 0.48,
+				"width": 11.0
+			},
+			"structure": "偏侧肩部",
+			"title": "风化 14",
+			"triangles": 264
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.14999997615814,
+					-0.159999996423721,
+					-0.75
+				],
+				"size": [
+					2.29999995231628,
+					1.60000002384186,
+					1.5
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_15",
+			"mesh": "res://assets/scenery/rocks/rock_0_15.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 8.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.84,
+				"seed": 3543,
+				"shape": 0,
+				"variation": 0.59,
+				"width": 11.5
+			},
+			"structure": "偏侧肩部",
+			"title": "风化 15",
+			"triangles": 248
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.25,
+					-0.180000007152557,
+					-1.39999997615814
+				],
+				"size": [
+					2.5,
+					1.79999995231628,
+					2.79999995231628
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_16",
+			"mesh": "res://assets/scenery/rocks/rock_0_16.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 14.0,
+				"height": 9.0,
+				"profile": 5,
+				"roughness": 0.88,
+				"rounding": 0.575,
+				"seed": 3992,
+				"shape": 0,
+				"variation": 0.81,
+				"width": 12.5
+			},
+			"structure": "收窄顶部",
+			"title": "风化 16",
+			"triangles": 296
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.35000002384186,
+					-0.13000001013279,
+					-1.30000007152557
+				],
+				"size": [
+					2.70000004768372,
+					1.30000007152557,
+					2.60000014305115
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_17",
+			"mesh": "res://assets/scenery/rocks/rock_0_17.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 13.0,
+				"height": 6.5,
+				"profile": 5,
+				"roughness": 0.88,
+				"rounding": 0.635,
+				"seed": 4129,
+				"shape": 0,
+				"variation": 0.92,
+				"width": 13.5
+			},
+			"structure": "收窄顶部",
+			"title": "风化 17",
+			"triangles": 264
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.45000004768372,
+					-0.159999996423721,
+					-1.20000004768372
+				],
+				"size": [
+					2.90000009536743,
+					1.60000002384186,
+					2.40000009536743
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_18",
+			"mesh": "res://assets/scenery/rocks/rock_0_18.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 12.0,
+				"height": 8.0,
+				"profile": 5,
+				"roughness": 0.88,
+				"rounding": 0.695,
+				"seed": 4266,
+				"shape": 0,
+				"variation": 0.48,
+				"width": 14.5
+			},
+			"structure": "收窄顶部",
+			"title": "风化 18",
+			"triangles": 256
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.55000007152557,
+					-0.189999997615814,
+					-1.10000002384186
+				],
+				"size": [
+					3.10000014305115,
+					1.90000009536743,
+					2.20000004768372
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_19",
+			"mesh": "res://assets/scenery/rocks/rock_0_19.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.0,
+				"height": 9.5,
+				"profile": 5,
+				"roughness": 0.88,
+				"rounding": 0.755,
+				"seed": 4403,
+				"shape": 0,
+				"variation": 0.59,
+				"width": 15.5
+			},
+			"structure": "收窄顶部",
+			"title": "风化 19",
+			"triangles": 263
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.60000002384186,
+					-0.140000000596046,
+					-1.05000007152557
+				],
+				"size": [
+					3.20000004768372,
+					1.39999997615814,
+					2.10000014305115
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_20",
+			"mesh": "res://assets/scenery/rocks/rock_0_20.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.5,
+				"height": 7.0,
+				"profile": 5,
+				"roughness": 0.88,
+				"rounding": 0.815,
+				"seed": 4540,
+				"shape": 0,
+				"variation": 0.7,
+				"width": 16.0
+			},
+			"structure": "收窄顶部",
+			"title": "风化 20",
+			"triangles": 268
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.949999988079071,
+					-0.189999997615814,
+					-0.949999988079071
+				],
+				"size": [
+					1.89999997615814,
+					1.90000009536743,
+					1.89999997615814
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_21",
+			"mesh": "res://assets/scenery/rocks/rock_0_21.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 9.5,
+				"profile": 8,
+				"roughness": 0.88,
+				"rounding": 0.55,
+				"seed": 4989,
+				"shape": 0,
+				"variation": 0.92,
+				"width": 9.5
+			},
+			"structure": "偏移上部",
+			"title": "风化 21",
+			"triangles": 276
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.05000007152557,
+					-0.140000000596046,
+					-0.850000023841858
+				],
+				"size": [
+					2.10000014305115,
+					1.39999997615814,
+					1.70000004768372
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_22",
+			"mesh": "res://assets/scenery/rocks/rock_0_22.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 7.0,
+				"profile": 8,
+				"roughness": 0.88,
+				"rounding": 0.61,
+				"seed": 5126,
+				"shape": 0,
+				"variation": 0.48,
+				"width": 10.5
+			},
+			"structure": "偏移上部",
+			"title": "风化 22",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.10000002384186,
+					-0.180000007152557,
+					-0.800000011920929
+				],
+				"size": [
+					2.20000004768372,
+					1.79999995231628,
+					1.60000002384186
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_23",
+			"mesh": "res://assets/scenery/rocks/rock_0_23.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.0,
+				"height": 9.0,
+				"profile": 8,
+				"roughness": 0.88,
+				"rounding": 0.67,
+				"seed": 5263,
+				"shape": 0,
+				"variation": 0.59,
+				"width": 11.0
+			},
+			"structure": "偏移上部",
+			"title": "风化 23",
+			"triangles": 244
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.20000004768372,
+					-0.13000001013279,
+					-0.75
+				],
+				"size": [
+					2.40000009536743,
+					1.30000007152557,
+					1.5
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_24",
+			"mesh": "res://assets/scenery/rocks/rock_0_24.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 6.5,
+				"profile": 8,
+				"roughness": 0.88,
+				"rounding": 0.73,
+				"seed": 5400,
+				"shape": 0,
+				"variation": 0.7,
+				"width": 12.0
+			},
+			"structure": "偏移上部",
+			"title": "风化 24",
+			"triangles": 264
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.30000007152557,
+					-0.159999996423721,
+					-0.699999988079071
+				],
+				"size": [
+					2.60000014305115,
+					1.59999990463257,
+					1.39999997615814
+				]
+			},
+			"category": "风化巨石",
+			"id": "rock_0_25",
+			"mesh": "res://assets/scenery/rocks/rock_0_25.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.0,
+				"height": 8.0,
+				"profile": 8,
+				"roughness": 0.88,
+				"rounding": 0.79,
+				"seed": 5537,
+				"shape": 0,
+				"variation": 0.81,
+				"width": 13.0
+			},
+			"structure": "偏移上部",
+			"title": "风化 25",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.05000007152557,
+					-0.140000000596046,
+					-0.949999988079071
+				],
+				"size": [
+					2.10000014305115,
+					1.39999997615814,
+					1.89999997615814
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_01",
+			"mesh": "res://assets/scenery/rocks/rock_1_01.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 7.0,
+				"profile": 2,
+				"roughness": 0.88,
+				"rounding": 0.03,
+				"seed": 11001,
+				"shape": 1,
+				"variation": 0.48,
+				"width": 10.5
+			},
+			"structure": "双斜顶",
+			"title": "棱角 01",
+			"triangles": 277
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.14999997615814,
+					-0.180000007152557,
+					-0.850000023841858
+				],
+				"size": [
+					2.29999995231628,
+					1.80000019073486,
+					1.70000004768372
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_02",
+			"mesh": "res://assets/scenery/rocks/rock_1_02.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 9.0,
+				"profile": 2,
+				"roughness": 0.88,
+				"rounding": 0.08,
+				"seed": 11138,
+				"shape": 1,
+				"variation": 0.59,
+				"width": 11.5
+			},
+			"structure": "双斜顶",
+			"title": "棱角 02",
+			"triangles": 272
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.20000004768372,
+					-0.219999998807907,
+					-0.800000011920929
+				],
+				"size": [
+					2.40000009536743,
+					2.20000004768372,
+					1.60000002384186
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_03",
+			"mesh": "res://assets/scenery/rocks/rock_1_03.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.0,
+				"height": 11.0,
+				"profile": 2,
+				"roughness": 0.88,
+				"rounding": 0.13,
+				"seed": 11275,
+				"shape": 1,
+				"variation": 0.7,
+				"width": 12.0
+			},
+			"structure": "双斜顶",
+			"title": "棱角 03",
+			"triangles": 272
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.30000007152557,
+					-0.159999996423721,
+					-0.75
+				],
+				"size": [
+					2.60000014305115,
+					1.60000002384186,
+					1.5
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_04",
+			"mesh": "res://assets/scenery/rocks/rock_1_04.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 8.0,
+				"profile": 2,
+				"roughness": 0.88,
+				"rounding": 0.18,
+				"seed": 11412,
+				"shape": 1,
+				"variation": 0.81,
+				"width": 13.0
+			},
+			"structure": "双斜顶",
+			"title": "棱角 04",
+			"triangles": 274
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.39999997615814,
+					-0.200000002980232,
+					-0.699999988079071
+				],
+				"size": [
+					2.79999995231628,
+					2.0,
+					1.39999997615814
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_05",
+			"mesh": "res://assets/scenery/rocks/rock_1_05.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.0,
+				"height": 10.0,
+				"profile": 2,
+				"roughness": 0.88,
+				"rounding": 0.23,
+				"seed": 11549,
+				"shape": 1,
+				"variation": 0.92,
+				"width": 14.0
+			},
+			"structure": "双斜顶",
+			"title": "棱角 05",
+			"triangles": 272
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.14999997615814,
+					-0.140000000596046,
+					-1.39999997615814
+				],
+				"size": [
+					2.29999995231628,
+					1.39999997615814,
+					2.79999995231628
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_06",
+			"mesh": "res://assets/scenery/rocks/rock_1_06.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 14.0,
+				"height": 7.0,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.08,
+				"seed": 11998,
+				"shape": 1,
+				"variation": 0.59,
+				"width": 11.5
+			},
+			"structure": "大斜面",
+			"title": "棱角 06",
+			"triangles": 286
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.25,
+					-0.180000007152557,
+					-1.30000007152557
+				],
+				"size": [
+					2.5,
+					1.80000019073486,
+					2.60000014305115
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_07",
+			"mesh": "res://assets/scenery/rocks/rock_1_07.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 13.0,
+				"height": 9.0,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.13,
+				"seed": 12135,
+				"shape": 1,
+				"variation": 0.7,
+				"width": 12.5
+			},
+			"structure": "大斜面",
+			"title": "棱角 07",
+			"triangles": 280
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.35000002384186,
+					-0.13000001013279,
+					-1.20000004768372
+				],
+				"size": [
+					2.70000004768372,
+					1.30000007152557,
+					2.40000009536743
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_08",
+			"mesh": "res://assets/scenery/rocks/rock_1_08.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 12.0,
+				"height": 6.5,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.18,
+				"seed": 12272,
+				"shape": 1,
+				"variation": 0.81,
+				"width": 13.5
+			},
+			"structure": "大斜面",
+			"title": "棱角 08",
+			"triangles": 224
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.39999997615814,
+					-0.159999996423721,
+					-1.10000002384186
+				],
+				"size": [
+					2.79999995231628,
+					1.60000002384186,
+					2.20000004768372
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_09",
+			"mesh": "res://assets/scenery/rocks/rock_1_09.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.0,
+				"height": 8.0,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.23,
+				"seed": 12409,
+				"shape": 1,
+				"variation": 0.92,
+				"width": 14.0
+			},
+			"structure": "大斜面",
+			"title": "棱角 09",
+			"triangles": 280
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.5,
+					-0.189999997615814,
+					-1.05000007152557
+				],
+				"size": [
+					3.0,
+					1.89999985694885,
+					2.10000014305115
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_10",
+			"mesh": "res://assets/scenery/rocks/rock_1_10.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.5,
+				"height": 9.5,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.03,
+				"seed": 12546,
+				"shape": 1,
+				"variation": 0.48,
+				"width": 15.0
+			},
+			"structure": "大斜面",
+			"title": "棱角 10",
+			"triangles": 292
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.900000035762787,
+					-0.219999998807907,
+					-1.05000007152557
+				],
+				"size": [
+					1.80000007152557,
+					2.20000004768372,
+					2.10000014305115
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_11",
+			"mesh": "res://assets/scenery/rocks/rock_1_11.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.5,
+				"height": 11.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.13,
+				"seed": 12995,
+				"shape": 1,
+				"variation": 0.7,
+				"width": 9.0
+			},
+			"structure": "偏侧肩部",
+			"title": "棱角 11",
+			"triangles": 280
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.949999988079071,
+					-0.260000020265579,
+					-1.0
+				],
+				"size": [
+					1.89999997615814,
+					2.60000014305115,
+					2.0
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_12",
+			"mesh": "res://assets/scenery/rocks/rock_1_12.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.0,
+				"height": 13.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.18,
+				"seed": 13132,
+				"shape": 1,
+				"variation": 0.81,
+				"width": 9.5
+			},
+			"structure": "偏侧肩部",
+			"title": "棱角 12",
+			"triangles": 283
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.0,
+					-0.200000002980232,
+					-0.900000035762787
+				],
+				"size": [
+					2.0,
+					2.0,
+					1.80000007152557
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_13",
+			"mesh": "res://assets/scenery/rocks/rock_1_13.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.0,
+				"height": 10.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.23,
+				"seed": 13269,
+				"shape": 1,
+				"variation": 0.92,
+				"width": 10.0
+			},
+			"structure": "偏侧肩部",
+			"title": "棱角 13",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.10000002384186,
+					-0.240000009536743,
+					-0.850000023841858
+				],
+				"size": [
+					2.20000004768372,
+					2.40000009536743,
+					1.70000004768372
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_14",
+			"mesh": "res://assets/scenery/rocks/rock_1_14.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 12.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.03,
+				"seed": 13406,
+				"shape": 1,
+				"variation": 0.48,
+				"width": 11.0
+			},
+			"structure": "偏侧肩部",
+			"title": "棱角 14",
+			"triangles": 290
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.14999997615814,
+					-0.180000007152557,
+					-0.75
+				],
+				"size": [
+					2.29999995231628,
+					1.79999995231628,
+					1.5
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_15",
+			"mesh": "res://assets/scenery/rocks/rock_1_15.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 9.0,
+				"profile": 4,
+				"roughness": 0.88,
+				"rounding": 0.08,
+				"seed": 13543,
+				"shape": 1,
+				"variation": 0.59,
+				"width": 11.5
+			},
+			"structure": "偏侧肩部",
+			"title": "棱角 15",
+			"triangles": 285
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.25,
+					-0.13000001013279,
+					-1.05000007152557
+				],
+				"size": [
+					2.5,
+					1.30000007152557,
+					2.10000014305115
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_16",
+			"mesh": "res://assets/scenery/rocks/rock_1_16.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.5,
+				"height": 6.5,
+				"profile": 6,
+				"roughness": 0.88,
+				"rounding": 0.18,
+				"seed": 13992,
+				"shape": 1,
+				"variation": 0.81,
+				"width": 12.5
+			},
+			"structure": "三角轮廓",
+			"title": "棱角 16",
+			"triangles": 252
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.35000002384186,
+					-0.100000001490116,
+					-1.0
+				],
+				"size": [
+					2.70000004768372,
+					1.0,
+					2.0
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_17",
+			"mesh": "res://assets/scenery/rocks/rock_1_17.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.0,
+				"height": 5.0,
+				"profile": 6,
+				"roughness": 0.88,
+				"rounding": 0.23,
+				"seed": 14129,
+				"shape": 1,
+				"variation": 0.92,
+				"width": 13.5
+			},
+			"structure": "三角轮廓",
+			"title": "棱角 17",
+			"triangles": 206
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.45000004768372,
+					-0.120000004768372,
+					-0.900000035762787
+				],
+				"size": [
+					2.90000009536743,
+					1.20000004768372,
+					1.80000007152557
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_18",
+			"mesh": "res://assets/scenery/rocks/rock_1_18.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.0,
+				"height": 6.0,
+				"profile": 6,
+				"roughness": 0.88,
+				"rounding": 0.03,
+				"seed": 14266,
+				"shape": 1,
+				"variation": 0.48,
+				"width": 14.5
+			},
+			"structure": "三角轮廓",
+			"title": "棱角 18",
+			"triangles": 254
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.55000007152557,
+					-0.140000000596046,
+					-0.850000023841858
+				],
+				"size": [
+					3.10000014305115,
+					1.39999997615814,
+					1.70000004768372
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_19",
+			"mesh": "res://assets/scenery/rocks/rock_1_19.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 7.0,
+				"profile": 6,
+				"roughness": 0.88,
+				"rounding": 0.08,
+				"seed": 14403,
+				"shape": 1,
+				"variation": 0.59,
+				"width": 15.5
+			},
+			"structure": "三角轮廓",
+			"title": "棱角 19",
+			"triangles": 236
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.60000002384186,
+					-0.109999999403954,
+					-0.75
+				],
+				"size": [
+					3.20000004768372,
+					1.10000002384186,
+					1.5
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_20",
+			"mesh": "res://assets/scenery/rocks/rock_1_20.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 5.5,
+				"profile": 6,
+				"roughness": 0.88,
+				"rounding": 0.13,
+				"seed": 14540,
+				"shape": 1,
+				"variation": 0.7,
+				"width": 16.0
+			},
+			"structure": "三角轮廓",
+			"title": "棱角 20",
+			"triangles": 272
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.800000011920929,
+					-0.189999997615814,
+					-1.14999997615814
+				],
+				"size": [
+					1.60000002384186,
+					1.90000009536743,
+					2.29999995231628
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_21",
+			"mesh": "res://assets/scenery/rocks/rock_1_21.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.5,
+				"height": 9.5,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.23,
+				"seed": 14989,
+				"shape": 1,
+				"variation": 0.92,
+				"width": 8.0
+			},
+			"structure": "缺角块体",
+			"title": "棱角 21",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.850000023841858,
+					-0.140000000596046,
+					-1.10000002384186
+				],
+				"size": [
+					1.70000004768372,
+					1.39999997615814,
+					2.20000004768372
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_22",
+			"mesh": "res://assets/scenery/rocks/rock_1_22.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.0,
+				"height": 7.0,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.03,
+				"seed": 15126,
+				"shape": 1,
+				"variation": 0.48,
+				"width": 8.5
+			},
+			"structure": "缺角块体",
+			"title": "棱角 22",
+			"triangles": 273
+		},
+		{
+			"bounds": {
+				"position": [
+					-0.900000035762787,
+					-0.180000007152557,
+					-1.0
+				],
+				"size": [
+					1.80000007152557,
+					1.80000019073486,
+					2.0
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_23",
+			"mesh": "res://assets/scenery/rocks/rock_1_23.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.0,
+				"height": 9.0,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.08,
+				"seed": 15263,
+				"shape": 1,
+				"variation": 0.59,
+				"width": 9.0
+			},
+			"structure": "缺角块体",
+			"title": "棱角 23",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.0,
+					-0.13000001013279,
+					-0.949999988079071
+				],
+				"size": [
+					2.0,
+					1.30000007152557,
+					1.89999997615814
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_24",
+			"mesh": "res://assets/scenery/rocks/rock_1_24.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 6.5,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.13,
+				"seed": 15400,
+				"shape": 1,
+				"variation": 0.7,
+				"width": 10.0
+			},
+			"structure": "缺角块体",
+			"title": "棱角 24",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.05000007152557,
+					-0.159999996423721,
+					-0.850000023841858
+				],
+				"size": [
+					2.10000014305115,
+					1.60000002384186,
+					1.70000004768372
+				]
+			},
+			"category": "棱角岩块",
+			"id": "rock_1_25",
+			"mesh": "res://assets/scenery/rocks/rock_1_25.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 8.0,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.18,
+				"seed": 15537,
+				"shape": 1,
+				"variation": 0.81,
+				"width": 10.5
+			},
+			"structure": "缺角块体",
+			"title": "棱角 25",
+			"triangles": 256
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.25,
+					-0.0500000007450581,
+					-1.14999997615814
+				],
+				"size": [
+					2.5,
+					0.5,
+					2.29999995231628
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_01",
+			"mesh": "res://assets/scenery/rocks/rock_2_01.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.5,
+				"height": 2.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.25,
+				"seed": 21001,
+				"shape": 2,
+				"variation": 0.48,
+				"width": 12.5
+			},
+			"structure": "自然块体",
+			"title": "卧石 01",
+			"triangles": 318
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.35000002384186,
+					-0.0600000023841858,
+					-1.10000002384186
+				],
+				"size": [
+					2.70000004768372,
+					0.600000023841858,
+					2.20000004768372
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_02",
+			"mesh": "res://assets/scenery/rocks/rock_2_02.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.0,
+				"height": 3.0,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.53,
+				"seed": 21138,
+				"shape": 2,
+				"variation": 0.59,
+				"width": 13.5
+			},
+			"structure": "自然块体",
+			"title": "卧石 02",
+			"triangles": 276
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.45000004768372,
+					-0.0700000002980232,
+					-1.0
+				],
+				"size": [
+					2.90000009536743,
+					0.699999988079071,
+					2.0
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_03",
+			"mesh": "res://assets/scenery/rocks/rock_2_03.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.0,
+				"height": 3.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.81,
+				"seed": 21275,
+				"shape": 2,
+				"variation": 0.7,
+				"width": 14.5
+			},
+			"structure": "自然块体",
+			"title": "卧石 03",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.55000007152557,
+					-0.0500000007450581,
+					-0.949999988079071
+				],
+				"size": [
+					3.10000014305115,
+					0.5,
+					1.89999997615814
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_04",
+			"mesh": "res://assets/scenery/rocks/rock_2_04.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 2.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.39,
+				"seed": 21412,
+				"shape": 2,
+				"variation": 0.81,
+				"width": 15.5
+			},
+			"structure": "自然块体",
+			"title": "卧石 04",
+			"triangles": 276
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.60000002384186,
+					-0.0700000002980232,
+					-0.850000023841858
+				],
+				"size": [
+					3.20000004768372,
+					0.699999988079071,
+					1.70000004768372
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_05",
+			"mesh": "res://assets/scenery/rocks/rock_2_05.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 3.5,
+				"profile": 0,
+				"roughness": 0.88,
+				"rounding": 0.67,
+				"seed": 21549,
+				"shape": 2,
+				"variation": 0.92,
+				"width": 16.0
+			},
+			"structure": "自然块体",
+			"title": "卧石 05",
+			"triangles": 240
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.60000002384186,
+					-0.0700000002980232,
+					-0.949999988079071
+				],
+				"size": [
+					3.20000004768372,
+					0.699999928474426,
+					1.89999997615814
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_06",
+			"mesh": "res://assets/scenery/rocks/rock_2_06.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 3.5,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.39,
+				"seed": 21998,
+				"shape": 2,
+				"variation": 0.59,
+				"width": 16.0
+			},
+			"structure": "斜顶楔形",
+			"title": "卧石 06",
+			"triangles": 279
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.70000004768372,
+					-0.0900000035762787,
+					-0.850000023841858
+				],
+				"size": [
+					3.40000009536743,
+					0.900000095367432,
+					1.70000004768372
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_07",
+			"mesh": "res://assets/scenery/rocks/rock_2_07.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.5,
+				"height": 4.5,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.67,
+				"seed": 22135,
+				"shape": 2,
+				"variation": 0.7,
+				"width": 17.0
+			},
+			"structure": "斜顶楔形",
+			"title": "卧石 07",
+			"triangles": 236
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.85000002384186,
+					-0.0600000023841858,
+					-0.800000011920929
+				],
+				"size": [
+					3.70000004768372,
+					0.600000023841858,
+					1.60000002384186
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_08",
+			"mesh": "res://assets/scenery/rocks/rock_2_08.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.0,
+				"height": 3.0,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.25,
+				"seed": 22272,
+				"shape": 2,
+				"variation": 0.81,
+				"width": 18.5
+			},
+			"structure": "斜顶楔形",
+			"title": "卧石 08",
+			"triangles": 312
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.95000004768372,
+					-0.0799999982118607,
+					-0.75
+				],
+				"size": [
+					3.90000009536743,
+					0.800000011920929,
+					1.5
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_09",
+			"mesh": "res://assets/scenery/rocks/rock_2_09.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 4.0,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.53,
+				"seed": 22409,
+				"shape": 2,
+				"variation": 0.92,
+				"width": 19.5
+			},
+			"structure": "斜顶楔形",
+			"title": "卧石 09",
+			"triangles": 264
+		},
+		{
+			"bounds": {
+				"position": [
+					-2.10000014305115,
+					-0.100000001490116,
+					-0.699999988079071
+				],
+				"size": [
+					4.20000028610229,
+					1.0,
+					1.39999997615814
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_10",
+			"mesh": "res://assets/scenery/rocks/rock_2_10.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.0,
+				"height": 5.0,
+				"profile": 1,
+				"roughness": 0.88,
+				"rounding": 0.81,
+				"seed": 22546,
+				"shape": 2,
+				"variation": 0.48,
+				"width": 21.0
+			},
+			"structure": "斜顶楔形",
+			"title": "卧石 10",
+			"triangles": 252
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.05000007152557,
+					-0.0799999982118607,
+					-1.60000002384186
+				],
+				"size": [
+					2.10000014305115,
+					0.799999952316284,
+					3.20000004768372
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_11",
+			"mesh": "res://assets/scenery/rocks/rock_2_11.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 16.0,
+				"height": 4.0,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.53,
+				"seed": 22995,
+				"shape": 2,
+				"variation": 0.7,
+				"width": 10.5
+			},
+			"structure": "大斜面",
+			"title": "卧石 11",
+			"triangles": 251
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.14999997615814,
+					-0.100000001490116,
+					-1.5
+				],
+				"size": [
+					2.29999995231628,
+					1.0,
+					3.0
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_12",
+			"mesh": "res://assets/scenery/rocks/rock_2_12.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 15.0,
+				"height": 5.0,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.81,
+				"seed": 23132,
+				"shape": 2,
+				"variation": 0.81,
+				"width": 11.5
+			},
+			"structure": "大斜面",
+			"title": "卧石 12",
+			"triangles": 232
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.20000004768372,
+					-0.0700000002980232,
+					-1.39999997615814
+				],
+				"size": [
+					2.40000009536743,
+					0.699999988079071,
+					2.79999995231628
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_13",
+			"mesh": "res://assets/scenery/rocks/rock_2_13.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 14.0,
+				"height": 3.5,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.39,
+				"seed": 23269,
+				"shape": 2,
+				"variation": 0.92,
+				"width": 12.0
+			},
+			"structure": "大斜面",
+			"title": "卧石 13",
+			"triangles": 228
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.30000007152557,
+					-0.0900000035762787,
+					-1.30000007152557
+				],
+				"size": [
+					2.60000014305115,
+					0.900000095367432,
+					2.60000014305115
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_14",
+			"mesh": "res://assets/scenery/rocks/rock_2_14.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 13.0,
+				"height": 4.5,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.67,
+				"seed": 23406,
+				"shape": 2,
+				"variation": 0.48,
+				"width": 13.0
+			},
+			"structure": "大斜面",
+			"title": "卧石 14",
+			"triangles": 283
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.39999997615814,
+					-0.0600000023841858,
+					-1.20000004768372
+				],
+				"size": [
+					2.79999995231628,
+					0.600000023841858,
+					2.40000009536743
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_15",
+			"mesh": "res://assets/scenery/rocks/rock_2_15.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 12.0,
+				"height": 3.0,
+				"profile": 3,
+				"roughness": 0.88,
+				"rounding": 0.25,
+				"seed": 23543,
+				"shape": 2,
+				"variation": 0.59,
+				"width": 14.0
+			},
+			"structure": "大斜面",
+			"title": "卧石 15",
+			"triangles": 264
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.64999997615814,
+					-0.0700000002980232,
+					-0.800000011920929
+				],
+				"size": [
+					3.29999995231628,
+					0.699999988079071,
+					1.60000002384186
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_16",
+			"mesh": "res://assets/scenery/rocks/rock_2_16.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 8.0,
+				"height": 3.5,
+				"profile": 7,
+				"roughness": 0.88,
+				"rounding": 0.67,
+				"seed": 23992,
+				"shape": 2,
+				"variation": 0.81,
+				"width": 16.5
+			},
+			"structure": "斜切薄片",
+			"title": "卧石 16",
+			"triangles": 252
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.80000007152557,
+					-0.0500000007450581,
+					-0.75
+				],
+				"size": [
+					3.60000014305115,
+					0.5,
+					1.5
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_17",
+			"mesh": "res://assets/scenery/rocks/rock_2_17.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.5,
+				"height": 2.5,
+				"profile": 7,
+				"roughness": 0.88,
+				"rounding": 0.25,
+				"seed": 24129,
+				"shape": 2,
+				"variation": 0.92,
+				"width": 18.0
+			},
+			"structure": "斜切薄片",
+			"title": "卧石 17",
+			"triangles": 296
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.95000004768372,
+					-0.0600000023841858,
+					-0.699999988079071
+				],
+				"size": [
+					3.90000009536743,
+					0.600000023841858,
+					1.39999997615814
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_18",
+			"mesh": "res://assets/scenery/rocks/rock_2_18.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 7.0,
+				"height": 3.0,
+				"profile": 7,
+				"roughness": 0.88,
+				"rounding": 0.53,
+				"seed": 24266,
+				"shape": 2,
+				"variation": 0.48,
+				"width": 19.5
+			},
+			"structure": "斜切薄片",
+			"title": "卧石 18",
+			"triangles": 264
+		},
+		{
+			"bounds": {
+				"position": [
+					-2.04999995231628,
+					-0.0700000002980232,
+					-0.650000035762787
+				],
+				"size": [
+					4.09999990463257,
+					0.699999928474426,
+					1.30000007152557
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_19",
+			"mesh": "res://assets/scenery/rocks/rock_2_19.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 6.5,
+				"height": 3.5,
+				"profile": 7,
+				"roughness": 0.88,
+				"rounding": 0.81,
+				"seed": 24403,
+				"shape": 2,
+				"variation": 0.59,
+				"width": 20.5
+			},
+			"structure": "斜切薄片",
+			"title": "卧石 19",
+			"triangles": 248
+		},
+		{
+			"bounds": {
+				"position": [
+					-2.20000004768372,
+					-0.0500000007450581,
+					-0.600000023841858
+				],
+				"size": [
+					4.40000009536743,
+					0.5,
+					1.20000004768372
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_20",
+			"mesh": "res://assets/scenery/rocks/rock_2_20.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 6.0,
+				"height": 2.5,
+				"profile": 7,
+				"roughness": 0.88,
+				"rounding": 0.39,
+				"seed": 24540,
+				"shape": 2,
+				"variation": 0.7,
+				"width": 22.0
+			},
+			"structure": "斜切薄片",
+			"title": "卧石 20",
+			"triangles": 260
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.30000007152557,
+					-0.120000004768372,
+					-1.30000007152557
+				],
+				"size": [
+					2.60000014305115,
+					1.20000004768372,
+					2.60000014305115
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_21",
+			"mesh": "res://assets/scenery/rocks/rock_2_21.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 13.0,
+				"height": 6.0,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.81,
+				"seed": 24989,
+				"shape": 2,
+				"variation": 0.92,
+				"width": 13.0
+			},
+			"structure": "缺角块体",
+			"title": "卧石 21",
+			"triangles": 208
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.45000004768372,
+					-0.0900000035762787,
+					-1.20000004768372
+				],
+				"size": [
+					2.90000009536743,
+					0.900000095367432,
+					2.40000009536743
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_22",
+			"mesh": "res://assets/scenery/rocks/rock_2_22.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 12.0,
+				"height": 4.5,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.39,
+				"seed": 25126,
+				"shape": 2,
+				"variation": 0.48,
+				"width": 14.5
+			},
+			"structure": "缺角块体",
+			"title": "卧石 22",
+			"triangles": 247
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.55000007152557,
+					-0.109999999403954,
+					-1.10000002384186
+				],
+				"size": [
+					3.10000014305115,
+					1.10000002384186,
+					2.20000004768372
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_23",
+			"mesh": "res://assets/scenery/rocks/rock_2_23.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 11.0,
+				"height": 5.5,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.67,
+				"seed": 25263,
+				"shape": 2,
+				"variation": 0.59,
+				"width": 15.5
+			},
+			"structure": "缺角块体",
+			"title": "卧石 23",
+			"triangles": 232
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.64999997615814,
+					-0.0799999982118607,
+					-1.05000007152557
+				],
+				"size": [
+					3.29999995231628,
+					0.799999952316284,
+					2.10000014305115
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_24",
+			"mesh": "res://assets/scenery/rocks/rock_2_24.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 10.5,
+				"height": 4.0,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.25,
+				"seed": 25400,
+				"shape": 2,
+				"variation": 0.7,
+				"width": 16.5
+			},
+			"structure": "缺角块体",
+			"title": "卧石 24",
+			"triangles": 252
+		},
+		{
+			"bounds": {
+				"position": [
+					-1.75,
+					-0.100000001490116,
+					-0.949999988079071
+				],
+				"size": [
+					3.5,
+					1.0,
+					1.89999997615814
+				]
+			},
+			"category": "扁平卧石",
+			"id": "rock_2_25",
+			"mesh": "res://assets/scenery/rocks/rock_2_25.res",
+			"parameters": {
+				"burial": 0.1,
+				"color": "858a86",
+				"color_variation": 0.12,
+				"depth": 9.5,
+				"height": 5.0,
+				"profile": 9,
+				"roughness": 0.88,
+				"rounding": 0.53,
+				"seed": 25537,
+				"shape": 2,
+				"variation": 0.81,
+				"width": 17.5
+			},
+			"structure": "缺角块体",
+			"title": "卧石 25",
+			"triangles": 264
+		}
+	],
+	"categories": [
+		"风化巨石",
+		"棱角岩块",
+		"扁平卧石"
+	],
+	"feet_per_unit": 5.0,
+	"format_version": 1,
+	"generator_version": 2
+}

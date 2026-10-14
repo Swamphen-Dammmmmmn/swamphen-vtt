@@ -16,16 +16,29 @@ var has_facing_bounds := false
 const Acrylic = preload("res://scripts/token_acrylic.gd")
 
 func configure_material(data: Dictionary) -> void:
-	var settings: Variant = data.get("components", {}).get("standee", {}).get("acrylic", Acrylic.defaults())
-	if actor == null or not validation.get("ok", false) or not Acrylic.valid(settings):
+	if actor == null or not validation.get("ok", false) or not FootprintRules.valid(data) or FootprintRules.dimensions(data) != current_extent:
 		configure(data)
 		return
-	validation["components"]["standee"]["acrylic"] = settings.duplicate(true)
-	var standee := actor.get_node_or_null("Standee") as MeshInstance3D
-	if standee != null and standee.material_override is ShaderMaterial and standee.material_override.shader == Acrylic.SurfaceShader:
-		standee.material_override.set_shader_parameter("plate_color", Color(settings["color"]))
-		standee.material_override.set_shader_parameter("opacity", float(settings["opacity"]))
-		standee.material_override.set_shader_parameter("surface_roughness", float(settings["roughness"]))
+	var surface = preload("res://scripts/token_surface.gd")
+	var settings_by_part := {}
+	for part in ["base", "standee"]:
+		var source: Dictionary = data.components[part]
+		if source.has("material") and not surface.valid(source.material):
+			configure(data)
+			return
+		settings_by_part[part] = surface.for_component(source, part)
+	var before: Dictionary = validation.components.standee
+	if before.get("presentation", "solid") == "image" and not before.has("contour") and before.material.board_visible != settings_by_part.standee.board_visible:
+		configure(data)
+		return
+	for part in ["base", "standee"]:
+		var settings: Dictionary = settings_by_part[part]
+		validation.components[part].material = settings
+		validation.components[part].color = settings.color
+		var mesh := actor.get_node_or_null("Base" if part == "base" else "Standee") as MeshInstance3D
+		if mesh != null and not validation.get("outside", []).has(part):
+			mesh.material_override = surface.material(settings, part)
+			mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if settings.board_visible and float(settings.opacity) >= 0.9999 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_refresh()
 var designer_visibility := {"base": true, "standee": true}
 
@@ -93,6 +106,7 @@ func zoom_view(factor: float) -> void:
 	_position_camera()
 
 func _position_camera() -> void:
+	pitch = OrbitCamera.clamp_pitch(pitch)
 	camera.far = maxf(100, distance * 4 + framing_bounds.size.length() * 2)
 	camera.near = maxf(0.005, distance * 0.00002)
 	camera.position = target + Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance

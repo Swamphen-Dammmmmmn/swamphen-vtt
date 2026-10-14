@@ -15,6 +15,9 @@ var adventure: Dictionary = {}
 var update_badge: PanelContainer
 var adventure_id := ""
 var current_map_id := ""
+var window_close_layer: CanvasLayer
+var window_close_busy := false
+var window_close_modes: Dictionary = {}
 var session_modal: CanvasLayer
 const TrayController = preload("res://scripts/adventure_tray_controller.gd")
 var tray_controller: Node
@@ -145,6 +148,7 @@ func _clear_page() -> void:
 		current_page = null
 
 func _navigate(destination: String, detail := "") -> void:
+	if is_instance_valid(window_close_layer) or window_close_busy: return
 	if is_instance_valid(tray_controller) and tray_controller.blocked(): return
 	if current_route=="join" and destination!="join" and network_session.active and not network_session.hosting and not network_session.connected: network_session.close()
 	if destination=="open_adventure":
@@ -175,8 +179,7 @@ func _navigate(destination: String, detail := "") -> void:
 		if map_editor.guard_leave(func(): _navigate(destination,detail)):
 			return
 	if destination == "quit":
-		network_session.close()
-		get_tree().quit()
+		_quit_application()
 		return
 	if destination == "end_session":
 		if session_role=="dm" and not adventure.is_empty() and not _save_adventure(): return
@@ -279,6 +282,7 @@ func _end_session() -> void:
 	_navigate("home")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(window_close_layer) or window_close_busy: return
 	if tray_controller.blocked(): return
 	if is_instance_valid(session_modal) or is_instance_valid(token_edit_layer): return
 	if event is InputEventKey and event.pressed and not event.echo and board!=null and current_route=="board" and not is_instance_valid(token_edit_layer) and not is_instance_valid(session_modal):
@@ -435,8 +439,110 @@ func refresh_network_map_collection() -> void:
 				child._refresh()
 
 func _notification(what: int) -> void:
-	if what==NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
-		_navigate("session_end" if not adventure.is_empty() else "exit")
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
+		_request_window_close()
+
+func _window_editor() -> Control:
+	if not is_instance_valid(current_page): return null
+	for key in ["identity_editor", "adventure_editor", "token_editor", "platform_editor", "map_editor"]:
+		if current_page.has_meta(key): return current_page.get_meta(key)
+	return null
+
+func _window_instance(root: Node) -> Control:
+	if not is_instance_valid(root): return null
+	if root is InstanceEditor and root.is_visible_in_tree() and not root.is_queued_for_deletion(): return root
+	for child in root.get_children():
+		var found := _window_instance(child)
+		if found != null: return found
+	return null
+
+func _visible_confirmation(root: Node) -> bool:
+	if root is Modal and root.is_visible_in_tree(): return true
+	for child in root.get_children():
+		if _visible_confirmation(child): return true
+	return false
+
+func _window_editor_busy(root: Node) -> bool:
+	if not is_instance_valid(root): return false
+	if root.get("saving") == true or root.get("returning_map") == true: return true
+	for child in root.get_children():
+		if _window_editor_busy(child): return true
+	return false
+
+func _request_window_close() -> void:
+	if window_close_busy or is_instance_valid(window_close_layer) or _visible_confirmation(self): return
+	var editor := _window_editor()
+	if _window_editor_busy(editor): return
+	var instance := _window_instance(self)
+	var dirty: bool = editor != null and editor.has_unsaved_changes()
+	if instance != null: dirty = dirty or instance.editor.has_unsaved_changes()
+	if adventure.is_empty() and not dirty:
+		_quit_application()
+		return
+	window_close_layer = CanvasLayer.new()
+	window_close_layer.layer = 150
+	add_child(window_close_layer)
+	var modal := Modal.new()
+	modal.theme = GoUi.theme()
+	window_close_layer.add_child(modal)
+	var description := "是否保存当前修改后退出？已保存的内容会保留。"
+	if not adventure.is_empty():
+		description = "是否保存当前冒险后退出？" if session_role == "dm" else "退出当前团并关闭软件。"
+		if instance != null and instance.editor.has_unsaved_changes():
+			description += "保存会先应用棋子修改。" if session_role == "dm" else "尚未应用的棋子修改将放弃。"
+	modal.configure("退出软件", description)
+	modal.add_action("取消", modal.dismiss)
+	if (adventure.is_empty() or session_role == "dm") and (editor == null or editor.get("created") != false):
+		modal.add_action("保存并退出", func():
+			window_close_busy = true
+			modal.dismiss_enabled = false
+			for child in modal.content.get_children():
+				if child is Button: child.disabled = true
+			var succeeded: bool = await _save_for_window_close(editor, instance)
+			if succeeded:
+				_quit_application()
+			else:
+				window_close_busy = false
+				modal.dismiss_enabled = true
+				modal.dismiss()
+		, true)
+	modal.add_action("不保存退出" if adventure.is_empty() or session_role == "dm" else "退出软件", _quit_application, false, true, true)
+	modal.dismissed.connect(func():
+		_restore_window_close_modes()
+		if is_instance_valid(window_close_layer): window_close_layer.queue_free()
+		window_close_layer = null
+	)
+	# Disable underlying input while retaining the page, camera and editor state.
+	window_close_modes.clear()
+	for node in [$Pages, board, token_edit_layer, tray_controller.overlay]:
+		if is_instance_valid(node):
+			window_close_modes[node] = node.process_mode
+			node.process_mode = Node.PROCESS_MODE_DISABLED
+
+func _restore_window_close_modes() -> void:
+	for node in window_close_modes:
+		if is_instance_valid(node): node.process_mode = window_close_modes[node]
+	window_close_modes.clear()
+
+func _save_for_window_close(editor: Control, instance: Control) -> bool:
+	if is_instance_valid(instance):
+		if not instance.editor._save(): return false
+		instance.hide()
+		instance.closed.emit()
+		instance.queue_free()
+	if not adventure.is_empty():
+		if is_instance_valid(tray_controller.overlay): tray_controller._close_overlay()
+		if is_instance_valid(tray_controller.panel): tray_controller.panel.close()
+		return _save_adventure()
+	if editor == null: return true
+	# A map embedded in the adventure saves through its existing parent delegate.
+	if is_instance_valid(editor.get("child_editor")):
+		return await editor.child_editor._save()
+	return await editor._save()
+
+func _quit_application() -> void:
+	network_session.close()
+	get_tree().quit()
 
 func _open_updates() -> void:
 	if is_instance_valid(session_modal) or is_instance_valid(token_edit_layer): return

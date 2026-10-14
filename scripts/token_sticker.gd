@@ -84,7 +84,8 @@ static func attach(standee: MeshInstance3D, component: Dictionary, preview: bool
 	var specification := migrate(component.get("sticker", defaults()))
 	var width := float(component["width_ft"]) / 5.0
 	var height := float(component["height_ft"]) / 5.0
-	var thickness := 0.0 if component.get("presentation", "solid") == "image" and not component.has("contour") else float(component["thickness_ft"]) / 5.0
+	var pure_image: bool = component.get("presentation", "solid") == "image" and not component.has("contour") and not component.get("material", {}).get("board_visible", false)
+	var thickness := 0.0 if pure_image else float(component["thickness_ft"]) / 5.0
 	for back in [false, true]:
 		var settings := face(specification, "back" if back else "front")
 		var id: String = settings["image_id"]

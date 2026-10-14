@@ -1,5 +1,6 @@
 extends RefCounted
 
+const Surface = preload("res://scripts/token_surface.gd")
 const BASES := ["square", "circle", "hexagon"]
 
 static func material(color: Color, preview := false) -> StandardMaterial3D:
@@ -11,7 +12,7 @@ static func material(color: Color, preview := false) -> StandardMaterial3D:
 		surface.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return surface
 
-static func build(size: int, color: Color, base := "square", preview := false) -> Node3D:
+static func build(size: int, color: Color, base := "square", preview := false, materials: Dictionary = {}) -> Node3D:
 	var actor := Node3D.new()
 	var base_mesh: Mesh
 	if base in ["circle", "hexagon"]:
@@ -39,6 +40,7 @@ static func build(size: int, color: Color, base := "square", preview := false) -
 	plate.position.y = size * 0.425 + 0.17
 	plate.material_override = material(color, preview)
 	actor.add_child(plate)
+	Surface.apply_basic(actor, materials, preview)
 	if preview:
 		for child in actor.get_children():
 			child.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

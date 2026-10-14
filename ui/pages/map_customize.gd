@@ -552,6 +552,13 @@ func _message(title: String, message: String) -> void:
 	modal.configure(title,message)
 	modal.add_action("继续编辑",modal.dismiss)
 
+func has_unsaved_changes() -> bool:
+	if is_instance_valid(platform_editor):
+		if is_instance_valid(platform_editor.token_tool.full_editor) and platform_editor.token_tool.full_editor.editor.has_unsaved_changes(): return true
+		_sync_local_platform()
+	if edit_id.is_empty() and values["platforms"].is_empty() and values["title"] == "地图": return false
+	return saved_signature.is_empty() or Store.signature(values) != saved_signature
+
 func guard_leave(action: Callable) -> bool:
 	if saving: return true
 	if is_instance_valid(platform_editor):

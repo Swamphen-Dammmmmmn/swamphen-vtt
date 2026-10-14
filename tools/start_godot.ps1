@@ -1,9 +1,14 @@
 param(
     [switch]$Editor,
+    [switch]$Headless,
     [string]$Page = '',
     [string]$LogFile = '',
     [string]$ExportPath = '',
+    [ValidateSet('Windows','Android ARM64 Test')][string]$ExportPreset = 'Windows',
+    [switch]$ExportDebug,
     [string]$SettingsTab = '',
+    [string]$Scene = '',
+    [ValidateRange(0,2)][int]$RockCategory = 0,
     [string]$PortableExecutable = '',
     [int]$QuitAfter = 0,
     [switch]$AdvancedToken
@@ -13,6 +18,10 @@ $taskProject = Split-Path -Parent $PSScriptRoot
 $taskEngine = Join-Path $env:LOCALAPPDATA 'Programs\Godot\Godot_v4.7.2-stable_win64.exe'
 if (-not (Test-Path -LiteralPath $taskEngine)) { throw 'Godot executable not found.' }
 $taskArguments = '--path "' + $taskProject + '"'
+if ($Headless) {
+    if (-not $Scene -or $Editor -or $PortableExecutable -or $ExportPath) { throw 'Headless is only available for standalone developer scenes.' }
+    $taskArguments += ' --headless'
+}
 if ($PortableExecutable) {
     $taskPortable = [System.IO.Path]::GetFullPath($PortableExecutable)
     $taskBuild = [System.IO.Path]::GetFullPath((Join-Path $taskProject 'build')) + '\'
@@ -23,9 +32,17 @@ if ($PortableExecutable) {
 if ($ExportPath) {
     $taskConsoleEngine = Join-Path $env:LOCALAPPDATA 'Programs\Godot\Godot_v4.7.2-stable_win64_console.exe'
     if (Test-Path -LiteralPath $taskConsoleEngine) { $taskEngine = $taskConsoleEngine }
-    $taskArguments += ' --headless --export-release Windows "' + $ExportPath + '"'
+    $taskExportFlag = if ($ExportDebug) { '--export-debug' } else { '--export-release' }
+    $taskArguments += ' --headless ' + $taskExportFlag + ' "' + $ExportPreset + '" "' + $ExportPath + '"'
 }
 if ($Editor) { $taskArguments += ' --editor' }
+if ($Scene) {
+    if ($Editor -or $ExportPath -or $Page -or $PortableExecutable) { throw 'Scene cannot be combined with editor, export, page or portable startup.' }
+    if ($Scene -notmatch '^res://dev/[a-z0-9_]+\.tscn$') { throw 'Only a development sandbox scene is allowed.' }
+    $taskScenePath = Join-Path $taskProject ($Scene.Substring(6))
+    if (-not (Test-Path -LiteralPath $taskScenePath)) { throw 'Sandbox scene was not found.' }
+    $taskArguments += ' "' + $Scene + '"'
+}
 if (-not $LogFile) {
     $taskLogDirectory = Join-Path $taskProject 'logs'
     New-Item -ItemType Directory -Path $taskLogDirectory -Force | Out-Null
@@ -44,6 +61,11 @@ if ($AdvancedToken) {
 if ($SettingsTab) {
     if ($Page -ne 'settings' -or $SettingsTab -notin @('video','interface','camera','tutorial','audio','network','updates')) { throw 'Invalid settings page.' }
     $taskArguments += ' --settings-tab=' + $SettingsTab
+}
+if ($Scene -eq 'res://dev/rock_sandbox.tscn') {
+    $taskArguments += ' -- --rock-category=' + $RockCategory
+} elseif ($RockCategory -ne 0) {
+    throw 'RockCategory is only available for the rock sandbox.'
 }
 # The desktop's COM object runs in Explorer, outside the caller's package identity.
 $taskShell = New-Object -ComObject Shell.Application

@@ -217,6 +217,7 @@ static func _read_record(path: String, filename: String) -> Dictionary:
 		var color = params.get("color")
 		if not color is String or not _matches(color, "^[0-9a-fA-F]{6}$"): return _invalid("颜色无效")
 		raw = {"title": title, "size": int(params["size"]), "base": params["base"], "color": Color.from_string(color, Color.WHITE)}
+		if params.has("materials"): raw["materials"] = params["materials"]
 	else:
 		if not _integer(params.get("component_version")) or int(params["component_version"]) not in [1, 2]: return _invalid("不支持的组件版本")
 		if not params.get("components") is Dictionary: return _invalid("组件无效")

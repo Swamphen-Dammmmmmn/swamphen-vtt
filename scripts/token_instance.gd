@@ -84,7 +84,7 @@ static func decode(data: Dictionary) -> Dictionary:
 
 static func build(data: Dictionary, ghost := false) -> Node3D:
 	var components: Dictionary = data.get("components",{})
-	var actor: Node3D = Appearance.build(int(data["size"]),data["color"],data["base"],ghost) if components.is_empty() else Components.build(Components.validate(components,Footprint.dimensions(data)),ghost)
+	var actor: Node3D = Appearance.build(int(data["size"]),data["color"],data["base"],ghost,data.get("materials",{})) if components.is_empty() else Components.build(Components.validate(components,Footprint.dimensions(data)),ghost)
 	apply_orientation(actor,data)
 	return actor
 

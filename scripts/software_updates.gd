@@ -19,6 +19,7 @@ var total := 0
 func _ready() -> void:
 	available = OS.has_feature("windows") and not OS.has_feature("editor") and FileAccess.file_exists(Paths.install_root().path_join("紫水鸡棋盘.exe"))
 	status = "" if available else "源项目使用本地数据目录，更新在ZIP发布版本中使用。"
+	if OS.has_feature("android"): status = "安卓测试包暂不支持内置更新。"
 	var staged := Paths.install_root().path_join("cache/updates/staged.json")
 	if available and FileAccess.file_exists(staged):
 		var value: Variant = JSON.parse_string(FileAccess.get_file_as_string(staged))

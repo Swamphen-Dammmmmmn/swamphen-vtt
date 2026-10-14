@@ -118,6 +118,9 @@ func _modify() -> void:
 		_notify("身份码已修改")
 	,true)
 
+func has_unsaved_changes() -> bool:
+	return _dirty()
+
 func guard_leave(action: Callable) -> bool:
 	if is_instance_valid(dialog): return true
 	if not _dirty(): return false

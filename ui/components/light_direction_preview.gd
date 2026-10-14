@@ -1,6 +1,7 @@
 extends SubViewportContainer
 
 const Hemisphere = preload("res://ui/components/light_hemisphere.gd")
+const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 signal direction_changed(azimuth: float, altitude: float)
 var viewport: SubViewport
 var camera: Camera3D
@@ -65,7 +66,7 @@ func sync(azimuth: float, altitude: float) -> void:
 
 func _turn(relative: Vector2) -> void:
 	yaw -= relative.x*0.008
-	pitch = clampf(pitch+relative.y*0.008,0.15,1.25)
+	pitch = OrbitCamera.clamp_pitch(pitch+relative.y*0.008)
 	var at := Vector3(0,3,0)
 	camera.position = at+Vector3(sin(yaw)*cos(pitch),sin(pitch),cos(yaw)*cos(pitch))*24
 	camera.look_at(at)

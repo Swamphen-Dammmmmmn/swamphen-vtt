@@ -2,6 +2,8 @@ extends RefCounted
 
 const Appearance = preload("res://scripts/token_appearance.gd")
 
+const Surface = preload("res://scripts/token_surface.gd")
+
 static func validate(raw: Dictionary) -> Dictionary:
 	var title := str(raw.get("title", "")).strip_edges()
 	if title.is_empty() or title.length() > 40:
@@ -24,7 +26,13 @@ static func validate(raw: Dictionary) -> Dictionary:
 		return _error("max_hp", "最大 HP 必须大于 0，当前 HP 不能超过最大 HP。")
 	var color: Color = raw.get("color", Color("2e7ae0"))
 	color.a = 1.0
-	return {"ok": true, "parameters": {"title": title, "size": count, "base": base, "color": color, "hp": hp, "max_hp": maximum, "ac": int(values["ac"])}}
+	var materials: Variant = raw.get("materials", Surface.basic_defaults(color))
+	if not materials is Dictionary: return _error("materials", "棋子材质无效。")
+	for part in ["base", "standee"]:
+		if not Surface.valid(materials.get(part)): return _error("materials", "棋子材质无效。")
+	materials = materials.duplicate(true)
+	for part in ["base", "standee"]: materials[part] = Surface.normalize(materials[part])
+	return {"ok": true, "parameters": {"title": title, "size": count, "base": base, "color": color, "hp": hp, "max_hp": maximum, "ac": int(values["ac"]), "materials": materials.duplicate(true)}}
 
 static func _error(field: String, message: String) -> Dictionary:
 	return {"ok": false, "field": field, "message": message}

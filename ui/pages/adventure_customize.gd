@@ -299,6 +299,11 @@ func _message(title: String, text: String) -> void:
 	modal.configure(title,text)
 	modal.add_action("继续编辑",modal.dismiss)
 
+func has_unsaved_changes() -> bool:
+	if is_instance_valid(child_editor) and child_editor.has_unsaved_changes(): return true
+	if edit_id.is_empty() and values["maps"].is_empty() and values["title"] == "冒险": return false
+	return saved_signature.is_empty() or Store.signature(values) != saved_signature
+
 func guard_leave(action: Callable) -> bool:
 	if saving or is_instance_valid(child_editor) or is_instance_valid(picker): return true
 	if accepted_leave or (not saved_signature.is_empty() and Store.signature(values)==saved_signature): return false
