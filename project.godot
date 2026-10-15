@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="紫水鸡棋盘 · UI树开发"
-config/version="0.1.2"
+config/version="0.1.2a"
 run/main_scene="res://scenes/application.tscn"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="紫水鸡棋盘"

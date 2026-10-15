@@ -1066,23 +1066,7 @@ func _build_sticker_form(parent: Control) -> void:
 	image_dialog.title = "选择立牌图片 · 最大 2.5 MB"
 	add_child(image_dialog)
 	image_dialog.canceled.connect(func(): file_picker_active = false)
-	image_dialog.file_selected.connect(func(path: String):
-		file_picker_active = false
-		var result := ImageStore.import_file(path)
-		if not result["ok"]:
-			_show_image_error(result["message"])
-			return
-		var saved_image := ImageStore.save_image(result["data"])
-		if not saved_image["ok"]:
-			_show_image_error(saved_image["message"])
-			return
-		_capture_component()
-		var specification := _sticker_spec()
-		specification["faces"][sticker_face]["image_id"] = saved_image["id"]
-		specification["faces"][sticker_face]["ignore_margin"] = false
-		_reload_sticker()
-		_refresh_preview()
-	)
+	image_dialog.file_selected.connect(_image_selected)
 	sticker_panel = TransformScene.instantiate()
 	sticker_panel.set_script(StickerPanel)
 	add_child(sticker_panel)
@@ -1283,13 +1267,46 @@ func _apply_sticker_values(values: Array) -> void:
 	else: settings["offset"] = [_percent(str(values[0])), _percent(str(values[1]))]
 	_refresh_preview()
 
+func _image_selected(path: String) -> void:
+	file_picker_active = false
+	var result := ImageStore.import_file(path)
+	if not result["ok"]:
+		_show_image_error(result["message"])
+		return
+	var saved_image := ImageStore.save_image(result["data"])
+	if not saved_image["ok"]:
+		_show_image_error(saved_image["message"])
+		return
+	_capture_component()
+	var specification := _sticker_spec()
+	specification["faces"][sticker_face]["image_id"] = saved_image["id"]
+	specification["faces"][sticker_face]["ignore_margin"] = false
+	_reload_sticker()
+	_refresh_preview()
+
+func _android_image_selected(selected: bool, paths: PackedStringArray, _filter: int) -> void:
+	file_picker_active = false
+	if not is_inside_tree() or not selected: return
+	if paths.size()!=1:
+		_show_image_error("未收到有效的图片，请重新选择。")
+		return
+	_image_selected(paths[0])
+
 func _select_image() -> void:
+	if file_picker_active: return
 	rotating = false
 	preview.gizmo.end_drag()
 	_close_sticker_adjustment()
 	_close_adjustment()
 	sticker_backing.get_popup().hide()
 	file_picker_active = true
+	if OS.has_feature("android"):
+		var result := DisplayServer.file_dialog_show("选择立牌图片 · 最大 2.5 MB","","",false,DisplayServer.FILE_DIALOG_MODE_OPEN_FILE,PackedStringArray(["*.png,*.jpg,*.jpeg;PNG / JPG;image/png,image/jpeg"]),_android_image_selected,DisplayServer.MAIN_WINDOW_ID)
+		if result!=OK:
+			file_picker_active = false
+			push_warning("安卓图片选择器启动失败：%s" % error_string(result))
+			_show_image_error("无法打开系统选图，请确认手机已启用系统文件选择器后重试。")
+		return
 	image_dialog.popup_file_dialog()
 
 func _show_image_error(message: String) -> void:

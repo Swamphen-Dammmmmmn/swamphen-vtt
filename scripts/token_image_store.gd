@@ -55,7 +55,9 @@ static func _decode(bytes: PackedByteArray) -> Dictionary:
 	return {"ok": true, "image": image, "bytes": bytes.size(), "data": bytes}
 
 static func import_file(path: String) -> Dictionary:
-	if path.get_extension().to_lower() not in ["png", "jpg", "jpeg"]: return _error("请选择 PNG、JPG 图片。")
+	# Android document providers return opaque content URIs, often without an extension.
+	# Decode the file header below; the URI suffix is not a file format.
+	if not (OS.has_feature("android") and path.begins_with("content://")) and path.get_extension().to_lower() not in ["png", "jpg", "jpeg"]: return _error("请选择 PNG、JPG 图片。")
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null: return _error("无法打开所选图片。")
 	if file.get_length() > MAX_BYTES:

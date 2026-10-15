@@ -13,12 +13,12 @@
 
 ## 当前状态
 
-目前提供 **Windows 与 Android ARM64 的 v0.1.2 测试版**，仍处于早期开发阶段。手机已接入触控、镜头、工具及界面适配，最新修复的真机体验与跨设备联机稳定性仍需测试。
+目前提供 **Windows v0.1.2 与 Android ARM64 v0.1.2a 测试版**，仍处于早期开发阶段。手机已接入触控、镜头、工具及界面适配，最新修复的真机体验与跨设备联机稳定性仍需测试。
 
 从 [GitHub 发版页面](https://github.com/Swamphen-Dammmmmmn/swamphen-vtt/releases/tag/v0.1.2) 下载：
 
 - **Windows**：`svtt-0.1.2-windows-portable.zip`，完整解压后运行“紫水鸡棋盘.exe”，无需安装Godot、Python或.NET。
-- **Android ARM64**：`svtt-0.1.2-android-arm64-test.apk`。同包名、同签名的新版APK直接覆盖安装可保留资料；不要先卸载。安卓没有内置更新功能。
+- **Android ARM64**：[v0.1.2a 图片导入修复测试版](https://github.com/Swamphen-Dammmmmmn/swamphen-vtt/releases/tag/v0.1.2a)，下载 `svtt-0.1.2a-android-arm64-test.apk`。同包名、同签名的新版APK直接覆盖安装可保留资料；不要先卸载。安卓没有内置更新功能。
 
 Windows用户资料位于软件目录的`userdata`文件夹；搬迁时复制整个目录。完整便携ZIP同时用于首次使用与更新，不再提供独立更新ZIP。设置中的“关于与更新”支持从GitHub下载并显示进度，也支持手动导入完整便携ZIP；发现新版时可通过左上方提示进入。不会自动下载安装，应用更新需要确认并重启，保留上一版本供恢复。GitHub自动生成的源码ZIP不能作为更新包。
 
