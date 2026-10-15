@@ -5,7 +5,7 @@
     "windows_release_x86_64.exe": "d34d36f3be1a6c49c56525ae86469b92e4f417ddf0b43cf00dd80c385c4b0562"
   },
   "licenses": {
-    "COPYRIGHT.txt": "d5aeff0741d5cb7a566befd8867667549c8bb46399a0e93091273b632bbefd96",
+    "COPYRIGHT.txt": "cb1980c88089573bcacd7221d777c689bb8bbd778799f24c27fca0fe5f774d6d",
     "LICENSE.txt": "b0435e3b3e4e55238f05f4b306f30524a1b2e20147810d436eaa554fa6855c80"
   },
   "android_build_tools": "35.0.1",
