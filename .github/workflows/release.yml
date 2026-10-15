@@ -90,18 +90,21 @@ jobs:
       - name: Check public source
         run: python tools/ci_release.py check
       - name: Use installed JDK 17
+        id: android
         if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
         shell: pwsh
         run: |
           if (!(Test-Path "$env:JAVA_HOME_17_X64/bin/java.exe")) { throw 'Runner JDK 17 is missing.' }
+          if (!(Test-Path "$env:ANDROID_HOME")) { throw 'Runner Android SDK is missing.' }
           "JAVA_HOME=$env:JAVA_HOME_17_X64" >> $env:GITHUB_ENV
+          "sdk_root=$env:ANDROID_HOME" >> $env:GITHUB_OUTPUT
       - name: Restore Android SDK tools
         if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.ANDROID_HOME }}/build-tools/35.0.1
-            ${{ env.ANDROID_HOME }}/platforms/android-36
+            ${{ steps.android.outputs.sdk_root }}/build-tools/35.0.1
+            ${{ steps.android.outputs.sdk_root }}/platforms/android-36
           key: android-sdk-${{ runner.os }}-35.0.1-api36
       - name: Install only missing Android tools
         if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
