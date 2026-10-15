@@ -11,6 +11,21 @@ import ci_release as ci
 
 
 class ReleaseChecks(unittest.TestCase):
+    def test_retry_uses_saved_packages_but_not_missing_or_expired_ones(self):
+        saved=[{'name':'release-packages','expired':False}]
+        self.assertEqual(ci.select_reuse('',2,saved,'123'),'123')
+        self.assertEqual(ci.select_reuse('',1,saved,'123'),'')
+        self.assertEqual(ci.select_reuse('',2,[],'123'),'')
+        self.assertEqual(ci.select_reuse('',2,[{'name':'release-packages','expired':True}],'123'),'')
+        self.assertEqual(ci.select_reuse('456',1,[],'123'),'456')
+        with self.assertRaises(RuntimeError): ci.select_reuse('not-an-id',2,saved,'123')
+
+    def test_recovery_refuses_foreign_workflow_and_invalid_source(self):
+        valid={'path':'.github/workflows/release.yml','head_branch':'main','event':'workflow_dispatch','head_sha':'a'*40}
+        self.assertEqual(ci.trusted_run_source(valid),'a'*40)
+        for key,value in [('path','another.yml'),('head_branch','untrusted'),('event','pull_request'),('head_sha','bad')]:
+            with self.subTest(key=key), self.assertRaises(RuntimeError): ci.trusted_run_source(dict(valid,**{key:value}))
+
     def test_version_and_platform_inputs(self):
         ci.validate('0.1.4','all',10401)
         ci.validate('0.1.3a','all',10312)

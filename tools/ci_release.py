@@ -56,6 +56,45 @@ def public_source(commit):
     require(not forbidden, 'Source contains local-only files: ' + repr(forbidden[:10]))
 
 
+def select_reuse(requested, attempt, artifacts, run_id):
+    require(not requested or requested.isdecimal(), 'Invalid reuse run ID.')
+    if requested:
+        return requested
+    if attempt > 1 and any(a.get('name') == 'release-packages' and not a.get('expired', True) for a in artifacts):
+        return run_id
+    return ''
+
+
+def trusted_run_source(record):
+    require(record.get('path') == '.github/workflows/release.yml'
+            and record.get('head_branch') == 'main'
+            and record.get('event') == 'workflow_dispatch', 'Untrusted build run.')
+    source = record.get('head_sha', '')
+    require(bool(re.fullmatch('[0-9a-f]{40}', source)), 'Invalid source commit.')
+    return source
+
+
+def plan(args):
+    validate(args.version, args.platform, args.android_code)
+    require(os.environ.get('GITHUB_ACTIONS') == 'true', 'Planning requires GitHub Actions.')
+    run_id = os.environ['GITHUB_RUN_ID']
+    attempt = int(os.environ.get('GITHUB_RUN_ATTEMPT', '1'))
+    def api(path):
+        return json.loads(capture('gh', 'api', f'repos/{core.REPOSITORY}/' + path))
+    artifacts = api(f'actions/runs/{run_id}/artifacts')['artifacts'] if attempt > 1 and not args.reuse_run else []
+    reuse = select_reuse(args.reuse_run, attempt, artifacts, run_id)
+    require(args.mode != 'prepare' or not reuse, 'Prepare-only mode cannot recover packages.')
+    source = capture('git', 'rev-parse', 'HEAD').strip()
+    if reuse:
+        previous = api(f'actions/runs/{reuse}')
+        source = trusted_run_source(previous)
+        available = artifacts if reuse == run_id and artifacts else api(f'actions/runs/{reuse}/artifacts')['artifacts']
+        require(any(a.get('name') == 'release-packages' and not a.get('expired', True) for a in available), 'Verified packages missing or expired; no rebuild was started.')
+    with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+        output.write(f'reuse_run={reuse}\nsource={source}\n')
+    print(json.dumps({'mode':args.mode, 'reuse_run':reuse, 'source':source, 'attempt':attempt}), flush=True)
+
+
 def checked_download(url, destination, digest):
     if destination.exists() and core.sha(destination) == digest:
         return
@@ -287,15 +326,21 @@ def publish(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['build', 'publish', 'clean', 'check'])
+    parser.add_argument('command', choices=['build', 'publish', 'clean', 'check', 'plan', 'prepare'])
     parser.add_argument('--version', default='0.0.0')
     parser.add_argument('--platform', default='all')
     parser.add_argument('--android-code', type=int, default=0)
     parser.add_argument('--channel', choices=['testing', 'stable'], default='testing')
     parser.add_argument('--notes', default='')
-    parser.add_argument('--mode', choices=['draft', 'publish'], default='draft')
+    parser.add_argument('--mode', choices=['build', 'draft', 'publish', 'prepare'], default='publish')
+    parser.add_argument('--reuse-run', default='')
     args = parser.parse_args()
-    if args.command == 'clean': cleanup()
+    if args.command == 'plan': plan(args)
+    elif args.command == 'prepare':
+        require(os.environ.get('GITHUB_ACTIONS') == 'true', 'Environment preparation requires GitHub Actions.')
+        toolchain(args.platform)
+        print('Environment prepared; no game build, signing key or release created.', flush=True)
+    elif args.command == 'clean': cleanup()
     elif args.command == 'check':
         public_source('HEAD')
         import py_compile

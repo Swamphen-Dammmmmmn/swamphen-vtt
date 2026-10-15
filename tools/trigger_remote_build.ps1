@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$Version,
     [ValidateSet('all','windows','android')][string]$Platform='all',
-    [ValidateSet('build','draft','publish')][string]$Mode='build',
+    [ValidateSet('build','draft','publish','prepare')][string]$Mode='publish',
     [ValidateSet('testing','stable')][string]$Channel='testing',
     [int]$AndroidCode=0,
     [switch]$SyncSource,
@@ -24,7 +24,7 @@ if reuse=='0':reuse=''
 sys.path.insert(0,'launcher')
 import core
 core.version(version)
-if reuse and (not reuse.isdigit() or mode=='build'):raise SystemExit('-ReuseRun requires a numeric run ID and draft/publish mode.')
+if reuse and (not reuse.isdigit() or mode=='prepare'):raise SystemExit('-ReuseRun requires a numeric run ID and build/draft/publish mode.')
 config=pathlib.Path('artifacts/github-release-cli')
 if (config/'hosts.yml').exists():os.environ['GH_CONFIG_DIR']=str(config.resolve())
 env=publishing_environment()

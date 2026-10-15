@@ -1,10 +1,11 @@
 name: Build and release
+run-name: Release v${{ inputs.version }} (${{ inputs.mode }})
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Committed version: X.Y.Z with optional lowercase revision, e.g. 0.1.3a'
+        description: 'Committed application version'
         required: true
         type: string
       platform:
@@ -13,17 +14,17 @@ on:
         options: [all, windows, android]
         default: all
       mode:
-        description: 'Build only, draft release, or publish after verification'
+        description: 'Publish automatically, build only, or prepare environment only'
         type: choice
-        options: [build, draft, publish]
-        default: build
+        options: [publish, build, prepare, draft]
+        default: publish
       channel:
-        description: 'Testing = prerelease; stable = regular release'
+        description: 'Testing or stable release'
         type: choice
         options: [testing, stable]
         default: testing
       android_code:
-        description: 'Android version code; 0 uses committed export preset'
+        description: '0 uses the committed Android version code'
         type: string
         default: '0'
       notes:
@@ -31,11 +32,11 @@ on:
         type: string
         required: true
       reuse_run:
-        description: 'Optional successful build run ID: reuse verified packages without rebuilding'
+        description: 'Optional earlier build; failed-run retries recover automatically'
         type: string
         default: ''
       skip_startup:
-        description: 'Skip packaged startup only with explicit user authorization; record as not verified'
+        description: 'Only skip startup with explicit user authorization'
         type: boolean
         default: false
 
@@ -47,52 +48,86 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    if: github.ref == 'refs/heads/main' && inputs.reuse_run == ''
+  release:
+    if: github.ref == 'refs/heads/main'
     runs-on: windows-2022
     environment: release
-    timeout-minutes: 45
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
     env:
       PYTHONUTF8: '1'
       PYTHONUNBUFFERED: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
       RELEASE_VERSION: ${{ inputs.version }}
       BUILD_PLATFORM: ${{ inputs.platform }}
-      SKIP_STARTUP: ${{ inputs.skip_startup }}
       ANDROID_CODE: ${{ inputs.android_code }}
       RELEASE_CHANNEL: ${{ inputs.channel }}
       RELEASE_NOTES: ${{ inputs.notes }}
+      RELEASE_MODE: ${{ inputs.mode }}
+      REQUESTED_REUSE: ${{ inputs.reuse_run }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13.2'
+          python-version: '3.13'
+          check-latest: false
           cache: pip
           cache-dependency-path: launcher/requirements.txt
-      - name: Install Python build dependencies
+      - name: Install Python dependencies once
         run: python -m pip install -r launcher/requirements.txt
-      - name: Check public source
-        run: python tools/ci_release.py check
-      - uses: actions/setup-java@v4
-        if: inputs.platform != 'windows'
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Install Android build tools
-        if: inputs.platform != 'windows'
+      - name: Select fresh build or automatic recovery
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" 'build-tools;35.0.1' 'platforms;android-36'
-          if ($LASTEXITCODE -ne 0) { throw 'Android SDK setup failed.' }
-      - uses: actions/cache@v4
+          python tools/ci_release.py plan --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --android-code $env:ANDROID_CODE --mode $env:RELEASE_MODE "--reuse-run=$env:REQUESTED_REUSE"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot select a safe build/recovery path.' }
+      - name: Check public source
+        run: python tools/ci_release.py check
+      - name: Use installed JDK 17
+        if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
+        shell: pwsh
+        run: |
+          if (!(Test-Path "$env:JAVA_HOME_17_X64/bin/java.exe")) { throw 'Runner JDK 17 is missing.' }
+          "JAVA_HOME=$env:JAVA_HOME_17_X64" >> $env:GITHUB_ENV
+      - name: Restore Android SDK tools
+        if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/build-tools/35.0.1
+            ${{ env.ANDROID_HOME }}/platforms/android-36
+          key: android-sdk-${{ runner.os }}-35.0.1-api36
+      - name: Install only missing Android tools
+        if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
+        shell: pwsh
+        run: |
+          $missing = @()
+          if (!(Test-Path "$env:ANDROID_HOME/build-tools/35.0.1/aapt2.exe") -or !(Test-Path "$env:ANDROID_HOME/build-tools/35.0.1/lib/apksigner.jar")) { $missing += 'build-tools;35.0.1' }
+          if (!(Test-Path "$env:ANDROID_HOME/platforms/android-36/android.jar")) { $missing += 'platforms;android-36' }
+          if ($missing.Count) {
+            & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" @missing
+            if ($LASTEXITCODE -ne 0) { throw 'Android SDK setup failed.' }
+          } else { Write-Output 'Required Android tools already present; no install.' }
+      - name: Restore engine and templates
+        if: steps.plan.outputs.reuse_run == ''
+        uses: actions/cache@v4
         with:
           path: |
             artifacts/ci-toolchain
             artifacts/export-templates
             artifacts/godot-licenses
           key: ci-toolchain-windows-${{ hashFiles('tools/ci-toolchain.json', 'tools/install_godot.py') }}
-      - name: Build, sign and verify
+      - name: Prepare environment without building or publishing
+        if: inputs.mode == 'prepare'
+        run: python tools/ci_release.py prepare --platform $env:BUILD_PLATFORM
+      - name: Build and sign once
+        if: inputs.mode != 'prepare' && steps.plan.outputs.reuse_run == ''
         env:
           RELEASE_SIGNING_KEY_B64: ${{ secrets.RELEASE_SIGNING_KEY_B64 }}
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -101,17 +136,18 @@ jobs:
         shell: pwsh
         run: |
           python tools/ci_release.py build --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --android-code $env:ANDROID_CODE --channel $env:RELEASE_CHANNEL --notes $env:RELEASE_NOTES
-          if ($LASTEXITCODE -ne 0) { throw 'Build or verification failed.' }
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed; nothing is public.' }
       - name: Remove signing material
         if: always()
         run: python tools/ci_release.py clean
-      - name: Keep verified packages
+      - name: Save completed packages for recovery
+        if: success() && inputs.mode != 'prepare' && steps.plan.outputs.reuse_run == ''
         uses: actions/upload-artifact@v4
         with:
           name: release-packages
           retention-days: 14
-          if-no-files-found: error
           compression-level: 0
+          if-no-files-found: error
           path: |
             build/ci/*.zip
             build/ci/*.apk
@@ -119,89 +155,69 @@ jobs:
             build/ci/release.sig
             build/ci/SHA256SUMS.txt
             build/ci/build-check.json
-      - name: Keep export logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: export-logs
-          path: logs/ci-*-export.log
-          if-no-files-found: ignore
-          retention-days: 7
-      - name: Build summary
-        shell: pwsh
-        run: |
-          "Version: $env:RELEASE_VERSION`nSource: $env:GITHUB_SHA`nMode: ${{ inputs.mode }}`nDownload: release-packages artifact" >> $env:GITHUB_STEP_SUMMARY
-
-  release:
-    needs: build
-    if: always() && github.ref == 'refs/heads/main' && inputs.mode != 'build' && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.reuse_run != ''))
-    runs-on: windows-2022
-    environment: release
-    timeout-minutes: 15
-    permissions:
-      contents: write
-      actions: read
-    env:
-      PYTHONUTF8: '1'
-      PYTHONUNBUFFERED: '1'
-      RELEASE_VERSION: ${{ inputs.version }}
-      RELEASE_CHANNEL: ${{ inputs.channel }}
-      RELEASE_NOTES: ${{ inputs.notes }}
-      RELEASE_MODE: ${{ inputs.mode }}
-      BUILD_PLATFORM: ${{ inputs.platform }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13.2'
-      - run: python -m pip install -r launcher/requirements.txt
-      - uses: actions/download-artifact@v4
+      - name: Recover completed packages without building
+        if: steps.plan.outputs.reuse_run != ''
+        uses: actions/download-artifact@v4
         with:
           name: release-packages
           path: build/ci
           github-token: ${{ github.token }}
-          run-id: ${{ inputs.reuse_run || github.run_id }}
-      - name: Resolve trusted build source
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BUILD_RUN: ${{ inputs.reuse_run || github.run_id }}
-        shell: pwsh
-        run: |
-          $record = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:BUILD_RUN" | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0 -or $record.path -ne '.github/workflows/release.yml' -or $record.head_branch -ne 'main' -or $record.event -ne 'workflow_dispatch') { throw 'Untrusted build run.' }
-          "BUILD_SOURCE_SHA=$($record.head_sha)" >> $env:GITHUB_ENV
-      - name: Verify existing packages and packaged Windows startup
+          run-id: ${{ steps.plan.outputs.reuse_run }}
+      - name: Verify packages and optional startup
+        if: inputs.mode != 'prepare'
         env:
           SKIP_STARTUP: ${{ inputs.skip_startup }}
+          BUILD_SOURCE_SHA: ${{ steps.plan.outputs.source }}
         shell: pwsh
         run: |
           $optional = @()
           if ($env:SKIP_STARTUP -eq 'true') { $optional += '--skip-startup' }
           python tools/verify_remote_release.py --directory build/ci --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --channel $env:RELEASE_CHANNEL --source $env:BUILD_SOURCE_SHA @optional
-          if ($LASTEXITCODE -ne 0) { throw 'Remote verification failed; release remains private.' }
-      - name: Keep small verification records
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-verification
-          retention-days: 14
-          if-no-files-found: ignore
-          path: |
-            build/ci/verification.json
-            build/ci/windows-startup.log
-      - name: Use the exact source that produced the packages
+          if ($LASTEXITCODE -ne 0) { throw 'Verification failed; nothing is public.' }
+      - name: Pin recovered packages to their original source
+        if: steps.plan.outputs.reuse_run != '' && inputs.mode != 'build' && inputs.mode != 'prepare'
+        env:
+          BUILD_SOURCE_SHA: ${{ steps.plan.outputs.source }}
         shell: pwsh
         run: |
           git fetch --depth=1 origin $env:BUILD_SOURCE_SHA
-          if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch artifact source.' }
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch original source.' }
           git checkout --detach $env:BUILD_SOURCE_SHA
-          if ($LASTEXITCODE -ne 0) { throw 'Cannot select artifact source.' }
-      - name: Upload draft, verify GitHub hashes, then optionally publish
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot select original source.' }
+      - name: Upload and publish automatically
+        if: inputs.mode == 'publish' || inputs.mode == 'draft'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
           python tools/ci_release.py publish --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --channel $env:RELEASE_CHANNEL --mode $env:RELEASE_MODE --notes $env:RELEASE_NOTES
-          if ($LASTEXITCODE -ne 0) { throw 'Release failed; any created draft stays private. Re-run failed jobs to reuse the verified packages.' }
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed; rerun this job to reuse saved packages.' }
+          gh release view "v$env:RELEASE_VERSION" --repo $env:GITHUB_REPOSITORY --json url,isDraft,isPrerelease,assets,targetCommitish | Out-File build/ci/publication.json -Encoding utf8
+      - name: Keep small result records
+        if: always() && inputs.mode != 'prepare'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-verification-${{ github.run_attempt }}
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            build/ci/verification.json
+            build/ci/windows-startup.log
+            build/ci/publication.json
+      - name: Keep export logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-logs-${{ github.run_attempt }}
+          path: logs/ci-*-export*.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Result summary
+        if: always()
+        shell: pwsh
+        run: |
+          "Version: $env:RELEASE_VERSION; Mode: $env:RELEASE_MODE; Source: ${{ steps.plan.outputs.source }}; Reuse: ${{ steps.plan.outputs.reuse_run }}; Result: ${{ job.status }}" >> $env:GITHUB_STEP_SUMMARY
+          if (Test-Path build/ci/publication.json) {
+            $publication = Get-Content build/ci/publication.json -Raw | ConvertFrom-Json
+            "Release: $($publication.url); Draft: $($publication.isDraft)" >> $env:GITHUB_STEP_SUMMARY
+          }
