@@ -113,11 +113,24 @@ def export(engine, preset, destination, debug=False):
     log = ROOT / 'logs' / ('ci-' + destination.suffix[1:] + '-export.log')
     log.parent.mkdir(exist_ok=True)
     print('::group::Export ' + preset, flush=True)
-    run(engine, '--headless', '--path', ROOT, '--log-file', log,
-        '--export-debug' if debug else '--export-release', preset, destination)
-    text = log.read_text(encoding='utf-8', errors='replace')
-    errors = [n for n in text.splitlines() if 'ERROR:' in n and 'No project icon specified' not in n]
-    require(destination.exists() and not errors, 'Godot export failed: ' + '\n'.join(errors))
+    for attempt in range(1, 4):
+        run(engine, '--headless', '--path', ROOT, '--log-file', log,
+            '--export-debug' if debug else '--export-release', preset, destination)
+        text = log.read_text(encoding='utf-8', errors='replace')
+        lines = text.splitlines()
+        errors = [n for n in lines if 'ERROR:' in n and 'No project icon specified' not in n]
+        if destination.exists() and not errors:
+            break
+        # Godot #124139: a transient dummy-renderer RID race. Do not accept that
+        # output or suppress its error; retry only this exact failure, at most 3x.
+        known_race = bool(errors) and all(n.strip() == 'ERROR: Parameter "t" is null.' for n in errors)
+        known_race = known_race and all(
+            i + 1 < len(lines) and 'texture_2d_initialize (./servers/rendering/dummy/storage/texture_storage.h:' in lines[i + 1]
+            for i, line in enumerate(lines) if 'ERROR: Parameter "t" is null.' in line)
+        shutil.copyfile(log, log.with_name(log.stem + f'-attempt-{attempt}.log'))
+        require(known_race and attempt < 3, 'Godot export failed: ' + '\n'.join(errors))
+        print(f'Known transient headless texture race; rejecting output and retrying export ({attempt}/3).', flush=True)
+        destination.unlink(missing_ok=True)
     print('::endgroup::', flush=True)
 
 
