@@ -158,6 +158,37 @@ jobs:
           path: build/ci
           github-token: ${{ github.token }}
           run-id: ${{ inputs.reuse_run || github.run_id }}
+      - name: Resolve trusted build source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RUN: ${{ inputs.reuse_run || github.run_id }}
+        shell: pwsh
+        run: |
+          $record = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:BUILD_RUN" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $record.path -ne '.github/workflows/release.yml' -or $record.head_branch -ne 'main' -or $record.event -ne 'workflow_dispatch') { throw 'Untrusted build run.' }
+          "BUILD_SOURCE_SHA=$($record.head_sha)" >> $env:GITHUB_ENV
+      - name: Verify existing packages and packaged Windows startup
+        shell: pwsh
+        run: |
+          python tools/verify_remote_release.py --directory build/ci --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --channel $env:RELEASE_CHANNEL --source $env:BUILD_SOURCE_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'Remote verification failed; release remains private.' }
+      - name: Keep small verification records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-verification
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            build/ci/verification.json
+            build/ci/windows-startup.log
+      - name: Use the exact source that produced the packages
+        shell: pwsh
+        run: |
+          git fetch --depth=1 origin $env:BUILD_SOURCE_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch artifact source.' }
+          git checkout --detach $env:BUILD_SOURCE_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot select artifact source.' }
       - name: Upload draft, verify GitHub hashes, then optionally publish
         env:
           GH_TOKEN: ${{ github.token }}
