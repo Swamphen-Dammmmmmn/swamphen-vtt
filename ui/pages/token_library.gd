@@ -109,6 +109,7 @@ func set_entries(data: Array[Dictionary], read_error := "", warnings: Array = []
 	warning_label.visible = not warnings.is_empty()
 	warning_label.text = "有 %d 个棋子文件未能读取；其他棋子仍可使用，原文件已保留。" % warnings.size()
 	warning_label.tooltip_text = "\n".join(PackedStringArray(warnings))
+	preload("res://ui/components/editor_layout.gd").error_details(warning_label)
 	var available: Array[String] = []
 	for entry in entries:
 		for tag in entry.get("tags", []):

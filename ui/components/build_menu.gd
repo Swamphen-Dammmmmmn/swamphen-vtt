@@ -40,7 +40,7 @@ func _ready() -> void:
 	button = Button.new()
 	button.text = "菜单"
 	button.tooltip_text = "编辑器菜单 · Esc"
-	Style.button(button)
+	Style.card_button(button)
 	GoStyle.apply_icon(button,GoIconSet.MENU,18)
 	row.add_child(button)
 	button.pressed.connect(open_menu)

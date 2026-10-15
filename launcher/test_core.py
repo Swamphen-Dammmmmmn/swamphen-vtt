@@ -12,6 +12,13 @@ from cryptography.hazmat.primitives.asymmetric import padding,rsa
 import core
 
 class Updates(unittest.TestCase):
+    def test_revision_version_order_and_rejection(self):
+        ordered = ['0.1.3', '0.1.3a', '0.1.3b', '0.1.3z', '0.1.4', '0.2.0']
+        self.assertEqual(sorted(reversed(ordered), key=core.version), ordered)
+        for invalid in ['v0.1.3a', '0.1.3aa', '0.1.3A', '0.1.3-a', '0.1.3a ', '0.1', '0.1.3.1', '0.1.３a', None]:
+            with self.subTest(version=invalid), self.assertRaises(core.UpdateError):
+                core.version(invalid)
+
     @classmethod
     def setUpClass(cls):
         cls.key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
@@ -72,12 +79,12 @@ class Updates(unittest.TestCase):
         self.assertTrue(any(event["phase"]=="verify" for event in events))
         self.assertEqual((self.root/"userdata"/"identity.json").read_text(),"keep identity")
 
-    def package(self,extra=None):
+    def package(self,extra=None,version='0.1.1'):
         data={"program/"+core.ENTRY:b"new game","boot/"+core.BOOT:b"new boot"}
         if extra:data.update(extra)
         import hashlib
         files={name:{"size":len(value),"sha256":hashlib.sha256(value).hexdigest()} for name,value in data.items()}
-        record={"schema":1,"app":core.APP,"platform":"win-x64","version":"0.1.1","launcher_format":1,"data_formats":{"tokens":[1,2],"platforms":[2],"maps":[1],"adventures":[1]},"files":files,"unpacked_size":sum(map(len,data.values()))}
+        record={"schema":1,"app":core.APP,"platform":"win-x64","version":version,"launcher_format":1,"data_formats":{"tokens":[1,2],"platforms":[2],"maps":[1],"adventures":[1]},"files":files,"unpacked_size":sum(map(len,data.values()))}
         raw=json.dumps(record).encode()
         sig=base64.b64encode(self.key.sign(raw,padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.DIGEST_LENGTH),hashes.SHA256()))
         path=self.root/"update.zip"
@@ -164,6 +171,17 @@ class Updates(unittest.TestCase):
         core.confirm(self.root)
         self.assertFalse(core.read_json(self.root/"installation.json")["pending"])
         self.assertEqual((self.root/"userdata/identity.json").read_text(),'keep identity')
+
+    def test_revision_update_preserves_data_and_rejects_same_version(self):
+        core.atomic_json(self.root/'installation.json',{'app':core.APP,'current':'0.1.3','pending':False})
+        (self.root/'versions/0.1.3').mkdir()
+        archive,_,_=self.package(version='0.1.3a')
+        core.stage(self.root,archive,self.public)
+        core.apply(self.root,self.public)
+        core.confirm(self.root)
+        self.assertEqual(core.read_json(self.root/'installation.json')['current'],'0.1.3a')
+        self.assertEqual((self.root/'userdata/identity.json').read_text(),'keep identity')
+        with self.assertRaises(core.UpdateError): core.stage(self.root,archive,self.public)
 
     def test_pending_recovery(self):
         package,_,_=self.package()

@@ -27,6 +27,7 @@ func _ready() -> void:
 	body.minimum_size_changed.connect(_queue_fit)
 	if Mobile.enabled: Mobile.changed.connect(_queue_fit)
 	var header := HBoxContainer.new()
+	header.set_meta("mobile_drag","native")
 	body.add_child(header)
 	var label := Style.text(title,20)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -64,7 +65,6 @@ func fit_at(available: Vector2, anchor: Vector2) -> void:
 	custom_minimum_size.x = minf(320,maxf(1,safe.size.x-48))
 	size.x = custom_minimum_size.x
 	scroll.size.x = maxf(1,size.x-chrome.x)
-	body.size.x = scroll.size.x
 	var height := minf(body.get_combined_minimum_size().y,maxf(1,safe.size.y-48-chrome.y))
 	scroll.custom_minimum_size.y = height
 	size = Vector2(custom_minimum_size.x,height+chrome.y)

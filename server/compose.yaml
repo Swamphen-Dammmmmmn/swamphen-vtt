@@ -13,6 +13,7 @@ services:
       TURN_PORT: "10131"
     volumes:
       - ./certs:/certs:ro
+      - ../assets/network/contract.json:/app/contract.json:ro
     logging:
       driver: none
     mem_limit: 192m

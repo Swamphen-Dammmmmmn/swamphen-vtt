@@ -58,8 +58,10 @@ def main():
     output.mkdir(parents=True,exist_ok=True)
     project=ROOT/'project.godot';project.write_text(re.sub(r'config/version="[^"]+"','config/version="'+args.version+'"',project.read_text(encoding='utf-8')),encoding='utf-8')
     # Android test builds have an increasing code; reused APKs retain their original bytes and version.
-    presets=ROOT/'export_presets.cfg';text=presets.read_text(encoding='utf-8');code=parts[0]*1000000+parts[1]*10000+parts[2]*100+6
-    text=re.sub(r'version/code=\d+','version/code='+str(code),text);text=re.sub(r'version/name="[^"]+"','version/name="'+args.version+'-android-test.6"',text);presets.write_text(text,encoding='utf-8')
+    presets=ROOT/'export_presets.cfg';text=presets.read_text(encoding='utf-8')
+    code=int(re.search(r'version/code=(\d+)',text)[1])
+    if f'version/name="{args.version}"' not in text:
+        raise SystemExit('Commit matching Android version/name and an increasing version/code before building.')
     work=output.parent/(output.name+'-work');program=work/'program';boot=work/'boot';program.mkdir(parents=True,exist_ok=True);boot.mkdir(exist_ok=True)
     if args.resume and (program/core.ENTRY).exists():
         wait_export(program/core.ENTRY,ROOT/'logs'/('release-'+args.version+'-windows.log'))

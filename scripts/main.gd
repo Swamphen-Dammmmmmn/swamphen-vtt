@@ -110,7 +110,7 @@ func _ready() -> void:
 			if tokens.size()==previous_count:
 				session_load_error = "部分棋子无法生成，已阻止覆盖保存。请返回后检查原冒险内容。"
 				continue
-			tokens[-1].merge(Instance.scene_values(data),true)
+			Instance.apply_parameters(tokens[-1],data)
 			Instance.apply_orientation(tokens[-1]["node"],tokens[-1])
 			tokens[-1]["persistent_id"] = data["id"]
 			tokens[-1]["platform_id"] = platform["id"]
@@ -296,6 +296,7 @@ func _add_token(title: String, cell: Vector2i, size: int, color: Color, hp: int 
 	if actor == null:
 		return
 	tokens.append({"id": next_token_id, "title": title, "cell": cell, "size": size, "width": extent.x, "length": extent.y, "base": base, "color": color, "node": actor, "hp": hp, "max_hp": maximum if maximum >= 0 else hp, "ac": ac, "kind": kind, "tags": tags.duplicate(), "components": components.duplicate(true), "materials": materials.duplicate(true)})
+	tokens[-1] = Instance.complete(tokens[-1])
 	if surfaces!=null:
 		tokens[-1]["persistent_id"] = preload("res://scripts/map_data.gd").new_id()
 		tokens[-1]["platform_id"] = surfaces.current
@@ -1990,7 +1991,7 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 			if tokens.size()==before:
 				session_load_error = "未能完整生成同步棋子。"
 				continue
-			tokens[-1].merge(Instance.scene_values(token),true)
+			Instance.apply_parameters(tokens[-1],token)
 			Instance.apply_orientation(tokens[-1]["node"],tokens[-1])
 			tokens[-1]["persistent_id"] = token["id"]
 			tokens[-1]["platform_id"] = platform["id"]
@@ -2008,4 +2009,4 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 	_on_tool(previous_tool if previous_tool in ["select","measure","shape"] else "select")
 
 func _mobile_attach() -> void:
-	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self)
+	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self,"board")

@@ -40,15 +40,17 @@ def check_draft(existing, commit):
 
 
 def validate(version, platform, code):
-    require(bool(re.fullmatch(r'\d+\.\d+\.\d+', version)), 'Version must be X.Y.Z.')
-    core.version(version)
+    try:
+        core.version(version)
+    except core.UpdateError as error:
+        raise RuntimeError(str(error)) from error
     require(platform in ('all', 'windows', 'android'), 'Unknown platform.')
     require(0 <= code <= 2100000000, 'Invalid Android version code.')
 
 
 def public_source(commit):
     paths = capture('git', '-c', 'core.quotepath=false', 'ls-tree', '-r', '--name-only', commit).splitlines()
-    forbidden = [n for n in paths if n.startswith(('docs/', 'artifacts/', 'build/', 'userdata/', 'cache/', 'logs/'))
+    forbidden = [n for n in paths if n.startswith(('docs/', '.agents/', 'artifacts/', 'build/', 'userdata/', 'cache/', 'logs/'))
                  or n.endswith(('.keystore', '.key', '.jks', '.p12', 'private.pem'))
                  or (n.lower().endswith(('.md', '.rst', '.pdf', '.docx')) and n != 'README.md' and Path(n).name.upper() != 'LICENSE.MD')]
     require(not forbidden, 'Source contains local-only files: ' + repr(forbidden[:10]))

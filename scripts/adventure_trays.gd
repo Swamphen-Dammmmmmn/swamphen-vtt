@@ -15,7 +15,7 @@ static func token(data: Dictionary) -> Dictionary:
 	if result.get("kind","basic")=="basic":
 		result["width"] = result["size"]
 		result["length"] = result["size"]
-	return result
+	return Instance.complete(result)
 
 static func from_library(record: Dictionary) -> Dictionary:
 	var source: Dictionary = record["parameters"].duplicate(true)

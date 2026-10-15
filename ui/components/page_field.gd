@@ -3,6 +3,7 @@ extends VBoxContainer
 const Style = preload("res://ui/components/page_style.gd")
 const EyeOpen = preload("res://ui/icons/eye_open.svg")
 const EyeClosed = preload("res://ui/icons/eye_closed.svg")
+const InputAction = preload("res://ui/components/input_action_button.gd")
 var input: LineEdit
 var error: Label
 
@@ -18,30 +19,13 @@ func setup(title: String, placeholder: String, password := false) -> void:
 	input.add_theme_font_size_override("font_size", Style.BODY_SIZE)
 	add_child(input)
 	if password:
-		for state in ["normal","read_only"]:
-			var face := input.get_theme_stylebox(state).duplicate()
-			face.content_margin_right = 48
-			input.add_theme_stylebox_override(state,face)
-		var reveal := Button.new()
+		var reveal := InputAction.new()
 		reveal.toggle_mode = true
 		reveal.icon = EyeClosed
 		reveal.tooltip_text = "显示密码"
 		reveal.accessibility_name = "显示密码"
-		reveal.expand_icon = true
-		reveal.add_theme_constant_override("icon_max_width",20)
-		Style.button(reveal,false,32)
-		for state in ["normal","hover","pressed","hover_pressed","disabled","focus"]:
-			var face := reveal.get_theme_stylebox(state).duplicate() as StyleBoxFlat
-			if face!=null:
-				face.set_border_width_all(0)
-				if state=="normal": face.bg_color = Color.TRANSPARENT
-				reveal.add_theme_stylebox_override(state,face)
 		input.add_child(reveal)
-		reveal.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
-		reveal.offset_left = -40
-		reveal.offset_right = -8
-		reveal.offset_top = -16
-		reveal.offset_bottom = 16
+		reveal.fit_input(input)
 		reveal.toggled.connect(func(visible_text: bool):
 			input.secret = not visible_text
 			reveal.icon = EyeOpen if visible_text else EyeClosed

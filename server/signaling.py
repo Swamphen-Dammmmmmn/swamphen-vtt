@@ -10,6 +10,7 @@ import secrets
 import ssl
 import time
 from dataclasses import dataclass, field
+from compatibility import CONTRACT, valid_version
 
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
@@ -26,6 +27,7 @@ SOCKETS = set()
 class Room:
     peers: dict = field(default_factory=dict)
     next_peer: int = 2
+    version: dict = field(default_factory=dict)
 
 
 async def send(socket, data):
@@ -61,10 +63,15 @@ async def leave(socket):
     room.peers.pop(peer_id, None)
     if peer_id == 1:
         ROOMS.pop(code, None)
-        for peer in list(room.peers.values()):
+        peers = list(room.peers.values())
+        for peer in peers:
             CONNECTIONS.pop(peer, None)
-            await send(peer, {"type": "room_closed"})
-            await peer.close()
+        active_close = (getattr(socket, "close_code", None) == 1000
+                        and getattr(socket, "close_reason", "") == "host_closed")
+        event = {"type": "room_closed", "reason": "host_closed" if active_close else "host_disconnected"}
+        # A slow close handshake must not delay notifications to other players.
+        await asyncio.gather(*(send(peer, event) for peer in peers))
+        await asyncio.gather(*(peer.close() for peer in peers), return_exceptions=True)
     else:
         host = room.peers.get(1)
         if host:
@@ -104,6 +111,10 @@ async def handle(socket):
                 await socket.close(code=1008)
                 return
             kind = message.get("type")
+            if kind in ("create", "join") and socket not in CONNECTIONS:
+                if not valid_version(message.get("version")):
+                    await send(socket, {"type": "error", "reason": "version_required", "contract": CONTRACT})
+                    continue
             if kind == "create" and socket not in CONNECTIONS:
                 remote = socket.remote_address[0] if socket.remote_address else ""
                 existing_hosts = sum(1 for room in ROOMS.values()
@@ -117,10 +128,10 @@ async def handle(socket):
                 code = secrets.token_hex(4).upper()
                 while code in ROOMS:
                     code = secrets.token_hex(4).upper()
-                ROOMS[code] = Room({1: socket})
+                ROOMS[code] = Room({1: socket}, version=message["version"].copy())
                 CONNECTIONS[socket] = (code, 1)
                 await send(socket, {"type": "created", "room": code,
-                                    "peer": 1, "ice_servers": turn_servers()})
+                                    "peer": 1, "version": message["version"], "ice_servers": turn_servers()})
             elif kind == "join" and socket not in CONNECTIONS:
                 code = message.get("room")
                 if not isinstance(code, str) or len(code) != 8:
@@ -130,6 +141,9 @@ async def handle(socket):
                 if not room:
                     await send(socket, {"type": "error", "reason": "missing"})
                     continue
+                if message["version"] != room.version:
+                    await send(socket, {"type": "error", "reason": "version_mismatch", "version": room.version})
+                    continue
                 if len(room.peers) >= MAX_PEERS:
                     await send(socket, {"type": "error", "reason": "full"})
                     continue
@@ -138,7 +152,7 @@ async def handle(socket):
                 room.peers[peer_id] = socket
                 CONNECTIONS[socket] = (code.upper(), peer_id)
                 await send(socket, {"type": "joined", "peer": peer_id,
-                                    "ice_servers": turn_servers()})
+                                    "version": room.version, "ice_servers": turn_servers()})
                 await send(room.peers[1], {"type": "peer_joined", "peer": peer_id})
             elif kind == "forward" and socket in CONNECTIONS:
                 code, source = CONNECTIONS[socket]
@@ -163,7 +177,9 @@ async def handle(socket):
                     await socket.close(code=1008)
                     return
                 fields = ("kind", "description_type", "sdp") if payload["kind"] == "description" else ("kind", "mid", "index", "candidate")
-                payload = {key: payload[key] for key in fields}
+                if set(payload) != set(fields):
+                    await socket.close(code=1008)
+                    return
                 room = ROOMS.get(code)
                 if room and target in room.peers:
                     await send(room.peers[target], {"type": "forward",

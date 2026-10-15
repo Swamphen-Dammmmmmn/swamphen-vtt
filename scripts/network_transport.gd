@@ -1,4 +1,5 @@
 extends Node
+const Compatibility = preload("res://scripts/network_compatibility.gd")
 
 signal room_ready(code: String)
 signal peer_ready(peer: int)
@@ -6,6 +7,7 @@ signal peer_left(peer: int)
 signal message_received(peer: int, message: Dictionary)
 signal image_received(peer: int, id: String, bytes: PackedByteArray)
 signal failed(reason: String)
+signal room_ended(active_close: bool)
 
 const CHUNK := 12000
 const MAX_MESSAGE := 8*1024*1024
@@ -21,6 +23,7 @@ var ice: Array = []
 var transfer_id := 1
 var connect_at := 0
 var last_signal := 0
+var closing_sockets: Array = []
 
 func start(host: bool, address: String, certificate: String, code := "") -> Error:
 	stop()
@@ -36,14 +39,30 @@ func start(host: bool, address: String, certificate: String, code := "") -> Erro
 	if error!=OK: started = false
 	return error
 
-func stop() -> void:
+func stop(host_closed := false) -> void:
+	var previous := socket
+	var state := previous.get_ready_state()
+	previous.close(1000,"host_closed" if host_closed and hosting and opened else "")
+	if state in [WebSocketPeer.STATE_OPEN,WebSocketPeer.STATE_CLOSING]:
+		closing_sockets.append({"socket":previous,"deadline":Time.get_ticks_msec()+2000})
 	started = false
 	opened = false
-	socket.close()
 	socket = WebSocketPeer.new()
 	for id in peers: peers[id]["connection"].close()
 	peers.clear()
 	assemblies.clear()
+
+func wait_for_close() -> void:
+	while not closing_sockets.is_empty():
+		await get_tree().process_frame
+
+func _poll_closing() -> void:
+	for item: Dictionary in closing_sockets.duplicate():
+		var previous: WebSocketPeer = item["socket"]
+		previous.poll()
+		if previous.get_ready_state()==WebSocketPeer.STATE_CLOSED or Time.get_ticks_msec()>=item["deadline"]:
+			previous.close()
+			closing_sockets.erase(item)
 
 func kick(peer: int) -> void:
 	_signal({"type":"kick","peer":peer})
@@ -79,19 +98,21 @@ func _queue(peer: int, channel: int, bytes: PackedByteArray) -> bool:
 	return true
 
 func _process(_delta: float) -> void:
+	_poll_closing()
 	if not started: return
 	socket.poll()
 	var state := socket.get_ready_state()
 	if state==WebSocketPeer.STATE_OPEN:
 		if not opened:
 			opened = true
-			_signal({"type":"create"} if hosting else {"type":"join","room":room})
+			_signal({"type":"create","version":Compatibility.local_version()} if hosting else {"type":"join","room":room,"version":Compatibility.local_version()})
 		while socket.get_available_packet_count()>0:
 			var bytes := socket.get_packet()
 			if bytes.size()>65536: _fatal("连接协调消息超出限制"); return
 			var raw: Variant = JSON.parse_string(bytes.get_string_from_utf8())
 			if not raw is Dictionary: _fatal("连接协调消息无效"); return
 			_handle_signal(raw)
+			if not started: return
 	elif state==WebSocketPeer.STATE_CLOSED and opened:
 		_fatal("连接协调服务已断开")
 		return
@@ -140,6 +161,8 @@ func _signal(data: Dictionary) -> void:
 func _handle_signal(data: Dictionary) -> void:
 	match data.get("type",""):
 		"created", "joined":
+			var mismatch := Compatibility.mismatch(data.get("version"))
+			if not mismatch.is_empty(): _fatal(mismatch); return
 			if not data.get("ice_servers") is Array: _fatal("连接配置无效"); return
 			ice = data["ice_servers"]
 			if hosting:
@@ -149,8 +172,18 @@ func _handle_signal(data: Dictionary) -> void:
 		"peer_joined":
 			if hosting and typeof(data.get("peer")) in [TYPE_INT,TYPE_FLOAT]: _create_peer(int(data["peer"]),true)
 		"peer_left": _drop(int(data.get("peer",0)))
-		"room_closed": _fatal("DM已关闭联机或离开")
-		"error": _fatal({"missing":"邀请码不存在或房间已关闭","full":"房间连接已满","busy":"连接服务暂时繁忙"}.get(data.get("reason"),"连接服务拒绝请求"))
+		"room_closed":
+			var reason: Variant = data.get("reason","host_disconnected")
+			if reason not in ["host_closed","host_disconnected"]: _fatal("房间关闭消息无效"); return
+			stop()
+			room_ended.emit(reason=="host_closed")
+		"error":
+			if data.get("reason")=="version_mismatch": _fatal(Compatibility.mismatch(data.get("version"))); return
+			if data.get("reason")=="version_required":
+				var required: Dictionary = data.get("contract",{}) if data.get("contract") is Dictionary else {}
+				_fatal("中继拒绝此联机版本：需要协议 %s、数据结构 %s。请更新软件或中继服务。" % [str(required.get("protocol","未知")),str(required.get("data_schema","未知"))])
+				return
+			_fatal({"missing":"邀请码不存在或房间已关闭","full":"房间连接已满","busy":"连接服务暂时繁忙"}.get(data.get("reason"),"连接服务拒绝请求"))
 		"forward":
 			var id := int(data.get("peer",0))
 			if not peers.has(id) or not data.get("data") is Dictionary: return

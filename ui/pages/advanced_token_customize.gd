@@ -900,7 +900,7 @@ func _fit() -> void:
 	var width_budget := maxf(1,(safe.size.x-96)/2) if dual else maxf(1,safe.size.x-48)
 	var width_left := minf(320,width_budget)
 	var width_right := minf(344,width_budget)
-	material_editor.fit_width(maxf(1,width_right-32-(Mobile.SCROLLBAR_WIDTH if Mobile.enabled else 10)))
+	material_editor.fit_width(maxf(1,width_right-32-(Mobile.SCROLLBAR_WIDTH+Mobile.SCROLLBAR_GAP if Mobile.enabled else 10)))
 	_fit_card(options_panel, options_content, form_scroll, form, width_left, available)
 	_fit_card(editor_panel, editor_content, editor_scroll, attribute_bodies[attribute_page[component_kind]], width_right, available)
 	left_handle.size = Vector2(44, 44)

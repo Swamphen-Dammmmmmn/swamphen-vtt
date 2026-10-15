@@ -14,6 +14,7 @@ __pycache__/
 
 # 本地文档由docs内独立仓库管理
 /docs/
+/.agents/
 *.md
 *.rst
 *.pdf

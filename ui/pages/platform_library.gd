@@ -53,6 +53,7 @@ func reload() -> void:
 		note.text += "有%d个地台未能读取，其他地台仍可使用；原文件已保留。" % loaded["warnings"].size()
 	note.tooltip_text = "\n".join(PackedStringArray(loaded["warnings"]))
 	note.visible = not note.text.is_empty()
+	preload("res://ui/components/editor_layout.gd").error_details(note,page)
 	_refresh()
 	if not loaded["error"].is_empty(): empty.hide()
 

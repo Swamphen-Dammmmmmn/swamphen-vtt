@@ -82,6 +82,11 @@ static func changes(before: Dictionary, after: Dictionary, map_id: String) -> Di
 		if not next.has(id): removed.append(id)
 	return {"changed":changed,"removed":removed,"map":map_id,"runtime":after["runtime"]["maps"].get(map_id,{"shapes":[],"measurements":[],"platform_origins":{}})}
 
+static func has_changes(before: Dictionary, change: Dictionary) -> bool:
+	if not change["changed"].is_empty() or not change["removed"].is_empty(): return true
+	var previous: Dictionary = before["runtime"]["maps"].get(change["map"],{"shapes":[],"measurements":[],"platform_origins":{}})
+	return canonical(previous)!=canonical(change["runtime"])
+
 static func canonical(value: Variant) -> String:
 	return JSON.stringify(_numbers(value),"",true)
 

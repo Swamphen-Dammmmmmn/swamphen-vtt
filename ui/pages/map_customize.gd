@@ -877,4 +877,4 @@ func _return_to_combination() -> void:
 
 func _mobile_attach() -> void:
 	if Mobile.enabled: Mobile.changed.connect(_queue_fit)
-	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self)
+	if Mobile.enabled: mobile_touch = preload("res://ui/components/mobile_scene_input.gd").attach(self,"free","map")

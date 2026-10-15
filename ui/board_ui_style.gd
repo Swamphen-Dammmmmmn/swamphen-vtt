@@ -43,6 +43,9 @@ static func place_floating(control: Control, anchor: Rect2, bounds: Vector2, lef
 	control.reset_size()
 	control.size = control.get_combined_minimum_size()
 	control.position = floating_position(control.size, anchor, bounds, left_margin, role, below)
+	if Mobile.enabled and control.get_parent() is Control:
+		var safe := Mobile.local_safe_rect(control.get_parent())
+		control.position = control.position.clamp(safe.position,(safe.end-control.size).max(safe.position))
 
 static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margin: float) -> void:
 	menu.theme = GoUi.theme()
@@ -94,7 +97,7 @@ static func creation_slot(button: Button, empty: bool) -> void:
 		button.add_theme_stylebox_override(state, face)
 
 static func style_controls(root: Node, height: float = CONTROL_HEIGHT) -> void:
-	if root is Button and not root is OptionButton:
+	if root is Button and not root is OptionButton and not root.get_meta("embedded_input_action",false):
 		var face := root.get_theme_stylebox("normal") as StyleBoxFlat
 		var primary: bool = root.theme_type_variation == &"PrimaryButton" or (face != null and face.bg_color.a > 0.5 and face.bg_color.r < 0.45 and face.bg_color.b > 0.4)
 		action_button(root, height, primary)

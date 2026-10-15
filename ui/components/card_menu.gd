@@ -18,6 +18,7 @@ func _ready() -> void:
 	content = Style.column(4)
 	panel.add_child(content)
 	get_viewport().size_changed.connect(close)
+	if Mobile.enabled: Mobile.changed.connect(close)
 	hide()
 
 func add_action(title: String, id: int, disabled := false, danger := false) -> void:
@@ -41,7 +42,7 @@ func toggle_for(button: Control) -> void:
 	for menu in get_tree().get_nodes_in_group("token_card_menus"):
 		if menu != self: menu.close()
 	anchor = button
-	var bounds := get_viewport().get_visible_rect()
+	var bounds := Mobile.safe_rect(get_viewport().get_visible_rect().size) if Mobile.enabled else get_viewport().get_visible_rect()
 	panel.custom_minimum_size.x = 200
 	panel.reset_size()
 	var dimensions := panel.get_combined_minimum_size()

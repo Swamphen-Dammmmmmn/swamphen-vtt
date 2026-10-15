@@ -245,7 +245,19 @@ func handle_pointer(event: InputEvent, on_ui: bool) -> bool:
 			if point!=null and is_instance_valid(model_marker) and model_marker.visible:
 				var local: Vector3 = model_marker.to_local(point)
 				on_arrow = Rect2(-0.24,-0.35,0.48,0.67).has_point(Vector2(local.x,local.z))
-			if point!=null and (on_arrow or absf(Vector2(point.x-center.x,point.z-center.z).length()-radius)<maxf(0.15,radius*0.12)):
+			var ring_hit := false
+			if point!=null:
+				if Mobile.enabled:
+					var screen: Vector2 = screen_point.call(event.position)
+					for segment in range(64):
+						var a := center+Vector3(sin(segment*TAU/64),0,cos(segment*TAU/64))*radius
+						var b := center+Vector3(sin((segment+1)*TAU/64),0,cos((segment+1)*TAU/64))*radius
+						if camera.is_position_behind(a) or camera.is_position_behind(b): continue
+						if Geometry2D.get_closest_point_to_segment(screen,camera.unproject_position(a),camera.unproject_position(b)).distance_to(screen)<Mobile.hit_radius():
+							ring_hit = true
+							break
+				else: ring_hit = absf(Vector2(point.x-center.x,point.z-center.z).length()-radius)<maxf(0.15,radius*0.12)
+			if point!=null and (on_arrow or ring_hit):
 				start_angle = atan2(point.x-center.x,point.z-center.z)
 				start_yaw = float(data.get("model_yaw_deg",0))
 				preview_yaw = start_yaw

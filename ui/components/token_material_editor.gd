@@ -103,6 +103,7 @@ func _ready() -> void:
 		value = default_value.duplicate(true)
 		_sync()
 		changed.emit())
+	resized.connect(func(): fit_width(size.x))
 	_sync()
 
 func configure(settings: Dictionary, defaults: Dictionary, image_mode := false) -> void:

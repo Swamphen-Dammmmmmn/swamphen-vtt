@@ -112,6 +112,7 @@ static func _decode(record: Dictionary, filename: String) -> Dictionary:
 	var runtime := Runtime.decode(record.get("runtime",Runtime.defaults()),data["maps"])
 	if not runtime["ok"]: return runtime
 	data["runtime"] = runtime["data"]
+	data["runtime"] = Runtime.pruned(data)
 	var policy := Policy.decode(record.get("network",Policy.defaults()),data)
 	if not policy["ok"]: return policy
 	data["network"] = policy["data"]

@@ -32,6 +32,7 @@ var session_role := "dm"
 var session_actor := "dm"
 var member_connections: Dictionary = {}
 var network_session: Node
+var quitting := false
 const Network = preload("res://scripts/network_session.gd")
 const Members = preload("res://scripts/adventure_members.gd")
 
@@ -127,8 +128,7 @@ func _request_software_restart(action: String) -> void:
 			modal.dismiss()
 			_session_message("无法继续","无法启动更新程序，当前内容已保留。")
 			return
-		network_session.close()
-		get_tree().quit()
+		_quit_application()
 	,true)
 
 func _clear_page() -> void:
@@ -287,6 +287,25 @@ func _end_session() -> void:
 	current_map_id = ""
 	_navigate("home")
 
+func remote_session_ended(active_close: bool) -> void:
+	if quitting: return
+	if session_role!="pl" and (current_route!="join" or not adventure.is_empty()): return
+	_restore_window_close_modes()
+	window_close_busy = false
+	for key in ["session_modal","token_edit_layer","window_close_layer"]:
+		var layer: CanvasLayer = get(key)
+		if is_instance_valid(layer):
+			layer.hide()
+			layer.queue_free()
+		set(key,null)
+	if is_instance_valid(tray_controller.overlay):
+		tray_controller.overlay.hide()
+		tray_controller.overlay.queue_free()
+		tray_controller.overlay = null
+	if is_instance_valid(tray_controller.panel): tray_controller.panel.close()
+	_end_session()
+	_session_message("团已关闭" if active_close else "连接已断开","DM 主动关闭了团。" if active_close else "与 DM 的连接已断开，团已结束。","确定")
+
 func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(window_close_layer) or window_close_busy: return
 	if tray_controller.blocked(): return
@@ -390,7 +409,7 @@ func _save_adventure() -> bool:
 	print("冒险进度已保存：%s" % adventure_id)
 	return true
 
-func _session_message(title: String, message: String) -> void:
+func _session_message(title: String, message: String, action_title := "继续") -> void:
 	if is_instance_valid(session_modal): return
 	if board!=null: board.set_application_active(false,true)
 	session_modal = CanvasLayer.new()
@@ -400,7 +419,7 @@ func _session_message(title: String, message: String) -> void:
 	modal.theme = GoUi.theme()
 	session_modal.add_child(modal)
 	modal.configure(title,message)
-	modal.add_action("继续",modal.dismiss)
+	modal.add_action(action_title,modal.dismiss)
 	modal.dismissed.connect(func():
 		session_modal.queue_free()
 		session_modal = null
@@ -561,7 +580,11 @@ func _save_for_window_close(editor: Control, instance: Control) -> bool:
 	return await editor._save()
 
 func _quit_application() -> void:
+	if quitting: return
+	quitting = true
+	window_close_busy = true
 	network_session.close()
+	await network_session.transport.wait_for_close()
 	get_tree().quit()
 
 func _open_updates() -> void:

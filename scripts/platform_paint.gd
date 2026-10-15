@@ -199,6 +199,16 @@ func redo() -> void:
 	coverage = redo_stack.pop_back()
 	_restore()
 
+func cancel_stroke() -> void:
+	if stroke_before==null: return
+	var restore := stroke_changed
+	if restore: coverage = stroke_before
+	stroke_before = null
+	stroke_changed = false
+	has_last = false
+	stroke_region = Rect2i()
+	if restore: _restore()
+
 func _restore() -> void:
 	_publish_pixels(Rect2i(Vector2i.ZERO,coverage.get_size()))
 	texture.update(effective)

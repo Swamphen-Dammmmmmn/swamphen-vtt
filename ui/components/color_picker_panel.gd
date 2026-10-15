@@ -9,6 +9,7 @@ func _ready() -> void:
 	super._ready()
 	picker = ColorPicker.new()
 	picker.edit_alpha = false
+	picker.set_meta("mobile_drag","native")
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content().add_child(picker)
 	picker.color_changed.connect(func(value: Color): color_changed.emit(value))

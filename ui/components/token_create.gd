@@ -51,7 +51,9 @@ func _ready() -> void:
 	hp_input = _field("当前 HP", "", 6)
 	maximum_input = _field("最大 HP", "", 6)
 	ac_input = _field("AC", "", 6)
-	for input in [hp_input, maximum_input, ac_input]: input.get_parent().reparent(stats_body)
+	for input in [hp_input, maximum_input, ac_input]:
+		input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
+		input.get_parent().reparent(stats_body)
 	note = GoStyle.label("HP / AC 可留空；仅填一项 HP 时，当前与最大生命值相同。底座不改变正方形占地。")
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content().add_child(note)

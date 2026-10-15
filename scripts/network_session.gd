@@ -1,4 +1,5 @@
 extends Node
+const Compatibility = preload("res://scripts/network_compatibility.gd")
 const Transport = preload("res://scripts/network_transport.gd")
 const Wire = preload("res://scripts/network_wire.gd")
 const Ops = preload("res://scripts/network_operations.gd")
@@ -47,6 +48,7 @@ var awaiting_snapshot := false
 var requested_images: Dictionary = {}
 var retired_images: Dictionary = {}
 var last_operation_error := ""
+var disconnect_epoch := 0
 
 func _ready() -> void:
 	transport = Transport.new()
@@ -57,6 +59,7 @@ func _ready() -> void:
 	transport.message_received.connect(_message)
 	transport.image_received.connect(_image)
 	transport.failed.connect(_failure)
+	transport.room_ended.connect(_room_ended)
 
 func open_host(secret: String) -> Error:
 	if application.adventure.is_empty() or secret.is_empty() or secret.length()>128: return ERR_INVALID_PARAMETER
@@ -91,11 +94,19 @@ func join(code: String, secret: String) -> Error:
 	else: _status("正在连接DM")
 	return error
 
-func close() -> void:
-	if is_instance_valid(transport): transport.stop()
+func close(notify_host_close := true) -> void:
+	disconnect_epoch += 1
+	if is_instance_valid(transport): transport.stop(notify_host_close and active and hosting)
 	for peer in peer_members: Members.release_connection(application.member_connections,peer_members[peer],str(peer))
 	active = false
 	connected = false
+	online_members.clear()
+	accessible.clear()
+	locked.clear()
+	tool_owners.clear()
+	last_signature = ""
+	revision = 0
+	elapsed = 0.0
 	password = ""
 	room_code = ""
 	peer_members.clear()
@@ -130,7 +141,7 @@ func _peer_ready(peer: int) -> void:
 	if hosting:
 		var nonce := Crypto.new().generate_random_bytes(16).hex_encode()
 		nonces[peer] = {"nonce":nonce,"time":Time.get_ticks_msec()}
-		transport.send_message(peer,{"type":"challenge","protocol":1,"nonce":nonce})
+		transport.send_message(peer,{"type":"challenge","version":Compatibility.local_version(),"nonce":nonce})
 
 func _peer_left(peer: int) -> void:
 	if hosting:
@@ -147,11 +158,22 @@ func _peer_left(peer: int) -> void:
 		receive_rates.erase(peer)
 		_broadcast()
 		application.refresh_network_map_collection()
-	elif peer==1: _failure("与DM的连接已断开，可使用原身份码重新加入")
+	elif peer==1 and active:
+		# The data channel can close before the coordinator delivers the reason.
+		connected = false
+		if application.board!=null: application.board.set_application_active(false,true)
+		var epoch := disconnect_epoch
+		await get_tree().create_timer(2.5).timeout
+		if active and epoch==disconnect_epoch: _failure("与DM的连接已断开，可使用原身份码重新加入")
+
+func _room_ended(active_close: bool) -> void:
+	if not active or hosting: return
+	close(false)
+	application.remote_session_ended.call_deferred(active_close)
 
 func _failure(reason: String) -> void:
 	var was_host := hosting
-	close()
+	close(false)
 	_status(reason)
 	if not was_host and application.session_role=="pl":
 		if application.board!=null: application.board.set_application_active(false,true)
@@ -183,6 +205,7 @@ func _process(delta: float) -> void:
 		_capture()
 		if Wire.state_signature(application.adventure)==Wire.state_signature(baseline): return
 		var changes := Wire.changes(baseline,application.adventure,application.current_map_id)
+		if not Wire.has_changes(baseline,changes): return
 		request_number += 1
 		changes["type"] = "operation"
 		changes["base"] = revision
@@ -253,10 +276,12 @@ func _message(peer: int, message: Dictionary) -> void:
 		if peer!=1: return
 		match kind:
 			"challenge":
-				if message.get("protocol")!=1 or not message.get("nonce") is String: _failure("协议版本不兼容"); return
+				var mismatch := Compatibility.mismatch(message.get("version"))
+				if not mismatch.is_empty(): _failure(mismatch); return
+				if not message.get("nonce") is String: _failure("联机验证消息无效"); return
 				var identity := Identity.read()
 				if not identity["ok"]: _failure(identity["message"]); return
-				transport.send_message(1,{"type":"authenticate","nonce":message["nonce"],"password":password,"code":identity["data"]["code"],"nickname":identity["data"]["nickname"],"protocol":1})
+				transport.send_message(1,{"type":"authenticate","nonce":message["nonce"],"password":password,"code":identity["data"]["code"],"nickname":identity["data"]["nickname"],"version":Compatibility.local_version()})
 				password = ""
 			"rejected": _failure(str(message.get("reason","DM拒绝加入")))
 			"snapshot": _snapshot(message)
@@ -280,10 +305,15 @@ func _message(peer: int, message: Dictionary) -> void:
 
 func _authenticate(peer: int, message: Dictionary) -> void:
 	if admitted.has(peer) or not nonces.has(peer): transport.kick(peer); return
-	var valid: bool = message.get("protocol")==1 and message.get("nonce")==nonces[peer]["nonce"] and message.get("password") is String and message["password"]==password
+	var mismatch := Compatibility.mismatch(message.get("version"))
+	if not mismatch.is_empty():
+		nonces.erase(peer)
+		transport.send_message(peer,{"type":"rejected","reason":mismatch})
+		return
+	var valid: bool = message.get("nonce")==nonces[peer]["nonce"] and message.get("password") is String and message["password"]==password
 	nonces.erase(peer)
 	if not valid:
-		transport.send_message(peer,{"type":"rejected","reason":"密码错误或协议不兼容"})
+		transport.send_message(peer,{"type":"rejected","reason":"密码或联机验证信息错误"})
 		return
 	if not message.get("code") is String or not message.get("nickname") is String: transport.kick(peer); return
 	var joined := Members.join(application.adventure,message["code"],message["nickname"],str(peer),application.member_connections)

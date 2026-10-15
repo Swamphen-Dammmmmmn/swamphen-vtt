@@ -1,4 +1,5 @@
 extends RefCounted
+const Numbers = preload("res://scripts/serialized_number.gd")
 const Shapes = preload("res://scripts/shape_plan.gd")
 const Measure = preload("res://scripts/measurement_plan.gd")
 
@@ -10,7 +11,8 @@ static func pruned(data: Dictionary) -> Dictionary:
 	var available := {}
 	for item: Dictionary in data["maps"]:
 		available[item["id"]] = true
-		if not result["maps"].has(item["id"]): continue
+		if not result["maps"].has(item["id"]):
+			result["maps"][item["id"]] = {"shapes":[],"measurements":[],"platform_origins":{}}
 		var platforms := {}
 		var tokens := {}
 		for platform: Dictionary in item["data"]["platforms"]:
@@ -149,7 +151,7 @@ static func decode(raw: Variant, maps: Array) -> Dictionary:
 			shape_ids[shape["display_id"]] = true
 			for key in ["radius","width","length"]:
 				if not number(shape.get(key),1,300): return error
-			if not number(shape.get("angle"),1,180) or not number(shape.get("rotation"),0,360) or shape.get("anchor") not in [0,1]: return error
+			if not number(shape.get("angle"),1,180) or not number(shape.get("rotation"),0,360) or not Numbers.is_one_of(shape.get("anchor"),[0,1]): return error
 		var measure_ids := {}
 		for measurement in state["measurements"]:
 			if not measurement is Dictionary or not measurement.get("endpoints") is Array or measurement["endpoints"].size()<2 or measurement["endpoints"].size()>256: return error
@@ -161,4 +163,6 @@ static func decode(raw: Variant, maps: Array) -> Dictionary:
 				if not platforms.has(endpoint["platform_id"]): return error
 	var normalized: Dictionary = raw.duplicate(true)
 	normalized["distance_mode"] = int(mode)
+	for state: Dictionary in normalized["maps"].values():
+		for shape: Dictionary in state["shapes"]: shape["anchor"] = int(shape["anchor"])
 	return {"ok":true,"data":normalized}

@@ -1,6 +1,7 @@
 extends Node
 signal changed
-const SCROLLBAR_WIDTH := 33.0
+const SCROLLBAR_WIDTH := 22.0
+const SCROLLBAR_GAP := 12
 var native_info: Dictionary = {}
 var native_reader: RefCounted
 var preferences: RefCounted
@@ -140,17 +141,46 @@ func _process(delta: float) -> void:
 	if enabled and (last_window != DisplayServer.window_get_size() or last_keyboard != _keyboard_height()): refresh()
 
 func _added(node: Node) -> void:
+	if node is PopupMenu: _prepare_popup.call_deferred(weakref(node))
 	if node is Button or node is LineEdit or node is SpinBox or node is VScrollBar:
 		_resize_control.call_deferred(weakref(node))
 
 func _resize_control(reference: WeakRef) -> void:
 	var control = reference.get_ref()
 	if control == null: return
+	if control.get_meta("embedded_input_action",false): return
 	if control is VScrollBar:
-		control.custom_minimum_size.x = maxf(control.custom_minimum_size.x,SCROLLBAR_WIDTH)
+		prepare_scrollbar(control)
 		return
+	if control is SpinBox: control.get_line_edit().virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	control.custom_minimum_size.y = maxf(control.custom_minimum_size.y, 48)
 	if control is Button: control.custom_minimum_size.x = maxf(control.custom_minimum_size.x, 48)
+
+func prepare_scrollbar(bar: VScrollBar) -> void:
+	if not enabled: return
+	if not bar.has_meta("mobile_scrollbar_width_connected"):
+		bar.set_meta("mobile_scrollbar_width_connected",true)
+		bar.theme_changed.connect(_fit_scrollbar.bind(weakref(bar)),CONNECT_DEFERRED)
+	_fit_scrollbar(weakref(bar))
+
+func _fit_scrollbar(reference: WeakRef) -> void:
+	var bar := reference.get_ref() as VScrollBar
+	if bar==null: return
+	var width := maxf(bar.custom_minimum_size.x,SCROLLBAR_WIDTH)
+	bar.custom_minimum_size.x = width
+	# ScrollContainer reserves get_minimum_size(), not custom_minimum_size.
+	# Keep the track's intrinsic width consistent with the actual control width.
+	for state in ["scroll","scroll_focus"]:
+		var style := bar.get_theme_stylebox(state)
+		var missing := width-style.get_minimum_size().x
+		if missing<=0: continue
+		var fitted := style.duplicate() as StyleBox
+		fitted.content_margin_left = style.get_content_margin(SIDE_LEFT)+missing*0.5
+		fitted.content_margin_right = style.get_content_margin(SIDE_RIGHT)+missing*0.5
+		bar.add_theme_stylebox_override(state,fitted)
+	var scroll := bar.get_parent() as ScrollContainer
+	if scroll!=null and scroll.get_theme_constant("scrollbar_h_separation")!=SCROLLBAR_GAP:
+		scroll.add_theme_constant_override("scrollbar_h_separation",SCROLLBAR_GAP)
 
 func _keyboard_height() -> int:
 	return DisplayServer.virtual_keyboard_get_height() if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD) else 0
@@ -162,3 +192,31 @@ func safe_rect(available: Vector2) -> Rect2:
 func point_on_ui_scroll(point: Vector2) -> bool:
 	var router := get_node_or_null("MobileUIScroll")
 	return router != null and router.owns(point)
+
+# Convert physical Android dp once; UI visual scale remains independent.
+func touch_units(dp: float) -> float:
+	if not enabled: return dp
+	var density := maxf(1,float(native_info.get("density",maxf(1,float(DisplayServer.screen_get_dpi())/160.0))))
+	return dp*density*get_viewport().get_visible_rect().size.y/maxf(1,DisplayServer.window_get_size().y)
+
+func drag_slop() -> float:
+	return maxf(4,touch_units(8))
+
+func hit_radius() -> float:
+	return maxf(18,touch_units(24))
+
+func local_safe_rect(control: Control) -> Rect2:
+	var safe := safe_rect(get_viewport().get_visible_rect().size)
+	var inverse := control.get_global_transform_with_canvas().affine_inverse()
+	return Rect2(inverse*safe.position,inverse*safe.end-inverse*safe.position).intersection(Rect2(Vector2.ZERO,control.size))
+
+func _prepare_popup(reference: WeakRef) -> void:
+	var popup = reference.get_ref()
+	if popup==null: return
+	popup.about_to_popup.connect(_fit_popup.bind(reference))
+
+func _fit_popup(reference: WeakRef) -> void:
+	var popup = reference.get_ref()
+	if popup==null: return
+	popup.add_theme_constant_override("v_separation",maxi(12,ceili(touch_units(48)-popup.get_theme_font_size("font_size")*1.4)))
+	popup.max_size.y = maxi(1,int(safe_rect(get_viewport().get_visible_rect().size).size.y-24))

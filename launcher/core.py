@@ -5,6 +5,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 from pathlib import Path, PurePosixPath
 import shutil
 import ssl
@@ -47,10 +48,11 @@ def atomic_json(path: Path, value):
 
 def version(value):
     if not isinstance(value, str): raise UpdateError("版本号无效。")
-    parts = value.split(".")
-    if len(parts) != 3 or any(not s.isascii() or not s.isdecimal() or len(s)>5 for s in parts):
-        raise UpdateError("版本号须为三段数字。")
-    return tuple(map(int, parts))
+    match = re.fullmatch(r"([0-9]{1,5})\.([0-9]{1,5})\.([0-9]{1,5})([a-z]?)", value)
+    if match is None:
+        raise UpdateError("版本号须为三段数字，可附一个小写修订字母，例如 0.1.3a。")
+    revision = ord(match[4]) - ord("a") + 1 if match[4] else 0
+    return (*map(int, match.group(1, 2, 3)), revision)
 
 def child(root: Path, relative: str) -> Path:
     if not isinstance(relative, str) or not relative or "\\" in relative or ":" in relative:

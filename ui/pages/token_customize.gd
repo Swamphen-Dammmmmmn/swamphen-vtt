@@ -177,6 +177,7 @@ func _add_field(parent: Control, key: String, title: String, placeholder: String
 	field.input.max_length = limit
 	field.input.text = initial
 	field.input.focus_exited.connect(_validate_fields)
+	if key in ["hp","max_hp","ac"]: field.input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	fields[key] = field
 
 func _add_choice(parent: Control, title: String, choices: Array) -> OptionButton:
@@ -308,7 +309,7 @@ func _fit() -> void:
 	var width := minf(320.0 if Mobile.enabled else Style.CUSTOMIZE_PANEL_WIDTH, maxf(1, bounds.x - margin * 2))
 	var height_limit := maxf(1, bounds.y - margin * 2)
 	for editor in material_editors.values():
-		editor.fit_width(maxf(1,width-32-(Mobile.SCROLLBAR_WIDTH if Mobile.enabled else 10)))
+		editor.fit_width(maxf(1,width-32-(Mobile.SCROLLBAR_WIDTH+Mobile.SCROLLBAR_GAP if Mobile.enabled else 10)))
 	var animating := basic_tween != null and basic_tween.is_running()
 	if not animating: options_panel.position = Vector2(safe.position.x+margin if basic_open else -width, safe.position.y+margin)
 	options_panel.size.x = width

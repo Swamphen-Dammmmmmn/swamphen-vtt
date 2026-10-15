@@ -54,7 +54,8 @@ func _confirm() -> void:
 
 func _position_panel() -> void:
 	panel.size = Vector2(minf(BoardUiStyle.EDIT_WIDTH, maxf(0, size.x - 32)), 0)
-	panel.position = (size - panel.size) / 2.0
+	var safe := Mobile.local_safe_rect(self) if Mobile.enabled else Rect2(Vector2.ZERO,size)
+	panel.position = safe.position+(safe.size-panel.size)/2.0
 
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:

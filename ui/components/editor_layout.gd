@@ -37,7 +37,9 @@ static func field_error(input: Control, message: String) -> void:
 static func scroll(scroll: ScrollContainer) -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var bar := scroll.get_v_scroll_bar()
-	if Mobile.enabled: bar.custom_minimum_size.x = Mobile.SCROLLBAR_WIDTH
+	if Mobile.enabled:
+		bar.custom_minimum_size.x = Mobile.SCROLLBAR_WIDTH
+		scroll.add_theme_constant_override("scrollbar_h_separation",Mobile.SCROLLBAR_GAP)
 	var track := StyleBoxFlat.new()
 	track.bg_color = Color("e7edf4")
 	track.set_corner_radius_all(6)
@@ -55,6 +57,7 @@ static func scroll(scroll: ScrollContainer) -> void:
 		thumb.content_margin_top = 12
 		thumb.content_margin_bottom = 12
 		bar.add_theme_stylebox_override(state, thumb)
+	if Mobile.enabled: Mobile.prepare_scrollbar(bar)
 
 static func tabs(buttons: Array[Button]) -> void:
 	for index in range(buttons.size()):
@@ -99,3 +102,29 @@ static func pair(parent: Control, threshold := 280.0) -> BoxContainer:
 	parent.add_child(row)
 	row.resized.connect(func(): row.vertical = row.size.x < threshold)
 	return row
+
+static func error_details(label: Label, page: Control = null, title := "读取详情") -> void:
+	var button: Button = label.get_meta("error_details") if label.has_meta("error_details") else null
+	if not is_instance_valid(button):
+		button = Button.new()
+		button.text = "查看原因"
+		Style.card_button(button)
+		label.get_parent().add_child(button)
+		label.get_parent().move_child(button,label.get_index()+1)
+		label.set_meta("error_details",button)
+		button.pressed.connect(func():
+			var modal := preload("res://ui/components/page_modal.gd").new()
+			var owner: Node = page if is_instance_valid(page) else label
+			while owner!=null and not owner.has_method("add_overlay"): owner = owner.get_parent()
+			if owner!=null: owner.add_overlay(modal)
+			else:
+				var layer := CanvasLayer.new()
+				var parent_layer := label.get_canvas_layer_node()
+				layer.layer = parent_layer.layer+1 if parent_layer!=null else 1
+				label.add_child(layer)
+				layer.add_child(modal)
+				modal.dismissed.connect(layer.queue_free)
+			modal.configure(title,label.tooltip_text if not label.tooltip_text.is_empty() else label.text)
+			modal.add_action("关闭",modal.dismiss)
+		)
+	button.visible = label.visible and not label.tooltip_text.is_empty()

@@ -7,11 +7,17 @@ var viewport: SubViewport
 var camera: Camera3D
 var hemisphere: Node3D
 var turning := false
+var touch_points: Dictionary = {}
+var touch_origin := Vector2.ZERO
+var touch_light := Vector2.ZERO
+var touch_moved := false
+var touch_pair := false
 var yaw := 0.65
 var pitch := 0.5
 
 func _ready() -> void:
 	stretch = true
+	set_meta("mobile_drag","custom")
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	custom_minimum_size.y = 200
 	tooltip_text = "左键调整太阳方向；右键拖动旋转观察。"
@@ -74,6 +80,7 @@ func _turn(relative: Vector2) -> void:
 	_refresh()
 
 func _gui_input(event: InputEvent) -> void:
+	if Mobile.enabled and event is InputEventMouse and event.device==InputEvent.DEVICE_ID_EMULATION: return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index==MOUSE_BUTTON_LEFT:
 			hemisphere.start(event.position)
@@ -83,6 +90,7 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 
 func _input(event: InputEvent) -> void:
+	if Mobile.enabled and event is InputEventMouse and event.device==InputEvent.DEVICE_ID_EMULATION: return
 	if not is_visible_in_tree():
 		cancel()
 		return
@@ -105,6 +113,7 @@ func interacting() -> bool:
 	return turning or (is_instance_valid(hemisphere) and hemisphere.dragging)
 
 func cancel() -> void:
+	if not touch_points.is_empty(): mobile_touch_cancel()
 	turning = false
 	if is_instance_valid(hemisphere): hemisphere.dragging = false
 
@@ -113,3 +122,45 @@ func _notification(what: int) -> void:
 
 func _refresh() -> void:
 	if is_instance_valid(viewport): viewport.render_target_update_mode = SubViewport.UPDATE_ONCE if is_visible_in_tree() else SubViewport.UPDATE_DISABLED
+
+func mobile_touch_event(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			if touch_points.is_empty():
+				touch_light = Vector2(hemisphere.azimuth,hemisphere.altitude)
+				touch_origin = event.position
+				touch_moved = false
+				touch_pair = false
+			touch_points[event.index] = event.position
+			if touch_points.size()>1:
+				if not touch_pair and touch_moved:
+					hemisphere.sync(touch_light.x,touch_light.y)
+					direction_changed.emit(touch_light.x,touch_light.y)
+				touch_pair = true
+				hemisphere.dragging = false
+		else:
+			if event.canceled:
+				mobile_touch_cancel()
+				return
+			if not touch_pair and not touch_moved:
+				hemisphere.start(get_global_transform_with_canvas().affine_inverse()*event.position)
+			touch_points.erase(event.index)
+			if touch_points.is_empty(): hemisphere.dragging = false
+	elif event is InputEventScreenDrag and touch_points.has(event.index):
+		var old: Vector2 = touch_points[event.index]
+		touch_points[event.index] = event.position
+		if touch_pair:
+			if touch_points.size()==2: _turn((event.position-old)*0.5)
+		elif event.position.distance_to(touch_origin)>Mobile.drag_slop():
+			touch_moved = true
+			if not hemisphere.dragging: hemisphere.start(get_global_transform_with_canvas().affine_inverse()*touch_origin)
+			hemisphere.drag(get_global_transform_with_canvas().affine_inverse()*event.position)
+
+func mobile_touch_cancel() -> void:
+	if not touch_points.is_empty() and not touch_pair and touch_moved:
+		hemisphere.sync(touch_light.x,touch_light.y)
+		direction_changed.emit(touch_light.x,touch_light.y)
+	touch_points.clear()
+	hemisphere.dragging = false
+	touch_pair = false
+	touch_moved = false

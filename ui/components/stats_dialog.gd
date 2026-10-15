@@ -91,10 +91,12 @@ func _ready() -> void:
 	panel.minimum_size_changed.connect(func(): _position_panel.call_deferred())
 
 func _position_panel() -> void:
-	var available := maxf(0, size.y - 118)
+	var safe := Mobile.local_safe_rect(self) if Mobile.enabled else Rect2(Vector2.ZERO,size)
+	var available := maxf(1, safe.size.y - 118)
 	var natural_height: float = body_scroll.get_child(0).get_combined_minimum_size().y + BoardUiStyle.PANEL_PADDING * 2
-	panel.size = Vector2(BoardUiStyle.WIDE_WIDTH, minf(natural_height, available))
+	panel.size = Vector2(minf(BoardUiStyle.WIDE_WIDTH,maxf(1,safe.size.x-32)), minf(natural_height, available))
 	panel.position = BoardUiStyle.floating_position(panel.size, anchor_rect, size, left_margin, BoardUiStyle.FloatingRole.EDIT)
+	if Mobile.enabled: panel.position = panel.position.clamp(safe.position,(safe.end-panel.size).max(safe.position))
 
 func _add_adjustment(key: String, text: String, direction: int) -> void:
 	var row := GoStyle.row(8)
@@ -104,6 +106,7 @@ func _add_adjustment(key: String, text: String, direction: int) -> void:
 	field.custom_minimum_size.x = 70
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.max_length = 6
+	field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	field.text_submitted.connect(func(_text: String): _adjust_hp(key, direction))
 	fields[key] = field
 	row.add_child(field)
@@ -122,6 +125,7 @@ func _add_field(parent: Control, key: String, title: String) -> void:
 	field.custom_minimum_size.x = 80
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	field.max_length = 6
+	field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	field.text_submitted.connect(func(_text: String):
 		if key == "temporary": _save_temporary()
 		elif key == "ac": _save_ac()

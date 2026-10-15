@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version already committed in project.godot (X.Y.Z)'
+        description: 'Committed version: X.Y.Z with optional lowercase revision, e.g. 0.1.3a'
         required: true
         type: string
       platform:

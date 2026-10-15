@@ -8,8 +8,12 @@ import secrets
 import socket
 import ssl
 import struct
+import time
 
 from websockets.asyncio.client import connect
+from compatibility import CONTRACT
+from pathlib import Path
+import re
 
 MAGIC = 0x2112A442
 
@@ -75,11 +79,23 @@ class Allocation:
         if authenticated:
             values += attribute(6, self.username) + attribute(0x14, self.realm) + attribute(0x15, self.nonce)
         data, transaction = packet(kind, values, self.key if authenticated else None)
-        self.socket.sendto(data, self.server)
-        while True:
-            response, source = self.socket.recvfrom(65536)
-            if source == self.server and response[8:20] == transaction:
-                return response
+        # A UDP probe must retransmit the same transaction on packet loss.
+        # Bound the total wait and still fail if no matching reply arrives.
+        try:
+            for wait in (1, 2, 4):
+                self.socket.sendto(data, self.server)
+                deadline = time.monotonic() + wait
+                while time.monotonic() < deadline:
+                    self.socket.settimeout(max(0.001, deadline - time.monotonic()))
+                    try:
+                        response, source = self.socket.recvfrom(65536)
+                    except TimeoutError:
+                        break
+                    if source == self.server and response[8:20] == transaction:
+                        return response
+            raise TimeoutError("No matching TURN response after three UDP attempts")
+        finally:
+            self.socket.settimeout(8)
 
     def permit(self, peer):
         response = self.exchange(8, attribute(0x12, encode_address(peer)), True)
@@ -97,7 +113,7 @@ async def check(args):
     context = ssl.create_default_context(cafile=args.certificate)
     async with connect(f"wss://{args.host}:{args.signal_port}", ssl=context,
                        compression=None, open_timeout=12) as websocket:
-        await websocket.send(json.dumps({"type": "create"}))
+        await websocket.send(json.dumps({"type": "create", "version": {"app": re.search(r'config/version="([^"]+)"', (Path(__file__).resolve().parent.parent / "project.godot").read_text(encoding="utf-8")).group(1), **CONTRACT}}))
         response = json.loads(await websocket.recv())
         if response.get("type") != "created":
             raise RuntimeError("Signaling registration failed")

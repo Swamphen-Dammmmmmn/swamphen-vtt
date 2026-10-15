@@ -20,7 +20,9 @@ from publish_release import publishing_environment,REPO
 from ci_release import public_source
 version,platform,mode,channel,code,notes,sync,reuse=sys.argv[1:]
 if reuse=='0':reuse=''
-if not re.fullmatch(r'\d+\.\d+\.\d+',version):raise SystemExit('Version must be X.Y.Z.')
+sys.path.insert(0,'launcher')
+import core
+core.version(version)
 if reuse and (not reuse.isdigit() or mode=='build'):raise SystemExit('-ReuseRun requires a numeric run ID and draft/publish mode.')
 config=pathlib.Path('artifacts/github-release-cli')
 if (config/'hosts.yml').exists():os.environ['GH_CONFIG_DIR']=str(config.resolve())

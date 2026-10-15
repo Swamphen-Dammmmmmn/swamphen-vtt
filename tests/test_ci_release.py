@@ -13,11 +13,12 @@ import ci_release as ci
 class ReleaseChecks(unittest.TestCase):
     def test_version_and_platform_inputs(self):
         ci.validate('0.1.4','all',10401)
+        ci.validate('0.1.3a','all',10312)
         for args in [('v0.1.4','all',0),('0.1.4;echo','all',0),('0.1.4','linux',0),('0.1.4','all',-1)]:
             with self.subTest(args=args), self.assertRaises(RuntimeError): ci.validate(*args)
 
     def test_private_source_is_rejected(self):
-        for path in ['docs/plan.md','artifacts/private.pem','secret.keystore','nested/notes.md','userdata/token.json']:
+        for path in ['docs/plan.md','.agents/skills/skill/config.json','artifacts/private.pem','secret.keystore','nested/notes.md','userdata/token.json']:
             with self.subTest(path=path), patch.object(ci,'capture',return_value=path), self.assertRaises(RuntimeError):
                 ci.public_source('HEAD')
 

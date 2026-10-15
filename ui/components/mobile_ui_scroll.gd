@@ -10,6 +10,8 @@ var suppress_frame := -1
 var down := false
 var velocity := 0.0
 var inertia: ScrollContainer
+var inertia_axis := "y"
+var custom_fingers: Array[int] = []
 var replay_queue: Array[InputEvent] = []
 var replay_scheduled := false
 var replay_down := false
@@ -59,6 +61,29 @@ func owns(point: Vector2) -> bool:
 	return finger>=0 or not blocked_fingers.is_empty() or _pick(point)!=null
 
 func _target_at(root: Control, point: Vector2) -> Control:
+	var actual := _actual_target(root,point)
+	if actual!=null: return actual
+	var hit := {"distance":INF}
+	_near_target(root,point,root.get_global_rect(),hit)
+	return hit.get("control")
+
+func _near_target(root: Control, point: Vector2, clip: Rect2, hit: Dictionary) -> void:
+	if not root.is_visible_in_tree() or not root.can_process(): return
+	if root.clip_contents: clip = clip.intersection(root.get_global_rect())
+	if not clip.has_point(point): return
+	if root is BaseButton or root is LineEdit:
+		if root is BaseButton and root.disabled: return
+		var rect := root.get_global_rect()
+		var padding := (Vector2.ONE*Mobile.touch_units(48)-rect.size).max(Vector2.ZERO)*0.5
+		if rect.grow_individual(padding.x,padding.y,padding.x,padding.y).has_point(point):
+			var distance := point.distance_squared_to(rect.get_center())
+			if distance<float(hit.distance):
+				hit["control"] = root
+				hit["distance"] = distance
+	for child in root.get_children():
+		if child is Control: _near_target(child,point,clip,hit)
+
+func _actual_target(root: Control, point: Vector2) -> Control:
 	if not root.is_visible_in_tree(): return null
 	if root is ScrollContainer:
 		var bar: VScrollBar = root.get_v_scroll_bar()
@@ -68,13 +93,36 @@ func _target_at(root: Control, point: Vector2) -> Control:
 	children.reverse()
 	for child in children:
 		if child is Control:
-			var found := _target_at(child,point)
+			var found := _actual_target(child,point)
 			if found!=null: return found
+	if root.get_global_rect().has_point(point) and root.has_meta("mobile_drag"): return root
 	if root.get_global_rect().has_point(point) and (root is BaseButton or root is LineEdit or root is TextEdit or root is Slider or root is ScrollBar or root is FoldableContainer): return root
 	return null
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouse and event.device==DEVICE: return
+	if mode=="custom" and (event is InputEventScreenTouch or event is InputEventScreenDrag):
+		if not is_instance_valid(target) or not target.is_visible_in_tree():
+			_cancel()
+		else:
+			if event is InputEventScreenTouch and event.pressed and (custom_fingers.size()>=2 or not target.get_global_rect().has_point(event.position)):
+				blocked_fingers.assign(custom_fingers)
+				blocked_fingers.append(event.index)
+				_cancel()
+				get_viewport().set_input_as_handled()
+				return
+			if event is InputEventScreenTouch:
+				if event.pressed and event.index not in custom_fingers: custom_fingers.append(event.index)
+				elif not event.pressed: custom_fingers.erase(event.index)
+			target.mobile_touch_event(event)
+			if custom_fingers.is_empty():
+				finger = -1
+				active = null
+				target = null
+				mode = ""
+		suppress_frame = Engine.get_process_frames()+1
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventScreenTouch and event.pressed and not blocked_fingers.is_empty() and event.index not in blocked_fingers:
 		blocked_fingers.append(event.index)
 		get_viewport().set_input_as_handled()
@@ -105,6 +153,10 @@ func _input(event: InputEvent) -> void:
 			origin = event.position
 			previous = origin
 			mode = "pending"
+			if is_instance_valid(target) and target.get_meta("mobile_drag","")=="custom":
+				mode = "custom"
+				custom_fingers.assign([event.index])
+				target.mobile_touch_event(event)
 			inertia = null
 			velocity = 0
 			get_viewport().set_input_as_handled()
@@ -118,7 +170,9 @@ func _input(event: InputEvent) -> void:
 					_mouse(true,event.position)
 					_mouse(false,event.position)
 				elif down: _mouse(false,event.position)
-				if mode=="scroll": inertia = active
+				if mode in ["scroll_x","scroll_y"]:
+					inertia = active
+					inertia_axis = "x" if mode=="scroll_x" else "y"
 			else: inertia = null
 			finger = -1
 			active = null
@@ -134,35 +188,34 @@ func _input(event: InputEvent) -> void:
 			return
 		var distance: Vector2 = event.position-origin
 		if mode=="pending" and distance.length()>_threshold():
-			var horizontal := absf(distance.x)>absf(distance.y)*1.8 and absf(distance.x)>_threshold()*1.4
-			var vertical := absf(distance.y)>absf(distance.x)*0.7 or distance.length()>_threshold()*2.0
-			if is_instance_valid(target) and target is VScrollBar:
+			var horizontal := absf(distance.x)>absf(distance.y)*1.8
+			var native_area: bool = is_instance_valid(target) and target.get_meta("mobile_drag","")=="native"
+			var native_slider: bool = is_instance_valid(target) and (target is ScrollBar or (horizontal and target is HSlider) or (not horizontal and target is VSlider) or (horizontal and (target is LineEdit or target is TextEdit) and target.has_focus()))
+			if native_area or native_slider:
 				mode = "native"
 				_mouse(true,origin)
-			elif horizontal:
-				if is_instance_valid(target) and (target is HSlider or target is HScrollBar or ((target is LineEdit or target is TextEdit) and target.has_focus())):
-					mode = "native"
-					_mouse(true,origin)
-				else: mode = "scroll"
-			elif vertical: mode = "scroll"
-
-		if mode=="scroll":
-			var change: float = previous.y-event.position.y
-			active.get_v_scroll_bar().value += change
+			elif horizontal and active.get_h_scroll_bar().max_value>active.get_h_scroll_bar().page:
+				mode = "scroll_x"
+			else: mode = "scroll_y"
+		if mode in ["scroll_x","scroll_y"]:
+			var change: float = previous.x-event.position.x if mode=="scroll_x" else previous.y-event.position.y
+			var bar: ScrollBar = active.get_h_scroll_bar() if mode=="scroll_x" else active.get_v_scroll_bar()
+			bar.value += change
 			velocity = change/maxf(0.008,get_process_delta_time())
 		elif mode=="native": _motion(event.position,event.position-previous)
+
 		previous = event.position
 		get_viewport().set_input_as_handled()
 
 func _threshold() -> float:
-	var physical: Vector2i = DisplayServer.window_get_size()
-	var density: float = float(Mobile.native_info.get("density",maxf(1,float(DisplayServer.screen_get_dpi())/160)))
-	return maxf(4,8*density*get_viewport().get_visible_rect().size.y/maxf(1,physical.y))
+	return Mobile.drag_slop()
 
 func _bar_point(point: Vector2) -> Vector2:
-	if is_instance_valid(target) and target is VScrollBar and mode!="scroll":
+	if is_instance_valid(target) and target is VScrollBar and mode not in ["scroll_x","scroll_y"]:
 		var rect := target.get_global_rect()
 		point.x = rect.get_center().x
+	if mode!="native" and is_instance_valid(target) and (target is BaseButton or target is LineEdit) and not target.get_global_rect().has_point(point):
+		point = target.get_global_rect().get_center()
 	return point
 
 func _mouse(pressed: bool, point: Vector2) -> void:
@@ -223,10 +276,17 @@ func _process(delta: float) -> void:
 		_cancel()
 	if finger<0 and is_instance_valid(inertia):
 		if not inertia.is_visible_in_tree() or not inertia.can_process() or absf(velocity)<8: inertia = null; return
-		inertia.get_v_scroll_bar().value += velocity*delta
+		var center := inertia.get_global_rect().get_center()
+		if _pick(center)!=inertia:
+			inertia = null
+			return
+		var bar: ScrollBar = inertia.get_h_scroll_bar() if inertia_axis=="x" else inertia.get_v_scroll_bar()
+		bar.value += velocity*delta
 		velocity *= exp(-8*delta)
 
 func _cancel() -> void:
+	if mode=="custom" and is_instance_valid(target): target.mobile_touch_cancel()
+	custom_fingers.clear()
 	replay_queue.clear()
 	replay_owner = null
 	replay_target = null

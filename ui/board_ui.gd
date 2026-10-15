@@ -249,13 +249,17 @@ func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, 
 		)
 		$TokenOperations.add_child(actions)
 	var chip := $TokenNames.get_child(index) as Control
-	chip.scale = Vector2.ONE * (8.0 / 9.0) * info_zoom * Interface.preferences.info_scale
+	var stable: bool = Mobile.enabled and (selected or chip.expanded)
+	chip.scale = Vector2.ONE * (Interface.preferences.info_scale if stable else (8.0 / 9.0)*info_zoom*Interface.preferences.info_scale)
+	var details_interactive: bool = interactive and (not Mobile.enabled or selected or chip.expanded)
 	chip.update_data(data["title"], data["color"], data["hp"], data["max_hp"], data["ac"], int(data.get("temp_hp",0)), str(data.get("notes","")))
-	chip.set_editable(editable and interactive)
+	chip.set_editable(editable and details_interactive)
 	chip.set_selected(selected)
+	chip.expand_button.disabled = not details_interactive
+	chip.expand_button.mouse_filter = Control.MOUSE_FILTER_STOP if details_interactive else Control.MOUSE_FILTER_IGNORE
 	chip.mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
-	chip.get_node("Content/Header/HP").mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
-	chip.get_node("Content/Header/AC").mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
+	chip.get_node("Content/Header/HP").mouse_filter = Control.MOUSE_FILTER_STOP if details_interactive else Control.MOUSE_FILTER_IGNORE
+	chip.get_node("Content/Header/AC").mouse_filter = Control.MOUSE_FILTER_STOP if details_interactive else Control.MOUSE_FILTER_IGNORE
 	chip.visible = in_front and get_global_rect().has_point(at)
 	chip.reset_size()
 	var dimensions := chip.get_combined_minimum_size() * chip.scale

@@ -30,6 +30,7 @@ func _ready() -> void:
 	$Shell/Header.mouse_default_cursor_shape = Control.CURSOR_MOVE
 	gui_input.connect(_surface_input)
 	get_parent().resized.connect(func(): fit_to_window.call_deferred())
+	if Mobile.enabled: Mobile.changed.connect(func(): fit_to_window.call_deferred())
 	content().minimum_size_changed.connect(func(): fit_to_window.call_deferred())
 	$Shell.minimum_size_changed.connect(func(): fit_to_window.call_deferred())
 	fit_to_window.call_deferred()
@@ -73,7 +74,8 @@ func place_initial(at: Vector2) -> void:
 
 func fit_to_window() -> void:
 	var bounds: Vector2 = get_parent().size
-	var available := Vector2(maxf(0.0, bounds.x - 32.0), maxf(0.0, bounds.y - 70.0))
+	var safe := Mobile.local_safe_rect(get_parent()) if Mobile.enabled else Rect2(Vector2.ZERO,bounds)
+	var available := Vector2(maxf(1.0,safe.size.x-32),maxf(1.0,safe.size.y-70))
 	var shell: VBoxContainer = $Shell
 	var padding := get_theme_stylebox("panel").get_minimum_size().y
 	var chrome := padding
@@ -90,8 +92,9 @@ func fit_to_window() -> void:
 
 func _clamp_position() -> void:
 	var bounds: Vector2 = get_parent().size
-	position.x = clampf(position.x, 16.0, maxf(16.0, bounds.x - size.x - 16.0))
-	position.y = clampf(position.y, 16.0, maxf(16.0, bounds.y - size.y - 54.0))
+	var safe := Mobile.local_safe_rect(get_parent()) if Mobile.enabled else Rect2(Vector2.ZERO,bounds)
+	position.x = clampf(position.x,safe.position.x+16,maxf(safe.position.x+16,safe.end.x-size.x-16))
+	position.y = clampf(position.y,safe.position.y+16,maxf(safe.position.y+16,safe.end.y-size.y-54))
 
 func _surface_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

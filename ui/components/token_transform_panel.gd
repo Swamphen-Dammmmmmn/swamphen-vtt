@@ -27,6 +27,7 @@ func _ready() -> void:
 		row.add_child(label)
 		var input := LineEdit.new()
 		input.max_length = 32
+		input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 		input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(input)
 		inputs.append(input)
@@ -50,6 +51,7 @@ func _ready() -> void:
 	interval_row.add_child(interval_label)
 	interval_input = LineEdit.new()
 	interval_input.max_length = 32
+	interval_input.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	interval_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	interval_row.add_child(interval_input)
 	interval_input.text_changed.connect(func(value: String):

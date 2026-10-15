@@ -110,7 +110,7 @@ func _ring_point(axis: int, angle: float) -> Vector3:
 
 func pick(mouse: Vector2, _include_locked := false) -> int:
 	if not visible or camera.is_position_behind(pivot): return -1
-	var best := 11.0
+	var best := Mobile.hit_radius() if Mobile.enabled else 11.0
 	var picked := -1
 	for axis in _visible_axes():
 		var segments := 64 if mode == "rotation" else 1

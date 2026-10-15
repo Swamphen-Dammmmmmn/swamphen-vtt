@@ -64,7 +64,7 @@ func _item(key: String) -> Dictionary:
 	return {}
 
 func hit(screen: Vector2) -> String:
-	var best := 15.0
+	var best := Mobile.hit_radius() if Mobile.enabled else 15.0
 	var found := ""
 	if camera!=null and visible:
 		for item in definitions:
