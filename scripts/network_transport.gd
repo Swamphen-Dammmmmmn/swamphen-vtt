@@ -102,6 +102,13 @@ func _process(_delta: float) -> void:
 	if not started: return
 	socket.poll()
 	var state := socket.get_ready_state()
+	# Godot exposes no queued packets after a received Close frame changes the
+	# state from OPEN. The coordinator repeats the terminal event in that frame.
+	if opened and not hosting and state in [WebSocketPeer.STATE_CLOSING,WebSocketPeer.STATE_CLOSED] and socket.get_close_code()==1000:
+		var reason := socket.get_close_reason()
+		if reason in ["room_closed:host_closed","room_closed:host_disconnected"]:
+			_handle_signal({"type":"room_closed","reason":reason.trim_prefix("room_closed:")})
+			return
 	if state==WebSocketPeer.STATE_OPEN:
 		if not opened:
 			opened = true

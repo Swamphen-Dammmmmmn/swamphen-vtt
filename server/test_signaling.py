@@ -15,6 +15,7 @@ class Socket:
         self.messages = list(messages)
         self.sent = []
         self.closed = False
+        self.close_options = {}
         self.remote_address = (address, 1)
 
     async def recv(self):
@@ -27,6 +28,7 @@ class Socket:
 
     async def close(self, **_kwargs):
         self.closed = True
+        self.close_options = _kwargs
 
 
 class ProtocolChecks(unittest.IsolatedAsyncioTestCase):
@@ -51,6 +53,7 @@ class ProtocolChecks(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(signaling.CONNECTIONS)
         self.assertTrue(client.closed)
         self.assertEqual(client.sent, [{"type": "room_closed", "reason": "host_disconnected"}])
+        self.assertEqual(client.close_options, {"code":1000,"reason":"room_closed:host_disconnected"})
 
     async def test_explicit_host_close_is_distinguished(self):
         host, client = Socket(), Socket()
@@ -59,6 +62,7 @@ class ProtocolChecks(unittest.IsolatedAsyncioTestCase):
         signaling.CONNECTIONS.update({host: ("12345678", 1), client: ("12345678", 2)})
         await signaling.leave(host)
         self.assertEqual(client.sent, [{"type": "room_closed", "reason": "host_closed"}])
+        self.assertEqual(client.close_options, {"code":1000,"reason":"room_closed:host_closed"})
         self.assertFalse(signaling.ROOMS)
         self.assertFalse(signaling.CONNECTIONS)
 

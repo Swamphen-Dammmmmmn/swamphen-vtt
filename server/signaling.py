@@ -71,7 +71,9 @@ async def leave(socket):
         event = {"type": "room_closed", "reason": "host_closed" if active_close else "host_disconnected"}
         # A slow close handshake must not delay notifications to other players.
         await asyncio.gather(*(send(peer, event) for peer in peers))
-        await asyncio.gather(*(peer.close() for peer in peers), return_exceptions=True)
+        # Godot may consume the application message and Close frame in one poll,
+        # making the message unreadable. Preserve the same reason in the Close.
+        await asyncio.gather(*(peer.close(code=1000, reason="room_closed:" + event["reason"]) for peer in peers), return_exceptions=True)
     else:
         host = room.peers.get(1)
         if host:
