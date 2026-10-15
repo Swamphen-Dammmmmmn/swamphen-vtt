@@ -1,0 +1,167 @@
+name: Build and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version already committed in project.godot (X.Y.Z)'
+        required: true
+        type: string
+      platform:
+        description: 'Build target'
+        type: choice
+        options: [all, windows, android]
+        default: all
+      mode:
+        description: 'Build only, draft release, or publish after verification'
+        type: choice
+        options: [build, draft, publish]
+        default: build
+      channel:
+        description: 'Testing = prerelease; stable = regular release'
+        type: choice
+        options: [testing, stable]
+        default: testing
+      android_code:
+        description: 'Android version code; 0 uses committed export preset'
+        type: string
+        default: '0'
+      notes:
+        description: 'Release notes'
+        type: string
+        required: true
+      reuse_run:
+        description: 'Optional successful build run ID: reuse verified packages without rebuilding'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && inputs.reuse_run == ''
+    runs-on: windows-2022
+    environment: release
+    timeout-minutes: 45
+    env:
+      PYTHONUTF8: '1'
+      PYTHONUNBUFFERED: '1'
+      RELEASE_VERSION: ${{ inputs.version }}
+      BUILD_PLATFORM: ${{ inputs.platform }}
+      ANDROID_CODE: ${{ inputs.android_code }}
+      RELEASE_CHANNEL: ${{ inputs.channel }}
+      RELEASE_NOTES: ${{ inputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.2'
+          cache: pip
+          cache-dependency-path: launcher/requirements.txt
+      - name: Install Python build dependencies
+        run: python -m pip install -r launcher/requirements.txt
+      - name: Check public source
+        run: python tools/ci_release.py check
+      - uses: actions/setup-java@v4
+        if: inputs.platform != 'windows'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android build tools
+        if: inputs.platform != 'windows'
+        shell: pwsh
+        run: |
+          & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" 'build-tools;35.0.1' 'platforms;android-36'
+          if ($LASTEXITCODE -ne 0) { throw 'Android SDK setup failed.' }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            artifacts/ci-toolchain
+            artifacts/export-templates
+            artifacts/godot-licenses
+          key: ci-toolchain-windows-${{ hashFiles('tools/ci-toolchain.json', 'tools/install_godot.py') }}
+      - name: Build, sign and verify
+        env:
+          RELEASE_SIGNING_KEY_B64: ${{ secrets.RELEASE_SIGNING_KEY_B64 }}
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+        shell: pwsh
+        run: |
+          python tools/ci_release.py build --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --android-code $env:ANDROID_CODE --channel $env:RELEASE_CHANNEL --notes $env:RELEASE_NOTES
+          if ($LASTEXITCODE -ne 0) { throw 'Build or verification failed.' }
+      - name: Remove signing material
+        if: always()
+        run: python tools/ci_release.py clean
+      - name: Keep verified packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: |
+            build/ci/*.zip
+            build/ci/*.apk
+            build/ci/release.json
+            build/ci/release.sig
+            build/ci/SHA256SUMS.txt
+            build/ci/build-check.json
+      - name: Keep export logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-logs
+          path: logs/ci-*-export.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Build summary
+        shell: pwsh
+        run: |
+          "Version: $env:RELEASE_VERSION`nSource: $env:GITHUB_SHA`nMode: ${{ inputs.mode }}`nDownload: release-packages artifact" >> $env:GITHUB_STEP_SUMMARY
+
+  release:
+    needs: build
+    if: always() && github.ref == 'refs/heads/main' && inputs.mode != 'build' && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.reuse_run != ''))
+    runs-on: windows-2022
+    environment: release
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      PYTHONUTF8: '1'
+      PYTHONUNBUFFERED: '1'
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_CHANNEL: ${{ inputs.channel }}
+      RELEASE_NOTES: ${{ inputs.notes }}
+      RELEASE_MODE: ${{ inputs.mode }}
+      BUILD_PLATFORM: ${{ inputs.platform }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.2'
+      - run: python -m pip install -r launcher/requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: build/ci
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.reuse_run || github.run_id }}
+      - name: Upload draft, verify GitHub hashes, then optionally publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          python tools/ci_release.py publish --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --channel $env:RELEASE_CHANNEL --mode $env:RELEASE_MODE --notes $env:RELEASE_NOTES
+          if ($LASTEXITCODE -ne 0) { throw 'Release failed; any created draft stays private. Re-run failed jobs to reuse the verified packages.' }

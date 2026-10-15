@@ -1,0 +1,14 @@
+{
+  "godot": "4.7.2",
+  "templates": {
+    "android_debug.apk": "59e0073f0fa59f552684a861d8f4266b0b34b488a140d6657eac7dd70d1a0a0d",
+    "windows_release_x86_64.exe": "d34d36f3be1a6c49c56525ae86469b92e4f417ddf0b43cf00dd80c385c4b0562"
+  },
+  "licenses": {
+    "COPYRIGHT.txt": "d5aeff0741d5cb7a566befd8867667549c8bb46399a0e93091273b632bbefd96",
+    "LICENSE.txt": "b0435e3b3e4e55238f05f4b306f30524a1b2e20147810d436eaa554fa6855c80"
+  },
+  "android_build_tools": "35.0.1",
+  "android_certificate_sha256": "fc1d7b1535062c1a3caaa29b55a3f43f23f99450137748124a7a2e6bfa02c007",
+  "package": "org.swamphen.svtt.test"
+}
