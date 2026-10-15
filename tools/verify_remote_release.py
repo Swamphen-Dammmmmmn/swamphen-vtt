@@ -8,7 +8,7 @@ import zipfile
 import ci_release as ci
 
 
-def verify(directory, version, channel, platform, source):
+def verify(directory, version, channel, platform, source, skip_startup=False):
     directory = directory.resolve()
     record = json.loads((directory / 'build-check.json').read_text())
     ci.require(record['source_commit'] == source, 'Build source does not match the trusted workflow run.')
@@ -21,6 +21,11 @@ def verify(directory, version, channel, platform, source):
     if platform in ('all', 'windows'):
         ci.OUT = directory
         ci.verify_windows(version, channel)
+        if skip_startup:
+            result['windows_startup'] = 'skipped: explicit user request; not verified'
+            (directory / 'verification.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
+            print(json.dumps(result, ensure_ascii=False), flush=True)
+            return
         package = directory / f'svtt-{version}-windows-portable.zip'
         preview = directory / 'startup-check'
         ci.require(not preview.exists(), 'Startup check directory already exists.')
@@ -46,5 +51,6 @@ if __name__ == '__main__':
     parser.add_argument('--channel', choices=['testing', 'stable'], required=True)
     parser.add_argument('--platform', choices=['all', 'windows', 'android'], required=True)
     parser.add_argument('--source', required=True)
+    parser.add_argument('--skip-startup', action='store_true')
     args = parser.parse_args()
-    verify(args.directory, args.version, args.channel, args.platform, args.source)
+    verify(args.directory, args.version, args.channel, args.platform, args.source, args.skip_startup)

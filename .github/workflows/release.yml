@@ -34,6 +34,10 @@ on:
         description: 'Optional successful build run ID: reuse verified packages without rebuilding'
         type: string
         default: ''
+      skip_startup:
+        description: 'Skip packaged startup only with explicit user authorization; record as not verified'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,6 +57,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
       RELEASE_VERSION: ${{ inputs.version }}
       BUILD_PLATFORM: ${{ inputs.platform }}
+      SKIP_STARTUP: ${{ inputs.skip_startup }}
       ANDROID_CODE: ${{ inputs.android_code }}
       RELEASE_CHANNEL: ${{ inputs.channel }}
       RELEASE_NOTES: ${{ inputs.notes }}
@@ -168,9 +173,13 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or $record.path -ne '.github/workflows/release.yml' -or $record.head_branch -ne 'main' -or $record.event -ne 'workflow_dispatch') { throw 'Untrusted build run.' }
           "BUILD_SOURCE_SHA=$($record.head_sha)" >> $env:GITHUB_ENV
       - name: Verify existing packages and packaged Windows startup
+        env:
+          SKIP_STARTUP: ${{ inputs.skip_startup }}
         shell: pwsh
         run: |
-          python tools/verify_remote_release.py --directory build/ci --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --channel $env:RELEASE_CHANNEL --source $env:BUILD_SOURCE_SHA
+          $optional = @()
+          if ($env:SKIP_STARTUP -eq 'true') { $optional += '--skip-startup' }
+          python tools/verify_remote_release.py --directory build/ci --version $env:RELEASE_VERSION --platform $env:BUILD_PLATFORM --channel $env:RELEASE_CHANNEL --source $env:BUILD_SOURCE_SHA @optional
           if ($LASTEXITCODE -ne 0) { throw 'Remote verification failed; release remains private.' }
       - name: Keep small verification records
         if: always()

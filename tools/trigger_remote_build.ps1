@@ -5,6 +5,7 @@ param(
     [ValidateSet('testing','stable')][string]$Channel='testing',
     [int]$AndroidCode=0,
     [switch]$SyncSource,
+    [switch]$SkipStartup,
     [string]$ReuseRun='0',
     [Parameter(Mandatory=$true)][string]$Notes
 )
@@ -18,7 +19,7 @@ import base64,json,os,pathlib,re,subprocess,sys
 sys.path.insert(0,'tools')
 from publish_release import publishing_environment,REPO
 from ci_release import public_source
-version,platform,mode,channel,code,notes,sync,reuse=sys.argv[1:]
+version,platform,mode,channel,code,notes,sync,reuse,skip_startup=sys.argv[1:]
 if reuse=='0':reuse=''
 sys.path.insert(0,'launcher')
 import core
@@ -46,9 +47,9 @@ if record['commit']['tree']['sha']!=tree:
  remote=subprocess.check_output(['git','commit-tree',tree,'-p',remote,'-m',f'Synchronize tested source for v{version}'],text=True).strip()
  subprocess.run(['git','update-ref','refs/heads/codex/public-main',remote],check=True)
  subprocess.run(['git','push','origin','codex/public-main:main'],env=pushenv,check=True)
-plan={'ref':'main','inputs':{'version':version,'platform':platform,'mode':mode,'channel':channel,'android_code':code,'notes':notes,'reuse_run':reuse}}
+plan={'ref':'main','inputs':{'version':version,'platform':platform,'mode':mode,'channel':channel,'android_code':code,'notes':notes,'reuse_run':reuse,'skip_startup':skip_startup=='True'}}
 subprocess.run(['gh','api','--method','POST',f'repos/{REPO}/actions/workflows/release.yml/dispatches','--input','-'],input=json.dumps(plan),env=env,text=True,check=True)
 print(f'Triggered {mode} for {remote}. Progress: https://github.com/{REPO}/actions/workflows/release.yml')
 '@
-$taskScript | & $taskPython - $Version $Platform $Mode $Channel $AndroidCode $Notes $SyncSource.IsPresent $ReuseRun
+$taskScript | & $taskPython - $Version $Platform $Mode $Channel $AndroidCode $Notes $SyncSource.IsPresent $ReuseRun $SkipStartup.IsPresent
 if ($LASTEXITCODE -ne 0) { throw 'Remote build was not triggered.' }
