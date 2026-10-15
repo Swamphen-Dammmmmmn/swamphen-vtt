@@ -98,8 +98,10 @@ jobs:
           if (!(Test-Path "$env:ANDROID_HOME")) { throw 'Runner Android SDK is missing.' }
           "JAVA_HOME=$env:JAVA_HOME_17_X64" >> $env:GITHUB_ENV
           "sdk_root=$env:ANDROID_HOME" >> $env:GITHUB_OUTPUT
+          $missing = !(Test-Path "$env:ANDROID_HOME/build-tools/35.0.1/aapt2.exe") -or !(Test-Path "$env:ANDROID_HOME/build-tools/35.0.1/lib/apksigner.jar") -or !(Test-Path "$env:ANDROID_HOME/platforms/android-36/android.jar")
+          "missing=$($missing.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
       - name: Restore Android SDK tools
-        if: steps.plan.outputs.reuse_run == '' && inputs.platform != 'windows'
+        if: steps.android.outputs.missing == 'true'
         uses: actions/cache@v4
         with:
           path: |
