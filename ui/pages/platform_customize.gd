@@ -513,7 +513,7 @@ func _process(delta: float) -> void:
 		var point := get_global_mouse_position()
 		if not get_global_rect().has_point(point) or _over_ui(point): return
 	var camera: Camera3D = preview.camera
-	if Input.is_physical_key_pressed(KEY_CTRL): return
+	if Input.is_physical_key_pressed(KEY_CTRL) or Input.is_physical_key_pressed(KEY_ALT) or Input.is_physical_key_pressed(KEY_META): return
 	var direction := Vector3.ZERO
 	if Input.is_physical_key_pressed(KEY_W): direction -= camera.basis.z
 	if Input.is_physical_key_pressed(KEY_S): direction += camera.basis.z

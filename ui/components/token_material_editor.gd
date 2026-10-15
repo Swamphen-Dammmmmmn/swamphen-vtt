@@ -15,6 +15,7 @@ var preset_status: Label
 var board_row: HBoxContainer
 var board_input: CheckButton
 var syncing := false
+var preset_grid: GridContainer
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 12)
@@ -29,6 +30,8 @@ func _ready() -> void:
 	preset_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	heading.add_child(preset_status)
 	var grid := GridContainer.new()
+	preset_grid = grid
+
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
@@ -202,3 +205,6 @@ func _preview(settings: Dictionary) -> SubViewportContainer:
 	host.resized.connect(refresh)
 	refresh.call_deferred()
 	return host
+
+func fit_width(available: float) -> void:
+	if is_instance_valid(preset_grid): preset_grid.columns = maxi(1,mini(3,int((available+8)/96)))

@@ -88,6 +88,7 @@ static func save(data: Dictionary, id := "", thumbnail: Image = null) -> Diction
 		var recovery := OK
 		if had_original: recovery = DirAccess.rename_absolute(backup,path)
 		return _error("保存失败，编辑内容已保留。"+("原存档已恢复。" if recovery==OK else "原存档保留在备份文件中。"))
+	ProductCatalog.record_saved("platforms",id,{"id":id,"title":str(data["title"]).strip_edges(),"parameters":data,"thumbnail":thumbnail})
 	return {"ok":true,"id":id}
 
 static func pack(data: Dictionary, id: String, thumbnail: Image = null) -> Dictionary:
@@ -268,6 +269,7 @@ static func delete(id: String) -> Dictionary:
 	if error!=OK: return _error("删除失败："+error_string(error))
 	for suffix in [".bak",".tmp"]:
 		if FileAccess.file_exists(path+suffix): DirAccess.remove_absolute(path+suffix)
+	ProductCatalog.removed("platforms",id)
 	return {"ok":true}
 
 static func preview_missing(image: Image) -> bool:
@@ -277,3 +279,6 @@ static func preview_missing(image: Image) -> bool:
 		for x in range(image.get_width()):
 			if not image.get_pixel(x,y).is_equal_approx(first): return false
 	return true
+
+static func read_catalog() -> Dictionary:
+	return ProductCatalog.read_list("platforms")

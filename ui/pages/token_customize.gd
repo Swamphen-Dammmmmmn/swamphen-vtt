@@ -1,5 +1,8 @@
 extends Control
 var mobile_touch: Node
+var orbit_button := 0
+var orbit_pending := false
+var orbit_origin := Vector2.ZERO
 
 const Layout = preload("res://ui/components/editor_layout.gd")
 const Style = preload("res://ui/components/page_style.gd")
@@ -97,6 +100,9 @@ func _ready() -> void:
 	tag_entry.tooltip_text = "查看类型与分类标签"
 	tag_entry.pressed.connect(_show_tags)
 	form.add_child(tag_entry)
+	var view_actions := preload("res://ui/components/orbit_view_actions.gd").new()
+	form.add_child(view_actions)
+	view_actions.configure(_orbit_focus,_orbit_overview)
 	_build_appearance_form(form)
 	stats_fold = GoStyle.foldable("初始数值", true, null, false)
 	Layout.fold(stats_fold)
@@ -301,6 +307,8 @@ func _fit() -> void:
 	var margin := 24.0
 	var width := minf(320.0 if Mobile.enabled else Style.CUSTOMIZE_PANEL_WIDTH, maxf(1, bounds.x - margin * 2))
 	var height_limit := maxf(1, bounds.y - margin * 2)
+	for editor in material_editors.values():
+		editor.fit_width(maxf(1,width-32-(Mobile.SCROLLBAR_WIDTH if Mobile.enabled else 10)))
 	var animating := basic_tween != null and basic_tween.is_running()
 	if not animating: options_panel.position = Vector2(safe.position.x+margin if basic_open else -width, safe.position.y+margin)
 	options_panel.size.x = width
@@ -321,25 +329,82 @@ func _fit() -> void:
 func _popup_open() -> bool:
 	return (is_instance_valid(discard_modal) and discard_modal.visible) or (is_instance_valid(tags_modal) and tags_modal.visible) or (is_instance_valid(save_error_modal) and save_error_modal.visible) or _appearance_popup_open()
 
+func _orbit_focus() -> void:
+	preview.focus_selected()
+
+func _orbit_overview() -> void:
+	preview.fit_all()
+
+func _orbit_pointer_on_ui(point: Vector2) -> bool:
+	if has_method("_pointer_on_ui"): return call("_pointer_on_ui",point)
+	return not get_global_rect().has_point(point) or (basic_open and options_panel.get_global_rect().has_point(point)) or basic_handle.get_global_rect().has_point(point)
+
+func _orbit_dragging() -> bool:
+	return false
+
+func _orbit_can_rotate(_point: Vector2) -> bool:
+	return true
+
+func _orbit_keyboard_blocked() -> bool:
+	if _popup_open() or _orbit_dragging() or not is_visible_in_tree() or not is_processing_input(): return true
+	var focused := get_viewport().gui_get_focus_owner()
+	return focused is LineEdit or focused is TextEdit or focused is SpinBox
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(preview) or _orbit_keyboard_blocked(): return
+	var direction := preload("res://scripts/orbit_camera.gd").lift_direction()
+	if direction!=0:
+		preview.target.y += direction*preload("res://scripts/orbit_camera.gd").lift_step(preview.distance,delta)
+		preview._position_camera()
+
+func _orbit_input(event: InputEvent) -> bool:
+	if event is InputEventMouseButton and not event.pressed and event.button_index==orbit_button:
+		orbit_button = 0
+		orbit_pending = false
+		get_viewport().set_input_as_handled()
+		return true
+	if _popup_open(): orbit_button = 0; orbit_pending = false; return false
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_F:
+		if _orbit_keyboard_blocked(): return false
+		_orbit_focus()
+		get_viewport().set_input_as_handled()
+		return true
+	if event is InputEventMouseButton and event.pressed and not _orbit_pointer_on_ui(event.position):
+		if event.button_index==MOUSE_BUTTON_LEFT:
+			if event.device==-420 or not _orbit_can_rotate(event.position): return false
+			orbit_button = MOUSE_BUTTON_LEFT
+			orbit_pending = true
+			orbit_origin = event.position
+		elif event.button_index in [MOUSE_BUTTON_RIGHT,MOUSE_BUTTON_MIDDLE]:
+			orbit_button = event.button_index
+			orbit_pending = false
+		elif event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+			preview.zoom_view(preload("res://scripts/orbit_camera.gd").zoom_factor(0.9 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/0.9))
+		else: return false
+		var focused := get_viewport().gui_get_focus_owner()
+		if focused!=null: focused.release_focus()
+		get_viewport().set_input_as_handled()
+		return true
+	if event is InputEventMouseMotion and orbit_button!=0:
+		if orbit_pending:
+			if event.position.distance_to(orbit_origin)<8.0:
+				get_viewport().set_input_as_handled()
+				return true
+			orbit_pending = false
+		if preload("res://scripts/orbit_camera.gd").mouse_rotates(orbit_button): preview.rotate_view(event.relative)
+		else: preview.pan_view(event.relative)
+		get_viewport().set_input_as_handled()
+		return true
+	return false
+
 func _input(event: InputEvent) -> void:
 	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
-	if _popup_open():
-		rotating = false
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if get_global_rect().has_point(event.position) and not (basic_open and options_panel.get_global_rect().has_point(event.position)) and not (is_instance_valid(basic_handle) and basic_handle.get_global_rect().has_point(event.position)):
-				rotating = true
-				get_viewport().set_input_as_handled()
-		elif rotating:
-			rotating = false
-			get_viewport().set_input_as_handled()
-	elif rotating and event is InputEventMouseMotion:
-		preview.rotate_view(event.relative)
-		get_viewport().set_input_as_handled()
+	_orbit_input(event)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		orbit_button = 0
+		orbit_pending = false
 		rotating = false
 
 func _type_name() -> String:
@@ -422,7 +487,7 @@ func _toggle_basic() -> void:
 	var margin := 24.0+Mobile.safe_rect(size).position.x
 	basic_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	basic_tween.tween_property(options_panel, "position:x", margin if basic_open else -options_panel.size.x, preload("res://ui/components/page_motion.gd").duration(0.16))
-	basic_tween.tween_property(options_panel, "modulate:a", 1.0 if basic_open else Mobile.safe_rect(size).position.x, preload("res://ui/components/page_motion.gd").duration(0.16))
+	basic_tween.tween_property(options_panel, "modulate:a", 1.0 if basic_open else 0.0, preload("res://ui/components/page_motion.gd").duration(0.16))
 	basic_tween.tween_property(basic_handle, "position:x", margin + 16 if basic_open else Mobile.safe_rect(size).position.x, preload("res://ui/components/page_motion.gd").duration(0.16))
 	basic_tween.finished.connect(func():
 		if not basic_open: options_panel.hide()

@@ -1,5 +1,6 @@
 extends Node
 signal changed
+const SCROLLBAR_WIDTH := 33.0
 var native_info: Dictionary = {}
 var native_reader: RefCounted
 var preferences: RefCounted
@@ -139,12 +140,15 @@ func _process(delta: float) -> void:
 	if enabled and (last_window != DisplayServer.window_get_size() or last_keyboard != _keyboard_height()): refresh()
 
 func _added(node: Node) -> void:
-	if node is Button or node is LineEdit or node is SpinBox:
+	if node is Button or node is LineEdit or node is SpinBox or node is VScrollBar:
 		_resize_control.call_deferred(weakref(node))
 
 func _resize_control(reference: WeakRef) -> void:
 	var control = reference.get_ref()
 	if control == null: return
+	if control is VScrollBar:
+		control.custom_minimum_size.x = maxf(control.custom_minimum_size.x,SCROLLBAR_WIDTH)
+		return
 	control.custom_minimum_size.y = maxf(control.custom_minimum_size.y, 48)
 	if control is Button: control.custom_minimum_size.x = maxf(control.custom_minimum_size.x, 48)
 

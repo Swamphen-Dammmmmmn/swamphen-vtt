@@ -44,6 +44,7 @@ var additional_overhead := 0.0
 var maximum_height_ratio := 1.0/3.0
 
 func _ready() -> void:
+	ProductCatalog.changed.connect(_catalog_changed)
 	theme = GoUi.theme()
 	focus_mode = Control.FOCUS_ALL
 	add_theme_stylebox_override("panel", BoardUiStyle.card_face(BoardUiStyle.PANEL_PADDING))
@@ -139,7 +140,7 @@ func set_entries(key: String, data: Array) -> void:
 		_reflow(anchor)
 
 func _load_local_entries() -> void:
-	var loaded := TokenStore.read_all()
+	var loaded := TokenStore.read_catalog()
 	library_error = loaded["error"]
 	library_warnings = loaded["warnings"]
 	entries["basic"] = []
@@ -147,11 +148,10 @@ func _load_local_entries() -> void:
 	for record in loaded["entries"]:
 		var key: String = record["kind"]
 		if not entries.has(key): continue
-		var params: Dictionary = record["parameters"].duplicate(true)
-		params["title"] = record["title"]
-		params["kind"] = key
-		params["tags"] = record["tags"].duplicate()
-		entries[key].append({"id": record["id"], "title": record["title"], "builtin": false, "tooltip": str(record["title"]) + "\n放置独立的冒险棋子", "parameters": params})
+		var item: Dictionary = record.duplicate(true)
+		item["builtin"] = false
+		item["tooltip"] = str(record["title"])
+		entries[key].append(item)
 
 func _filter_entries() -> void:
 	filtered.clear()
@@ -271,8 +271,22 @@ func _position_layout() -> void:
 	position = Vector2(start + maxf(0, bounds.x - start - 16 - size.x) / 2, maxf(16, bounds.y - size.y - 66))
 
 func _choose_entry(data: Dictionary) -> void:
+	var chosen := data.duplicate(true)
+	if data.has("catalog_kind"):
+		var loaded: Dictionary = load(ProductCatalog.STORES[data.catalog_kind]).get_record(data.id)
+		if not loaded.ok:
+			library_error = loaded.message
+			status.text = loaded.message
+			status.show()
+			return
+		chosen = loaded.record.duplicate(true)
+		chosen["builtin"] = false
+		if data.catalog_kind=="tokens":
+			chosen.parameters["title"] = chosen.title
+			chosen.parameters["kind"] = chosen.kind
+			chosen.parameters["tags"] = chosen.tags.duplicate()
 	close()
-	entry_chosen.emit(data.duplicate(true))
+	entry_chosen.emit(chosen)
 
 func _settle_layout(expected_revision: int, anchor: int) -> void:
 	if revision != expected_revision:
@@ -349,3 +363,17 @@ func _input(event: InputEvent) -> void:
 		else:
 			scroll.scroll_vertical += direction * int(slot_height + GAP)
 		get_viewport().set_input_as_handled()
+
+var catalog_refresh_queued := false
+func _catalog_changed(kind: String) -> void:
+	var expected := "platforms" if category=="platform" else "tokens"
+	if kind!=expected or not visible or catalog_refresh_queued: return
+	catalog_refresh_queued = true
+	get_tree().create_timer(0.2).timeout.connect(_reload_catalog)
+func _reload_catalog() -> void:
+	catalog_refresh_queued = false
+	if not visible: return
+	var anchor := _visible_index()
+	_load_local_entries()
+	_filter_entries()
+	_reflow(anchor)

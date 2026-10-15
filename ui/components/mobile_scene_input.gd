@@ -5,6 +5,19 @@ var bridge_events: Array[InputEvent] = []
 var bridge_scheduled := false
 var bridge_down := false
 const SLOP := 10.0
+const PAIR_HOLD_MS := 280
+const PAIR_DECISION_MS := 40
+var pair_decision_started := 0
+const PAIR_REST_SLOP := 5.0
+const PAIR_START_SLOP := 8.0
+var pair_mode := ""
+var pair_origins: Dictionary = {}
+var pair_started := 0
+var lift_finger := -1
+const OrbitCamera = preload("res://scripts/orbit_camera.gd")
+var skip_pair_delta := false
+var joystick_session := false
+var blocked_fingers: Array[int] = []
 var host: Node
 var kind := "preview"
 var fingers: Dictionary = {}
@@ -20,6 +33,11 @@ var look_id := -1
 var overlay: CanvasLayer
 var surface: Control
 var boost: Button
+var boost_finger := -1
+var boost_origin := Vector2.ZERO
+var boost_canceled := false
+var boost_suppress_frame := -1
+var input_generation := 0
 var camera_enabled := false
 var previous_tool := ""
 var previous_active := ""
@@ -63,6 +81,7 @@ func _ready() -> void:
 	cancel_button.hide()
 
 func _tool_changed(key: String) -> void:
+	if not fingers.is_empty() or bridge_down: _interrupt_drag()
 	reset()
 	camera_enabled = host.active_tool == "mobile_camera"
 	if camera_enabled:
@@ -73,10 +92,17 @@ func _tool_changed(key: String) -> void:
 	previous_active = key
 
 func _process(delta: float) -> void:
-	var inactive := _blocked() or not host.is_processing_input()
-	if inactive and (not fingers.is_empty() or boost.button_pressed):
+	if kind=="free" and camera_enabled!=(host.active_tool=="mobile_camera"):
 		_interrupt_drag()
 		reset()
+		camera_enabled = host.active_tool=="mobile_camera"
+	var inactive := _blocked() or not host.is_processing_input()
+	if inactive and (not fingers.is_empty() or boost.button_pressed):
+		for id in fingers:
+			if id not in blocked_fingers: blocked_fingers.append(id)
+		_interrupt_drag()
+		reset()
+	if pair_mode=="pending" and not inactive: _resolve_pair()
 	boost.visible = kind == "free" and camera_enabled and not inactive
 	var view := get_viewport().get_visible_rect().size
 	var m: Vector4 = Mobile.margins
@@ -119,22 +145,49 @@ func _control_at(root: Node, point: Vector2) -> bool:
 
 func handle(event: InputEvent) -> bool:
 	if event is InputEventMouse and event.device == -421: return true
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not _blocked():
-		if camera_enabled:
-			host._select_tool("mobile_camera")
-			get_viewport().set_input_as_handled()
-			return true
-		if _operation_pending():
-			_cancel_operation()
-			get_viewport().set_input_as_handled()
-			return true
+	if event is InputEventMouse and event.device==InputEvent.DEVICE_ID_EMULATION and (boost_finger>=0 or Engine.get_process_frames()<=boost_suppress_frame):
+		get_viewport().set_input_as_handled()
+		return true
 	# Native mouse emulation remains available to GUI controls, never to scene tools.
 	if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION: return true
 	if not (event is InputEventScreenTouch or event is InputEventScreenDrag): return false
+	if event is InputEventScreenTouch and event.pressed and boost_finger<0 and boost.visible and not _blocked() and blocked_fingers.is_empty() and boost.get_global_rect().has_point(event.position):
+		boost_finger = event.index
+		boost_origin = event.position
+		boost_canceled = false
+		get_viewport().set_input_as_handled()
+		return true
+	if (event is InputEventScreenTouch or event is InputEventScreenDrag) and event.index==boost_finger:
+		if event.position.distance_to(boost_origin)>SLOP: boost_canceled = true
+		if event is InputEventScreenTouch and not event.pressed:
+			if not event.canceled and not boost_canceled and boost.visible and not _blocked() and boost.get_global_rect().has_point(event.position): _boost_click.call_deferred(input_generation)
+			boost_finger = -1
+			boost_suppress_frame = Engine.get_process_frames()+1
+		get_viewport().set_input_as_handled()
+		return true
+	if not blocked_fingers.is_empty():
+		if event is InputEventScreenTouch:
+			if event.pressed and event.index not in blocked_fingers: blocked_fingers.append(event.index)
+			elif not event.pressed: blocked_fingers.erase(event.index)
+		get_viewport().set_input_as_handled()
+		return true
 	if event is InputEventScreenTouch:
 		if event.pressed:
+			if not fingers.is_empty() and (_blocked() or _over_ui(event.position)):
+				blocked_fingers.assign(fingers.keys())
+				blocked_fingers.append(event.index)
+				_interrupt_drag()
+				reset()
+				get_viewport().set_input_as_handled()
+				return true
 			if _blocked() or _over_ui(event.position): return false
 			fingers[event.index] = event.position
+			if fingers.size()>2:
+				blocked_fingers.assign(fingers.keys())
+				_interrupt_drag()
+				reset()
+				get_viewport().set_input_as_handled()
+				return true
 			if fingers.size() == 1:
 				_mouse_motion(event.position,Vector2.ZERO)
 				first_position = event.position
@@ -143,9 +196,11 @@ func handle(event: InputEvent) -> bool:
 				multitouch = false
 				sent_down = false
 				_capture_snapshot()
+			if fingers.size()>=2: skip_pair_delta = true
 			if camera_enabled:
 				var joystick_area: bool = event.position.x < get_viewport().get_visible_rect().size.x*0.45 and event.position.y > get_viewport().get_visible_rect().size.y*0.45
 				if joystick_id < 0 and joystick_area:
+					joystick_session = true
 					joystick_id = event.index
 					joystick_center = event.position
 					for id in fingers:
@@ -157,18 +212,29 @@ func handle(event: InputEvent) -> bool:
 			else:
 				multitouch = true
 				_interrupt_drag()
+			if fingers.size()==2 and not joystick_session:
+				multitouch = true
+				if kind!="free": _begin_pair()
 		else:
 			if not fingers.has(event.index): return false
 			if event.canceled:
+				blocked_fingers.assign(fingers.keys())
+				blocked_fingers.erase(event.index)
 				_interrupt_drag()
 				reset()
 			else:
+				if fingers.size()==1 and not multitouch and not camera_enabled and _over_ui(event.position):
+					_interrupt_drag()
+					reset(false)
+					get_viewport().set_input_as_handled()
+					return true
 				if fingers.size() == 1 and not multitouch and not camera_enabled:
 					if sent_down: _mouse_button(false,event.position)
 					elif not moved or _placement_pending(): _mouse_button(true,event.position); _mouse_button(false,event.position)
 				if event.index == joystick_id: joystick_id = -1; joystick_value = Vector2.ZERO
 				if event.index == look_id: look_id = -1
 				fingers.erase(event.index)
+				skip_pair_delta = true
 				if fingers.is_empty(): reset(false)
 		get_viewport().set_input_as_handled()
 		return true
@@ -178,9 +244,18 @@ func handle(event: InputEvent) -> bool:
 	if event.index == joystick_id:
 		var offset: Vector2 = (event.position-joystick_center)/52.0
 		joystick_value = Vector2(offset.x,-offset.y).limit_length() if offset.length()>0.12 else Vector2.ZERO
-	elif joystick_id >= 0 and event.index == look_id:
-		host.preview.turn(event.position-old)
+	elif camera_enabled and joystick_session:
+		if look_id<0: look_id = event.index
+		if event.index==look_id: _turn_free(event.position-old)
 	elif fingers.size() >= 2:
+		if kind!="free":
+			_pair_drag(event.index,old)
+			get_viewport().set_input_as_handled()
+			return true
+		if skip_pair_delta:
+			skip_pair_delta = false
+			get_viewport().set_input_as_handled()
+			return true
 		var ids := fingers.keys()
 		var other: Vector2 = fingers[ids[1] if ids[0] == event.index else ids[0]]
 		var center := (old+other)*0.5
@@ -190,7 +265,7 @@ func handle(event: InputEvent) -> bool:
 		var after: float = event.position.distance_to(other)
 		if before > 24 and after > 24: _zoom(before/after,center)
 	elif not multitouch:
-		if camera_enabled: host.preview.turn(event.position-old)
+		if camera_enabled: _turn_free(event.position-old)
 		elif _single_camera():
 			if event.position.distance_to(first_position)>SLOP: moved = true
 			if moved: _rotate(event.position-old)
@@ -202,6 +277,95 @@ func handle(event: InputEvent) -> bool:
 	last_position = event.position
 	get_viewport().set_input_as_handled()
 	return true
+
+func _boost_click(generation: int) -> void:
+	if generation!=input_generation: return
+	if not is_instance_valid(boost) or not boost.is_visible_in_tree() or _blocked(): return
+	# Replay a complete GUI click; this also works for a second touch while the joystick is held.
+	var point := boost.get_global_rect().get_center()
+	var hover := InputEventMouseMotion.new()
+	hover.device = -421
+	hover.position = point
+	hover.global_position = point
+	get_viewport().push_input(hover,true)
+	for pressed in [true,false]:
+		var event := InputEventMouseButton.new()
+		event.device = -421
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+		event.position = point
+		event.global_position = point
+		event.pressed = pressed
+		get_viewport().push_input(event,true)
+
+func _begin_pair() -> void:
+	pair_mode = "pending"
+	pair_origins = fingers.duplicate()
+	pair_started = Time.get_ticks_msec()
+	pair_decision_started = 0
+	lift_finger = -1
+
+func _pair_drag(index: int, old: Vector2) -> void:
+	if fingers.size()!=2 or pair_origins.size()!=2: return
+	var ids := fingers.keys()
+	var other_id: int = ids[1] if ids[0]==index else ids[0]
+	var point: Vector2 = fingers[index]
+	var other: Vector2 = fingers[other_id]
+	if pair_mode=="lift":
+		if index==lift_finger: _lift(-(point.y-old.y))
+		return
+	var before_center := (old+other)*0.5
+	var before_distance := old.distance_to(other)
+	if pair_mode=="pending": return
+	_pan((point+other)*0.5-before_center)
+	var after_distance := point.distance_to(other)
+	if before_distance>24 and after_distance>24: _zoom(before_distance/after_distance,before_center)
+
+func _resolve_pair() -> void:
+	if fingers.size()!=2 or pair_origins.size()!=2: return
+	var ids := fingers.keys()
+	var first: Vector2 = fingers[ids[0]]
+	var second: Vector2 = fingers[ids[1]]
+	var first_origin: Vector2 = pair_origins[ids[0]]
+	var second_origin: Vector2 = pair_origins[ids[1]]
+	var first_motion := first-first_origin
+	var second_motion := second-second_origin
+	if maxf(first_motion.length(),second_motion.length())<=PAIR_START_SLOP: return
+	var now := Time.get_ticks_msec()
+	if pair_decision_started==0:
+		pair_decision_started = now
+		return
+	# Touch events arrive per finger. Collect both before classifying a same-direction swipe.
+	if now-pair_decision_started<PAIR_DECISION_MS: return
+	var moving_id: int = ids[0]
+	var motion := first_motion
+	var stationary := second_motion.length()<=PAIR_REST_SLOP
+	if first_motion.length()<=PAIR_REST_SLOP and second_motion.length()>PAIR_START_SLOP:
+		moving_id = ids[1]
+		motion = second_motion
+		stationary = true
+	var rested_before_move := pair_decision_started-pair_started>=PAIR_HOLD_MS
+	if rested_before_move and stationary and absf(motion.y)>absf(motion.x)*1.6:
+		pair_mode = "lift"
+		lift_finger = moving_id
+		return
+	pair_mode = "normal"
+	_pan((first+second-first_origin-second_origin)*0.5)
+	var before := first_origin.distance_to(second_origin)
+	var after := first.distance_to(second)
+	if before>24 and after>24: _zoom(before/after,(first+second)*0.5)
+
+func _lift(amount: float) -> void:
+	var camera: Camera3D = host.camera if kind=="board" else host.preview.camera
+	var distance: float = host.camera_distance if kind=="board" else host.preview.distance
+	var height := get_viewport().get_visible_rect().size.y
+	var step := OrbitCamera.pan_delta(camera,distance,Vector2(0,amount),height,true,true).y
+	if kind=="board":
+		host.focus.y += step
+		host._update_camera()
+	else:
+		host.preview.target.y += step
+		host.preview._position_camera()
 
 func _single_camera() -> bool:
 	if kind == "preview":
@@ -251,8 +415,11 @@ func _flush_bridge() -> void:
 	if not is_instance_valid(host) or not host.is_inside_tree(): return
 	if not host.can_process() or _blocked():
 		var release_needed := bridge_down
-		bridge_down = false
 		_interrupt_drag()
+		bridge_events.clear()
+		bridge_down = false
+		snapshot.clear()
+		expansion_snapshot.clear()
 		if release_needed:
 			var release := InputEventMouseButton.new()
 			release.device = BRIDGE_DEVICE
@@ -261,40 +428,43 @@ func _flush_bridge() -> void:
 			release.global_position = release.position
 			get_viewport().push_input(release,true)
 		return
+	var generation := input_generation
 	for event in batch:
-		get_viewport().push_input(event,true)
+		if generation!=input_generation or not host.can_process() or _blocked():
+			_interrupt_drag()
+			break
 		if event is InputEventMouseButton: bridge_down = event.pressed
+		get_viewport().push_input(event,true)
+		if event is InputEventMouseButton and not event.pressed:
+			snapshot.clear()
+			expansion_snapshot.clear()
+
+func _turn_free(relative: Vector2) -> void:
+	var height := get_viewport().get_visible_rect().size.y
+	var amount := OrbitCamera.rotation_delta(relative,height,true)
+	# Free camera uses the opposite pitch sign to the orbit target convention.
+	host.preview.free_yaw -= amount.x
+	host.preview.free_pitch = OrbitCamera.clamp_pitch(host.preview.free_pitch-amount.y)
+	host.preview.camera.rotation = Vector3(host.preview.free_pitch,host.preview.free_yaw,0)
 
 func _rotate(relative: Vector2) -> void:
-	if kind == "board":
-		host.yaw -= relative.x*0.006*float(host.camera_preferences.values["rotation"])
-		host.pitch = preload("res://scripts/orbit_camera.gd").clamp_pitch(host.pitch+relative.y*0.004*float(host.camera_preferences.values["rotation"]))
-		host._update_camera()
-	else: host.preview.rotate_view(relative)
+	if kind=="board": host._orbit_rotate(relative,true)
+	else: host.preview.rotate_view(relative,true)
 
 func _pan(relative: Vector2) -> void:
-	var camera: Camera3D = host.camera if kind == "board" else host.preview.camera
-	var distance: float = host.camera_distance if kind == "board" else (host.preview.distance if kind == "preview" else 10.0)
-	var scale := 2.0*distance*tan(deg_to_rad(camera.fov)*0.5)/maxf(1,get_viewport().get_visible_rect().size.y)
-	if kind == "free": camera.position += -camera.basis.x*relative.x*scale+Vector3.UP*relative.y*scale
-	elif kind == "board":
-		var forward := Vector3(-sin(host.yaw),0,-cos(host.yaw))
-		host.focus += (-camera.basis.x*relative.x+forward*relative.y)*scale
-		host._update_camera()
+	if kind=="board": host._orbit_pan(relative,true)
+	elif kind=="preview": host.preview.pan_view(relative,true)
 	else:
-		host.preview.target += (-camera.basis.x*relative.x+camera.basis.y*relative.y)*scale
-		host.preview._position_camera()
+		var camera: Camera3D = host.preview.camera
+		camera.position += OrbitCamera.pan_delta(camera,10.0,relative,get_viewport().get_visible_rect().size.y,true,true)
 
 func _zoom(ratio: float, _center: Vector2) -> void:
-	if kind == "free": host.preview.camera.position += host.preview.camera.basis.z*log(ratio)*6.0
-	elif kind == "board":
-		host.camera_distance = clampf(host.camera_distance*ratio,3.0,100000.0)
+	var factor := OrbitCamera.zoom_factor(ratio,true)
+	if kind=="free": host.preview.camera.position += host.preview.camera.basis.z*log(factor)*6.0
+	elif kind=="board":
+		host.camera_distance = clampf(host.camera_distance*factor,3.0,100000.0)
 		host._update_camera()
-	else:
-		if host.preview.has_method("zoom_view"): host.preview.zoom_view(ratio)
-		else:
-			host.preview.distance = clampf(host.preview.distance*ratio,0.4,100.0)
-			host.preview._position_camera()
+	else: host.preview.zoom_view(factor)
 
 func _capture_snapshot() -> void:
 	snapshot = {}
@@ -302,6 +472,7 @@ func _capture_snapshot() -> void:
 	elif kind == "preview" and host.has_method("_pointer_on_ui"): snapshot = host.component_values.duplicate(true)
 
 func _interrupt_drag() -> void:
+	var editing := sent_down or bridge_down
 	bridge_events.clear()
 	if kind == "free":
 		if host.get_script().resource_path.get_file()=="platform_customize.gd":
@@ -310,9 +481,10 @@ func _interrupt_drag() -> void:
 			if not moving_id.is_empty():
 				host.token_tool.selected = moving_id
 				host.token_tool._move()
-			for key in expansion_snapshot:
-				host.expansion_values[key] = expansion_snapshot[key]
-				host.expansion_inputs[key].set_value_no_signal(expansion_snapshot[key])
+			if editing:
+				for key in expansion_snapshot:
+					host.expansion_values[key] = expansion_snapshot[key]
+					host.expansion_inputs[key].set_value_no_signal(expansion_snapshot[key])
 			if host.active_tool=="expand": host._refresh_expansion()
 		else:
 			host.move_gizmo.end_drag()
@@ -326,10 +498,10 @@ func _interrupt_drag() -> void:
 		host.preview.gizmo.end_drag()
 		host.preview.sticker_gizmo.end_drag()
 		host.rotating = false
-		if not snapshot.is_empty(): host.component_values = snapshot.duplicate(true); host._load_component()
+		if editing and not snapshot.is_empty(): host.component_values = snapshot.duplicate(true); host._load_component()
 	elif kind == "board":
 		if is_instance_valid(host.turn_control): host.turn_control._cancel_drag()
-		host.left_pan_pending = false
+		host.left_orbit_pending = false
 		host.camera_button = 0
 	if bridge_down:
 		sent_down = false
@@ -356,16 +528,34 @@ func _cancel_operation() -> void:
 	reset()
 
 func reset(reset_boost := true) -> void:
+	if reset_boost:
+		input_generation += 1
+		bridge_events.clear()
+		if bridge_down: _mouse_button(false,Vector2(-10000,-10000))
+	if not bridge_down:
+		snapshot.clear()
+		expansion_snapshot.clear()
 	fingers.clear()
 	joystick_id = -1
+	joystick_session = false
+	pair_mode = ""
+	pair_decision_started = 0
+	pair_origins.clear()
+	lift_finger = -1
+	skip_pair_delta = false
 	look_id = -1
 	joystick_value = Vector2.ZERO
 	sent_down = false
 	multitouch = false
-	if reset_boost and is_instance_valid(boost): boost.button_pressed = false
+	if reset_boost:
+		boost_canceled = true
+		if is_instance_valid(boost): boost.button_pressed = false
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		blocked_fingers.clear()
+		boost_finger = -1
+		boost_canceled = true
 		_interrupt_drag()
 		reset()
 

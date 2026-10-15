@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="紫水鸡棋盘 · UI树开发"
-config/version="0.1.2a"
+config/version="0.1.3"
 run/main_scene="res://scenes/application.tscn"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="紫水鸡棋盘"
@@ -21,6 +21,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 Mobile="*res://scripts/mobile_layout.gd"
 TokenPreviews="*res://scripts/token_thumbnail_cache.gd"
+ProductCatalog="*res://scripts/product_catalog.gd"
 
 Storage="*res://scripts/storage_bootstrap.gd"
 Interface="*res://scripts/interface_settings.gd"

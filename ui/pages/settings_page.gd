@@ -126,13 +126,13 @@ func _select(key: String) -> void:
 
 func _build_camera() -> void:
 	body.add_child(Style.text("操作速度", 20))
-	for entry in [["pan", "平移速度"], ["rotation", "旋转速度"], ["zoom", "滚轮缩放速度"]]:
+	for entry in [["pan", "平移速度"], ["rotation", "旋转速度"], ["zoom", "缩放速度"]]:
 		var labels: Array = []
 		for value in CameraPreferences.SPEEDS: labels.append("%d%%" % roundi(value * 100))
 		var input := _option(entry[1], labels)
 		camera_inputs[entry[0]] = input
 		input.item_selected.connect(_camera_speed.bind(entry[0]))
-	var reverse := _option("滚轮缩放方向", ["正常", "反转"])
+	var reverse := _option("缩放方向", ["正常", "反转"])
 	camera_inputs["reverse_zoom"] = reverse
 	reverse.item_selected.connect(func(index: int): camera_preferences.set_value("reverse_zoom", index == 1))
 	body.add_child(HSeparator.new())

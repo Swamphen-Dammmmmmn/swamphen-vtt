@@ -1,7 +1,6 @@
 extends PanelContainer
 
 const Style = preload("res://ui/components/page_style.gd")
-const Thumbnail = preload("res://ui/components/token_thumbnail.gd")
 const CardMenu = preload("res://ui/components/card_menu.gd")
 signal edit_requested(id: String)
 signal delete_requested(data: Dictionary)
@@ -22,7 +21,7 @@ func configure(data: Dictionary) -> void:
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview.custom_minimum_size.y = Style.LIBRARY_PREVIEW_HEIGHT
 	column.add_child(preview)
-	TokenPreviews.request(data["parameters"],preview)
+	ProductCatalog.request_preview(data,preview)
 	var title := Style.text(data["title"], 20)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS

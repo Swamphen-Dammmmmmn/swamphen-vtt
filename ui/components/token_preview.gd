@@ -40,10 +40,28 @@ func configure(data: Dictionary) -> void:
 	target = Vector3(0, count * 0.4, 0)
 	_position_camera()
 
-func rotate_view(relative: Vector2) -> void:
-	yaw -= relative.x * 0.008
-	pitch = OrbitCamera.clamp_pitch(pitch + relative.y * 0.006)
+func rotate_view(relative: Vector2, touch := false) -> void:
+	var amount := OrbitCamera.rotation_delta(relative,get_viewport().get_visible_rect().size.y,touch)
+	yaw -= amount.x
+	pitch = OrbitCamera.clamp_pitch(pitch+amount.y)
 	_position_camera()
+
+func pan_view(relative: Vector2, touch := false) -> void:
+	target += OrbitCamera.pan_delta(camera,distance,relative,get_viewport().get_visible_rect().size.y,touch)
+	_position_camera()
+
+func zoom_view(factor: float) -> void:
+	distance = clampf(distance*factor,0.4,1000.0)
+	_position_camera()
+
+func focus_selected(_part := "") -> void:
+	if not is_instance_valid(actor): return
+	target = Vector3(0,preview_count*0.4,0)
+	distance = 3.2*preview_count
+	_position_camera()
+
+func fit_all() -> void:
+	focus_selected()
 
 func _position_camera() -> void:
 	pitch = OrbitCamera.clamp_pitch(pitch)

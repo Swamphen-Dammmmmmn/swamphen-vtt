@@ -37,6 +37,7 @@ static func field_error(input: Control, message: String) -> void:
 static func scroll(scroll: ScrollContainer) -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var bar := scroll.get_v_scroll_bar()
+	if Mobile.enabled: bar.custom_minimum_size.x = Mobile.SCROLLBAR_WIDTH
 	var track := StyleBoxFlat.new()
 	track.bg_color = Color("e7edf4")
 	track.set_corner_radius_all(6)

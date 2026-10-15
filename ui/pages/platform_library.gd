@@ -3,10 +3,7 @@ const Style = preload("res://ui/components/page_style.gd")
 const Store = preload("res://scripts/platform_library_store.gd")
 const Rename = preload("res://ui/components/product_rename.gd")
 const Modal = preload("res://ui/components/page_modal.gd")
-const Preview = preload("res://ui/components/platform_preview.gd")
 const CardMenu = preload("res://ui/components/card_menu.gd")
-const TokenInstance = preload("res://scripts/token_instance.gd")
-const Footprint = preload("res://scripts/token_footprint.gd")
 signal create_requested
 signal edit_requested(id: String)
 var page: Control
@@ -15,10 +12,9 @@ var grid: GridContainer
 var note: Label
 var empty: Label
 var entries: Array = []
-var rebuilding := false
-var renderer: Control
 
 func _ready() -> void:
+	ProductCatalog.changed.connect(_catalog_changed)
 	add_theme_constant_override("separation",12)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var header := HBoxContainer.new()
@@ -48,7 +44,7 @@ func _ready() -> void:
 	reload()
 
 func reload() -> void:
-	var loaded := Store.read_all()
+	var loaded := Store.read_catalog()
 	entries = loaded["entries"]
 	print("地台库：%s，有效记录 %d，读取失败 %d" % [ProjectSettings.globalize_path(Store.DIRECTORY),entries.size(),loaded["warnings"].size()])
 	for warning: String in loaded["warnings"]: push_warning(warning)
@@ -59,7 +55,6 @@ func reload() -> void:
 	note.visible = not note.text.is_empty()
 	_refresh()
 	if not loaded["error"].is_empty(): empty.hide()
-	_rebuild_previews.call_deferred()
 
 func _refresh() -> void:
 	for child in grid.get_children():
@@ -86,18 +81,16 @@ func _card(record: Dictionary) -> void:
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var image: Image = record["thumbnail"]
-	if image!=null: picture.texture = ImageTexture.create_from_image(image)
-	if Store.preview_missing(image):
-		picture.tooltip_text = "正在生成地台预览"
+	ProductCatalog.request_preview(record,picture)
 	column.add_child(picture)
 	var title := Style.text(record["title"],20)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title.tooltip_text = record["title"]
 	column.add_child(title)
-	var data: Dictionary = record["parameters"]
-	column.add_child(Style.text("%d × %d 英尺 · 厚 %d 英尺" % [data["width_feet"],data["length_feet"],data["thickness_feet"]],14,true))
+	var data: Dictionary = record["summary"]
+	if not record.get("pending",false):
+		column.add_child(Style.text("%d × %d 英尺 · 厚 %d 英尺" % [data.get("width_feet",0),data.get("length_feet",0),data.get("thickness_feet",0)],14,true))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
 	column.add_child(row)
@@ -154,45 +147,12 @@ func _message(title: String, message: String) -> void:
 func _fit() -> void:
 	grid.columns = maxi(1,floori((size.x+12)/(220+12)))
 
-func _rebuild_previews() -> void:
-	if rebuilding: return
-	rebuilding = true
-	for record: Dictionary in entries.duplicate():
-		if not Store.preview_missing(record["thumbnail"]): continue
-		if not is_instance_valid(renderer):
-			renderer = Preview.new()
-			add_child(renderer)
-			renderer.top_level = true
-			renderer.position = Vector2(-10000,-10000)
-			renderer.size = Vector2(320,200)
-			await get_tree().process_frame
-		var data: Dictionary = record["parameters"].duplicate(true)
-		renderer.configure(data,true)
-		# Repaired previews must include the scene's copied tokens, not just the ground.
-		var origin: Vector2 = data["grid_origin_feet"]/5.0
-		for token: Dictionary in data.get("tokens",[]):
-			var actor := TokenInstance.build(token)
-			renderer.actor.add_child(actor)
-			var cell: Vector2i = token["cell"]
-			var extent := Footprint.dimensions(token)
-			actor.position = Vector3(origin.x+cell.x+extent.x/2.0,float(data["top_feet"])/5.0,origin.y+cell.y+extent.y/2.0)
-		# Allow initial mesh, grass chunks and the render target to finish their first frames.
-		for frame in range(8): await get_tree().process_frame
-		await RenderingServer.frame_post_draw
-		var image: Image = renderer.viewport.get_texture().get_image()
-		if image==null or image.is_empty(): continue
-		var result := Store.save(data,record["id"],image)
-		if result["ok"]:
-			var fresh := Store.get_record(record["id"])
-			if fresh["ok"]:
-				for current: Dictionary in entries:
-					if current["id"]==record["id"]: current["thumbnail"] = fresh["record"]["thumbnail"]
-				_refresh()
-		else:
-			note.text = "地台仍可编辑，预览更新失败："+result["message"]
-			note.show()
-	if is_instance_valid(renderer):
-		remove_child(renderer)
-		renderer.queue_free()
-		renderer = null
-	rebuilding = false
+
+var catalog_refresh_queued := false
+func _catalog_changed(kind: String) -> void:
+	if kind!="platforms" or catalog_refresh_queued or not is_visible_in_tree(): return
+	catalog_refresh_queued = true
+	get_tree().create_timer(0.2).timeout.connect(_reload_catalog)
+func _reload_catalog() -> void:
+	catalog_refresh_queued = false
+	reload()

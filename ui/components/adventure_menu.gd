@@ -38,6 +38,9 @@ func configure(role: String, confirming := false, title := "冒险") -> void:
 	else:
 		_add_action("继续冒险","board",false,GoIconSet.PLAY)
 		_add_action("地图集","session_maps",false,GoIconSet.MAP)
+		var view_actions := preload("res://ui/components/orbit_view_actions.gd").new()
+		content.add_child(view_actions)
+		view_actions.configure(func(): action_requested.emit("camera_focus"),func(): action_requested.emit("camera_overview"))
 		if role=="dm":
 			_add_action("联机房间","network_room",false,GoIconSet.USERS)
 		content.add_child(HSeparator.new())

@@ -772,41 +772,45 @@ func _pointer_on_ui(at: Vector2) -> bool:
 		if is_instance_valid(panel) and panel.visible and panel.get_global_rect().has_point(at): return true
 	return (edge_open["left"] and options_panel.get_global_rect().has_point(at)) or (edge_open["right"] and editor_panel.get_global_rect().has_point(at))
 
+func _orbit_dragging() -> bool:
+	return preview.gizmo.dragged>=0 or preview.sticker_gizmo.dragged>=0 or (is_instance_valid(transform_panel) and transform_panel.dragging) or (is_instance_valid(sticker_panel) and sticker_panel.dragging)
+
+func _orbit_can_rotate(point: Vector2) -> bool:
+	var active_gizmo: Node3D = preview.sticker_gizmo if not sticker_mode.is_empty() else preview.gizmo
+	return active_gizmo.pick(point,true)<0
+
+func _orbit_focus() -> void:
+	preview.focus_selected(component_kind)
+
 func _input(event: InputEvent) -> void:
 	if is_instance_valid(mobile_touch) and mobile_touch.handle(event): return
 	var active_gizmo: Node3D = preview.sticker_gizmo if not sticker_mode.is_empty() else preview.gizmo
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-		if active_gizmo.dragged >= 0 or rotating:
-			active_gizmo.end_drag()
-			rotating = false
-			get_viewport().set_input_as_handled()
-		return
 	if _popup_open():
-		rotating = false
+		orbit_button = 0
 		active_gizmo.end_drag()
 		if not sticker_mode.is_empty(): _close_sticker_adjustment()
 		return
+	if active_gizmo.dragged < 0 and _orbit_input(event): return
 	if event is InputEventMouseButton:
-		if active_gizmo.dragged >= 0 and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		if not event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
+			if active_gizmo.dragged>=0:
+				active_gizmo.end_drag()
+				get_viewport().set_input_as_handled()
+			return
+		if active_gizmo.dragged>=0:
 			get_viewport().set_input_as_handled()
 			return
 		if _pointer_on_ui(event.position): return
-		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
-			preview.zoom_view(0.9 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / 0.9)
-			get_viewport().set_input_as_handled()
-		elif event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var axis: int = active_gizmo.pick(event.position, true)
-			rotating = axis < 0
-			if axis >= 0: active_gizmo.begin_drag(event.position)
-			get_viewport().set_input_as_handled()
+		if event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
+			var axis: int = active_gizmo.pick(event.position,true)
+			if axis>=0:
+				active_gizmo.begin_drag(event.position)
+				get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion:
-		if active_gizmo.dragged >= 0:
+		if active_gizmo.dragged>=0:
 			active_gizmo.drag(event.position)
 			get_viewport().set_input_as_handled()
-		elif rotating:
-			preview.rotate_view(event.relative)
-			get_viewport().set_input_as_handled()
-		else: active_gizmo.hover(Vector2(-10000, -10000) if _pointer_on_ui(event.position) else event.position)
+		else: active_gizmo.hover(Vector2(-10000,-10000) if _pointer_on_ui(event.position) else event.position)
 
 func _notification(what: int) -> void:
 	super._notification(what)
@@ -834,12 +838,7 @@ func _set_ui_enabled(root: Control, enabled: bool) -> void:
 
 func _toggle_edge(side: String) -> void:
 	edge_open[side] = not edge_open[side]
-	if edge_open[side] and (Mobile.enabled or size.x < 320 + 344 + 480 + 72):
-		var other := "right" if side == "left" else "left"
-		if edge_open[other]:
-			edge_open[other] = false
-			_close_owned_popups(other)
-			_animate_edge(other)
+
 	if not edge_open[side]: _close_owned_popups(side)
 	_animate_edge(side)
 
@@ -897,15 +896,16 @@ func _fit() -> void:
 	if not is_instance_valid(left_handle) or not is_instance_valid(editor_panel): return
 	var safe := Mobile.safe_rect(size)
 	var available := maxf(1,safe.size.y-48)
-	var width_left := minf(320, maxf(1,safe.size.x-48))
-	var width_right := minf(344, maxf(1,safe.size.x-48))
+	var dual: bool = edge_open["left"] and edge_open["right"]
+	var width_budget := maxf(1,(safe.size.x-96)/2) if dual else maxf(1,safe.size.x-48)
+	var width_left := minf(320,width_budget)
+	var width_right := minf(344,width_budget)
+	material_editor.fit_width(maxf(1,width_right-32-(Mobile.SCROLLBAR_WIDTH if Mobile.enabled else 10)))
 	_fit_card(options_panel, options_content, form_scroll, form, width_left, available)
 	_fit_card(editor_panel, editor_content, editor_scroll, attribute_bodies[attribute_page[component_kind]], width_right, available)
 	left_handle.size = Vector2(44, 44)
 	right_handle.size = Vector2(44, 44)
-	if edge_open["left"] and edge_open["right"] and (Mobile.enabled or size.x < width_left + width_right + 480 + 72):
-		edge_open["left"] = false
-		_close_owned_popups("left")
+
 	for side in ["left", "right"]:
 		var panel: PanelContainer = options_panel if side == "left" else editor_panel
 		var handle: Button = left_handle if side == "left" else right_handle
@@ -984,9 +984,7 @@ func _build_sticker_form(parent: Control) -> void:
 		sticker_face_buttons[key] = button
 	sticker_notice = Style.text("至少导入一面的图片才能保存", 14, true)
 	parent.add_child(sticker_notice)
-	var image_row := HBoxContainer.new()
-	image_row.add_theme_constant_override("separation", 12)
-	parent.add_child(image_row)
+	var image_row := Layout.pair(parent,300.0)
 	var image_column := Style.column(6)
 	image_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	image_row.add_child(image_column)
@@ -1301,7 +1299,7 @@ func _select_image() -> void:
 	sticker_backing.get_popup().hide()
 	file_picker_active = true
 	if OS.has_feature("android"):
-		var result := DisplayServer.file_dialog_show("选择立牌图片 · 最大 2.5 MB","","",false,DisplayServer.FILE_DIALOG_MODE_OPEN_FILE,PackedStringArray(["*.png,*.jpg,*.jpeg;PNG / JPG;image/png,image/jpeg"]),_android_image_selected,DisplayServer.MAIN_WINDOW_ID)
+		var result := DisplayServer.file_dialog_show("选择立牌图片 · 最大 2.5 MB","","",false,DisplayServer.FILE_DIALOG_MODE_OPEN_FILE,PackedStringArray(["image/png", "image/jpeg"]),_android_image_selected,DisplayServer.MAIN_WINDOW_ID)
 		if result!=OK:
 			file_picker_active = false
 			push_warning("安卓图片选择器启动失败：%s" % error_string(result))

@@ -15,6 +15,7 @@ var entries: Array = []
 var selection_only := false
 
 func _ready() -> void:
+	ProductCatalog.changed.connect(_catalog_changed)
 	add_theme_constant_override("separation",12)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var header := HBoxContainer.new()
@@ -45,7 +46,7 @@ func _ready() -> void:
 	reload()
 
 func reload() -> void:
-	var loaded := Store.read_all()
+	var loaded := Store.read_catalog()
 	entries = loaded["entries"]
 	print("冒险库：%s，有效记录 %d，读取失败 %d" % [ProjectSettings.globalize_path(Store.DIRECTORY),entries.size(),loaded["warnings"].size()])
 	for warning: String in loaded["warnings"]: push_warning(warning)
@@ -84,18 +85,16 @@ func _card(record: Dictionary) -> void:
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var image: Image = record["thumbnail"]
-	if image!=null: picture.texture = ImageTexture.create_from_image(image)
-	if image==null:
-		picture.tooltip_text = "暂无冒险预览，打开后保存可更新"
+	ProductCatalog.request_preview(record,picture)
 	column.add_child(picture)
 	var title := Style.text(record["title"],20)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title.tooltip_text = record["title"]
 	column.add_child(title)
-	var data: Dictionary = record["parameters"]
-	column.add_child(Style.text("%d 张地图" % data["maps"].size(),14,true))
+	var data: Dictionary = record["summary"]
+	if not record.get("pending",false):
+		column.add_child(Style.text("%d 张地图" % int(data.get("map_count",0)),14,true))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
 	column.add_child(row)
@@ -152,3 +151,12 @@ func _message(title: String, message: String) -> void:
 
 func _fit() -> void:
 	grid.columns = maxi(1,floori((size.x+12)/(220+12)))
+
+var catalog_refresh_queued := false
+func _catalog_changed(kind: String) -> void:
+	if kind!="adventures" or catalog_refresh_queued or not is_visible_in_tree(): return
+	catalog_refresh_queued = true
+	get_tree().create_timer(0.2).timeout.connect(_reload_catalog)
+func _reload_catalog() -> void:
+	catalog_refresh_queued = false
+	reload()

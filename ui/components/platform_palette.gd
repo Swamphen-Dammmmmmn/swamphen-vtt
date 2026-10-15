@@ -12,12 +12,12 @@ func _ready() -> void:
 	search.placeholder_text = "搜索地台名称"
 
 func _load_local_entries() -> void:
-	var loaded := PlatformStore.read_all()
+	var loaded := PlatformStore.read_catalog()
 	library_error = loaded["error"]
 	library_warnings = loaded["warnings"]
 	entries["platform"] = []
 	for record: Dictionary in loaded["entries"]:
-		entries["platform"].append({"id":record["id"],"title":record["title"],"thumbnail":record["thumbnail"],"parameters":record["parameters"],"tooltip":str(record["title"])+"\n导入独立地台副本"})
+		entries["platform"].append(record.duplicate(true))
 
 func open(margin: float, key: String = "platform") -> void:
 	super.open(margin,key)

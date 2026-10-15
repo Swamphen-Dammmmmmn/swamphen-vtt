@@ -756,7 +756,7 @@ func _process(delta: float) -> void:
 			if preview.selected_id!=hovered: preview.highlight(hovered)
 	var direction := Vector3.ZERO
 	var camera: Camera3D = preview.camera
-	if Input.is_physical_key_pressed(KEY_CTRL): return
+	if Input.is_physical_key_pressed(KEY_CTRL) or Input.is_physical_key_pressed(KEY_ALT) or Input.is_physical_key_pressed(KEY_META): return
 	if Input.is_physical_key_pressed(KEY_W): direction -= camera.basis.z
 	if Input.is_physical_key_pressed(KEY_S): direction += camera.basis.z
 	if Input.is_physical_key_pressed(KEY_A): direction -= camera.basis.x

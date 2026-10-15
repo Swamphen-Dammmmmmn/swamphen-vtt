@@ -96,6 +96,15 @@ func configure(data: Dictionary) -> void:
 		fit_all()
 	else: _position_camera()
 
+func focus_selected(part := "") -> void:
+	if not is_instance_valid(actor): return
+	var mesh := actor.get_node_or_null("Base" if part=="base" else "Standee") as MeshInstance3D
+	if mesh==null or not mesh.visible: return
+	var bounds: AABB = mesh.transform * mesh.get_aabb()
+	target = bounds.get_center()
+	distance = maxf(1,bounds.size.length()*1.8)
+	_position_camera()
+
 func fit_all() -> void:
 	target = framing_bounds.get_center()
 	distance = maxf(4, framing_bounds.size.length() * 1.5)

@@ -27,6 +27,7 @@ var reset_button: Button
 var type_buttons: Dictionary = {}
 
 func _ready() -> void:
+	ProductCatalog.changed.connect(_catalog_changed)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", Style.ITEM_GAP)
 	var header := HBoxContainer.new()
@@ -97,7 +98,7 @@ func _ready() -> void:
 	empty_content.add_child(reset_button)
 	get_parent().get_parent().resized.connect(_fit_grid)
 	resized.connect(_fit_grid)
-	set_entries([])
+	set_entries(entries,error_message)
 
 # The local storage step supplies validated records; no demo assets or file writes here.
 func set_entries(data: Array[Dictionary], read_error := "", warnings: Array = []) -> void:
@@ -189,3 +190,15 @@ func _fit_grid() -> void:
 	var card_width := minf(Style.LIBRARY_CARD_WIDTH, available)
 	for card in grid.get_children():
 		card.custom_minimum_size.x = card_width
+
+var catalog_refresh_queued := false
+func _catalog_changed(kind: String) -> void:
+	if kind!="tokens" or catalog_refresh_queued or not is_visible_in_tree(): return
+	catalog_refresh_queued = true
+	get_tree().create_timer(0.2).timeout.connect(_reload_catalog)
+func _reload_catalog() -> void:
+	catalog_refresh_queued = false
+	var loaded: Dictionary = load("res://scripts/token_library_store.gd").read_catalog()
+	var records: Array[Dictionary] = []
+	for record in loaded.entries: records.append(record)
+	set_entries(records,loaded.error,loaded.warnings)

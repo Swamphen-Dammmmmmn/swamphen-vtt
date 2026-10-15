@@ -55,18 +55,27 @@ static func _decode(bytes: PackedByteArray) -> Dictionary:
 	return {"ok": true, "image": image, "bytes": bytes.size(), "data": bytes}
 
 static func import_file(path: String) -> Dictionary:
-	# Android document providers return opaque content URIs, often without an extension.
-	# Decode the file header below; the URI suffix is not a file format.
-	if not (OS.has_feature("android") and path.begins_with("content://")) and path.get_extension().to_lower() not in ["png", "jpg", "jpeg"]: return _error("请选择 PNG、JPG 图片。")
+	# The picker may return an opaque URI or a path without an extension.
+	# File contents, not the path shape, determine PNG/JPG support.
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null: return _error("无法打开所选图片。")
 	if file.get_length() > MAX_BYTES:
 		file.close()
 		return _error("所选图片超过 2.5 MB，请先压缩。")
-	var bytes := file.get_buffer(file.get_length())
-	var error := file.get_error()
+	var bytes := PackedByteArray()
+	while true:
+		# Request at most one byte beyond the budget to detect oversized streams.
+		var block := file.get_buffer(mini(65536, MAX_BYTES + 1 - bytes.size()))
+		var error := file.get_error()
+		if error not in [OK, ERR_FILE_EOF]:
+			file.close()
+			return _error("读取图片失败。")
+		bytes.append_array(block)
+		if bytes.size() > MAX_BYTES:
+			file.close()
+			return _error("所选图片超过 2.5 MB，请先压缩。")
+		if block.is_empty(): break
 	file.close()
-	if error != OK: return _error("读取图片失败。")
 	return _decode(bytes)
 
 static func content_id(bytes: PackedByteArray) -> String:

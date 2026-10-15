@@ -92,7 +92,7 @@ func _ready() -> void:
 			startup = argument.trim_prefix("--page=")
 	var detail := "advanced" if OS.get_cmdline_user_args().has("--advanced-token") and startup == "token_customize" else ""
 	if startup=="adventure_play":
-		var loaded := AdventureStore.read_all()
+		var loaded := AdventureStore.read_catalog()
 		if not loaded["entries"].is_empty(): _open_adventure(loaded["entries"][0]["id"])
 		else: _navigate("adventures")
 		return
@@ -151,6 +151,12 @@ func _navigate(destination: String, detail := "") -> void:
 	if is_instance_valid(window_close_layer) or window_close_busy: return
 	if is_instance_valid(tray_controller) and tray_controller.blocked(): return
 	if current_route=="join" and destination!="join" and network_session.active and not network_session.hosting and not network_session.connected: network_session.close()
+	if destination in ["camera_focus","camera_overview"]:
+		if is_instance_valid(board):
+			if destination=="camera_focus": board._orbit_focus()
+			else: board._orbit_overview()
+		_navigate("board")
+		return
 	if destination=="open_adventure":
 		_open_adventure(detail)
 		return

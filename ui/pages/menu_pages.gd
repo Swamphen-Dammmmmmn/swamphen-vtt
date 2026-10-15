@@ -175,7 +175,7 @@ static func _token_library(page: Page, detail := "") -> void:
 		page.content.add_child(success)
 	var library := TokenLibrary.new()
 	page.content.add_child(library)
-	var loaded := TokenStore.read_all()
+	var loaded := TokenStore.read_catalog()
 	var records: Array[Dictionary] = []
 	for record in loaded["entries"]: records.append(record)
 	library.set_entries(records, loaded["error"], loaded["warnings"])
@@ -193,17 +193,12 @@ static func _token_library(page: Page, detail := "") -> void:
 		modal.name_saved.connect(func(): _refresh_token_library(page))
 	)
 	library.tags_requested.connect(func(id: String):
-		var record_result := TokenStore.get_record(id)
-		if not record_result["ok"]:
-			var modal := Modal.new()
-			page.add_overlay(modal)
-			modal.configure("无法读取标签", record_result["message"])
-			modal.add_action("关闭", modal.dismiss)
+		for data: Dictionary in library.entries:
+			if data["id"]!=id: continue
+			var tags_panel := TagsPanel.new()
+			page.add_overlay(tags_panel)
+			tags_panel.configure_token(data["title"],data["kind"],data["tags"])
 			return
-		var data: Dictionary = record_result["record"]
-		var tags_panel := TagsPanel.new()
-		page.add_overlay(tags_panel)
-		tags_panel.configure_token(data["title"], data["kind"], data["tags"])
 	)
 	library.copy_requested.connect(func(id: String):
 		var result := TokenStore.copy(id)
@@ -213,7 +208,7 @@ static func _token_library(page: Page, detail := "") -> void:
 			modal.configure("复制失败", result["message"])
 			modal.add_action("关闭", modal.dismiss)
 			return
-		var refreshed := TokenStore.read_all()
+		var refreshed := TokenStore.read_catalog()
 		var entries: Array[Dictionary] = []
 		for record in refreshed["entries"]: entries.append(record)
 		library.set_entries(entries, refreshed["error"], refreshed["warnings"])
@@ -239,7 +234,7 @@ static func _token_library(page: Page, detail := "") -> void:
 				confirm.disabled = false
 				return
 			modal.dismiss()
-			var refreshed := TokenStore.read_all()
+			var refreshed := TokenStore.read_catalog()
 			var entries: Array[Dictionary] = []
 			for record in refreshed["entries"]: entries.append(record)
 			library.set_entries(entries, refreshed["error"], refreshed["warnings"])
@@ -381,7 +376,7 @@ static func _flush_paragraph(page: Page, lines: PackedStringArray) -> void:
 	page.content.add_child(panel)
 
 static func _refresh_token_library(page: Page) -> void:
-	var loaded := TokenStore.read_all()
+	var loaded := TokenStore.read_catalog()
 	var entries: Array[Dictionary] = []
 	for record in loaded["entries"]: entries.append(record)
 	for child in page.content.get_children():

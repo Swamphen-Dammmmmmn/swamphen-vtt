@@ -63,9 +63,9 @@ var camera_render_angles := Vector2(0.58, 0.85)
 var camera_render_distance := 52.0
 var camera_initialized := false
 var camera_button := 0
-var left_pan_pending := false
+var left_orbit_pending := false
 var left_press_position := Vector2.ZERO
-const LEFT_PAN_THRESHOLD := 8.0
+const LEFT_ORBIT_THRESHOLD := 8.0
 var selected := -1
 var hover_token := -1
 var hover_timeout := 0.0
@@ -164,7 +164,7 @@ func set_application_active(active: bool, keep_visible := false) -> void:
 	if is_instance_valid(mobile_touch): mobile_touch.reset()
 	# Navigation pauses editing without cancelling drafts or changing board data.
 	camera_button = 0
-	left_pan_pending = false
+	left_orbit_pending = false
 	process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 	visible = active or keep_visible
 	ui.visible = active or keep_visible
@@ -441,9 +441,40 @@ func _update_camera(delta := -1.0) -> void:
 	camera.position = camera_render_focus + Vector3(sin(angle.x) * cos(angle.y), sin(angle.y), cos(angle.x) * cos(angle.y)) * camera_render_distance
 	camera.look_at(camera_render_focus)
 
+func _orbit_focus() -> void:
+	if selected<0 or selected>=tokens.size(): return
+	var actor: Node3D = tokens[selected]["node"]
+	var bounds: AABB = actor.get_meta("appearance_bounds",AABB(Vector3(-0.5,0,-0.5),Vector3.ONE))
+	bounds = actor.global_transform*bounds
+	focus = bounds.get_center()
+	camera_distance = maxf(3,bounds.size.length()*2.0)
+	camera_initialized = false
+	_update_camera()
+
+func _orbit_overview() -> void:
+	if not session_map.get("platforms",[]).is_empty():
+		var bounds: AABB = preload("res://scripts/map_data.gd").bounds(session_map["platforms"][0])
+		for platform: Dictionary in session_map["platforms"]: bounds = bounds.merge(preload("res://scripts/map_data.gd").bounds(platform))
+		focus = bounds.get_center()/5.0
+		camera_distance = maxf(12,bounds.size.length()/5.0*1.4)
+	else:
+		focus = Vector3.ZERO
+		camera_distance = 52
+	camera_initialized = false
+	_update_camera()
+
+func _orbit_rotate(relative: Vector2, touch := false) -> void:
+	var amount := OrbitCamera.rotation_delta(relative,get_viewport().get_visible_rect().size.y,touch)
+	yaw -= amount.x
+	pitch = OrbitCamera.clamp_pitch(pitch+amount.y)
+	_update_camera()
+
+func _orbit_pan(relative: Vector2, touch := false) -> void:
+	focus += OrbitCamera.pan_delta(camera,camera_distance,relative,get_viewport().get_visible_rect().size.y,touch)
+	_update_camera()
+
 func _zoom_camera(direction: float) -> void:
-	if camera_preferences.values["reverse_zoom"]: direction = -direction
-	camera_distance = clampf(camera_distance * pow(0.9, direction * float(camera_preferences.values["zoom"])), 3.0, 100000.0)
+	camera_distance = clampf(camera_distance*OrbitCamera.zoom_factor(pow(0.9,direction)),3.0,100000.0)
 	_update_camera()
 
 func _input(event: InputEvent) -> void:
@@ -460,9 +491,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and is_instance_valid(ui) and ui.keyboard_owned_by_ui():
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-		if left_pan_pending or camera_button == MOUSE_BUTTON_LEFT:
-			var was_click := left_pan_pending and camera_button == 0
-			left_pan_pending = false
+		if left_orbit_pending or camera_button == MOUSE_BUTTON_LEFT:
+			var was_click := left_orbit_pending and camera_button == 0
+			left_orbit_pending = false
 			camera_button = 0
 			if was_click and not ui.pointer_on_ui() and not ui.rename_open():
 				_left_click(left_press_position)
@@ -472,26 +503,21 @@ func _input(event: InputEvent) -> void:
 		camera_button = 0
 	if is_instance_valid(ui) and ui.rename_open():
 		return
-	if event is InputEventMouseMotion and left_pan_pending:
-		if event.position.distance_to(left_press_position) < LEFT_PAN_THRESHOLD:
+	if event is InputEventMouseMotion and left_orbit_pending:
+		if event.position.distance_to(left_press_position) < LEFT_ORBIT_THRESHOLD:
 			return
-		left_pan_pending = false
+		left_orbit_pending = false
 		camera_button = MOUSE_BUTTON_LEFT
 		ui.hide_token_actions()
-	if event is InputEventMouseMotion and camera_button != 0:
-		if camera_button == MOUSE_BUTTON_RIGHT:
-			yaw -= event.relative.x * 0.006 * float(camera_preferences.values["rotation"])
-			pitch = OrbitCamera.clamp_pitch(pitch + event.relative.y * 0.004 * float(camera_preferences.values["rotation"]))
-		else:
-			var right := camera.global_basis.x
-			var forward := Vector3(-sin(yaw), 0, -cos(yaw))
-			var world_per_pixel := 2.0 * camera_distance * tan(deg_to_rad(camera.fov / 2.0)) / get_viewport().get_visible_rect().size.y
-			focus += (-right * event.relative.x + forward * event.relative.y) * world_per_pixel * float(camera_preferences.values["pan"])
-		_update_camera()
+	if event is InputEventMouseMotion and camera_button!=0:
+		if OrbitCamera.mouse_rotates(camera_button): _orbit_rotate(event.relative)
+		else: _orbit_pan(event.relative)
 		get_viewport().set_input_as_handled()
 	if event is InputEventKey and event.pressed and not event.echo:
 		var handled := true
-		if event.keycode == KEY_ENTER and tool in [Tool.ROUTE, Tool.MEASURE]:
+		if event.keycode==KEY_F:
+			_orbit_focus()
+		elif event.keycode == KEY_ENTER and tool in [Tool.ROUTE, Tool.MEASURE]:
 			_on_route_action("confirm")
 		elif event.keycode == KEY_ENTER and tool == Tool.SHAPE:
 			_on_shape_action("confirm")
@@ -514,11 +540,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_escape()
 		return
 	if event is InputEventMouseButton and event.pressed:
+		if ui.pointer_on_ui(): return
 		if event.button_index==MOUSE_BUTTON_RIGHT and tool==Tool.TOKEN_CREATE and not tray_placement_id.is_empty():
 			_on_tool("select")
 			get_viewport().set_input_as_handled()
-			return
-		if ui.pointer_on_ui():
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			ui.release_keyboard_focus()
@@ -528,40 +553,31 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_WHEEL_DOWN:
 				_zoom_camera(-1.0)
 			MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE:
-				left_pan_pending = false
+				left_orbit_pending = false
 				camera_button = event.button_index
 				ui.hide_token_actions()
 			MOUSE_BUTTON_LEFT:
 				if camera_button != 0:
 					return
-				if not (Mobile.enabled and event.device == -420) and _can_start_left_pan(event.position):
-					left_pan_pending = true
+				if not (Mobile.enabled and event.device==-420) and _can_start_left_orbit(event.position):
+					left_orbit_pending = true
 					left_press_position = event.position
-				else:
-					_left_click(event.position)
+				else: _left_click(event.position)
 
-func _can_start_left_pan(mouse: Vector2) -> bool:
-	if tool == Tool.TOKEN_CREATE:
-		return false
-	if tool == Tool.SHAPE and not shape_plan.moving and shape_plan.pick(_shape_grid_point(mouse)) >= 0:
-		return false
-	if ui.pointer_on_ui() or (tool in [Tool.SELECT, Tool.ROUTE] and _pick_token(mouse) >= 0) or (tool == Tool.MEASURE and measure_creating and _pick_token(mouse) >= 0):
-		return false
-	if tool == Tool.MEASURE and measurement.editing_index >= 0:
-		return false
-	if tool == Tool.ROUTE:
-		if route.editing_index > 0:
-			return false
-		if not route.points.is_empty() and _pick_path_point(mouse) > 0:
-			return false
-	return true
+func _can_start_left_orbit(mouse: Vector2) -> bool:
+	# Active editing tools own the left button; orbit starts only on selection-mode background.
+	return tool==Tool.SELECT and not ui.pointer_on_ui() and _pick_token(mouse)<0
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
-		left_pan_pending = false
+		left_orbit_pending = false
 		camera_button = 0
 
 func _process(delta: float) -> void:
+	if is_instance_valid(ui) and not ui.keyboard_owned_by_ui() and not ui.rename_open() and not turn_control.panel.visible:
+		var editing_drag := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and camera_button!=MOUSE_BUTTON_LEFT and not left_orbit_pending
+		if not editing_drag:
+			focus.y += OrbitCamera.lift_direction()*OrbitCamera.lift_step(camera_distance,delta)
 	_update_camera(delta)
 	if not is_instance_valid(ui):
 		return
@@ -597,7 +613,7 @@ func _process(delta: float) -> void:
 			_update_route_pointer(mouse)
 			_update_route_ui()
 		Tool.SHAPE:
-			if shape_plan.moving and camera_button == 0 and not left_pan_pending and not ui.pointer_on_ui():
+			if shape_plan.moving and camera_button == 0 and not left_orbit_pending and not ui.pointer_on_ui():
 				var cell := _mouse_cell(mouse)
 				if _on_board(cell):
 					var previous_surface: String = shape_plan.draft.get("platform_id", "")
@@ -1630,7 +1646,7 @@ func _update_entity_hover(mouse: Vector2, _delta: float) -> void:
 	if tool == Tool.ROUTE or (tool == Tool.MEASURE and measure_creating):
 		_clear_entity_hover()
 		return
-	if ui.rename_open() or camera_button != 0 or left_pan_pending or ui.pointer_on_creation_palette():
+	if ui.rename_open() or camera_button != 0 or left_orbit_pending or ui.pointer_on_creation_palette():
 		ui.hide_entity_actions()
 		return
 	if not entity_entries.is_empty(): _position_entity_group()

@@ -1,6 +1,5 @@
 extends Button
 
-const Thumbnail = preload("res://ui/components/token_thumbnail.gd")
 var entry: Dictionary = {}
 var slot_height := BoardUiStyle.CREATION_SLOT_HEIGHT
 var thumbnail: Control
@@ -38,21 +37,17 @@ func configure(data: Dictionary) -> void:
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_theme_constant_override("separation", 4)
 	margin.add_child(column)
-	var preview: Control
-	if entry.has("thumbnail"):
-		var picture := TextureRect.new()
-		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if entry["thumbnail"]!=null: picture.texture = ImageTexture.create_from_image(entry["thumbnail"])
-		preview = picture
-	else:
-		preview = Thumbnail.new()
-	thumbnail = preview
-	preview.custom_minimum_size.y = maxf(24, slot_height - 40)
-	preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(preview)
-	if not entry.has("thumbnail"): preview.configure(entry.get("parameters", {}))
+	var picture := TextureRect.new()
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	thumbnail = picture
+	picture.custom_minimum_size.y = maxf(24,slot_height-40)
+	picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(picture)
+	if entry.has("catalog_kind"): ProductCatalog.request_preview(entry,picture)
+	elif entry.get("thumbnail")!=null: picture.texture = ImageTexture.create_from_image(entry.thumbnail)
+	else: TokenPreviews.request(entry.get("parameters",{}),picture)
 	var title := Label.new()
 	title.text = str(entry.get("title", ""))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

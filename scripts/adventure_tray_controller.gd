@@ -190,8 +190,10 @@ func _pick_library() -> void:
 	var library := Library.new()
 	library.selection_only = true
 	page.content.add_child(library)
-	var loaded := TokenStore.read_all()
-	library.set_entries(loaded["entries"],loaded["error"],loaded["warnings"])
+	var loaded := TokenStore.read_catalog()
+	var records: Array[Dictionary] = []
+	for entry in loaded["entries"]: records.append(entry)
+	library.set_entries(records,loaded["error"],loaded["warnings"])
 	library.edit_requested.connect(func(id: String):
 		var record := TokenStore.get_record(id)
 		if not record["ok"]:

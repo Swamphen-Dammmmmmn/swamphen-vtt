@@ -76,6 +76,7 @@ static func save(data: Dictionary, id := "", thumbnail: Image = null) -> Diction
 	if error!=OK:
 		var recovered := not original or DirAccess.rename_absolute(backup,path)==OK
 		return _error("保存失败，编辑内容已保留。"+("原文件已恢复。" if recovered else "原文件保留在备份中。"))
+	ProductCatalog.record_saved("maps",id,decoded["record"])
 	return {"ok":true,"id":id}
 
 static func _decode(record: Dictionary, filename: String) -> Dictionary:
@@ -181,4 +182,8 @@ static func delete(id: String) -> Dictionary:
 	if DirAccess.remove_absolute(path)!=OK: return _error("删除地图失败，原文件已保留。")
 	for suffix in [".bak",".tmp"]:
 		if FileAccess.file_exists(path+suffix): DirAccess.remove_absolute(path+suffix)
+	ProductCatalog.removed("maps",id)
 	return {"ok":true}
+
+static func read_catalog() -> Dictionary:
+	return ProductCatalog.read_list("maps")

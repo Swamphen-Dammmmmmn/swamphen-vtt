@@ -14,6 +14,7 @@ var replay_queue: Array[InputEvent] = []
 var replay_scheduled := false
 var replay_down := false
 var replay_owner: WeakRef
+var replay_target: WeakRef
 var blocked_fingers: Array[int] = []
 
 func _ready() -> void:
@@ -59,6 +60,9 @@ func owns(point: Vector2) -> bool:
 
 func _target_at(root: Control, point: Vector2) -> Control:
 	if not root.is_visible_in_tree(): return null
+	if root is ScrollContainer:
+		var bar: VScrollBar = root.get_v_scroll_bar()
+		if bar.is_visible_in_tree() and root.get_global_rect().has_point(point) and bar.get_global_rect().grow_individual(8,0,0,0).has_point(point): return bar
 	if root.clip_contents and not root.get_global_rect().has_point(point): return null
 	var children := root.get_children()
 	children.reverse()
@@ -130,11 +134,18 @@ func _input(event: InputEvent) -> void:
 			return
 		var distance: Vector2 = event.position-origin
 		if mode=="pending" and distance.length()>_threshold():
-			var horizontal := absf(distance.x)>absf(distance.y)*1.2
-			if is_instance_valid(target) and ((horizontal and (target is HSlider or target is HScrollBar or ((target is LineEdit or target is TextEdit) and target.has_focus()))) or (not horizontal and (target is VScrollBar or target is VSlider))):
+			var horizontal := absf(distance.x)>absf(distance.y)*1.8 and absf(distance.x)>_threshold()*1.4
+			var vertical := absf(distance.y)>absf(distance.x)*0.7 or distance.length()>_threshold()*2.0
+			if is_instance_valid(target) and target is VScrollBar:
 				mode = "native"
 				_mouse(true,origin)
-			else: mode = "scroll"
+			elif horizontal:
+				if is_instance_valid(target) and (target is HSlider or target is HScrollBar or ((target is LineEdit or target is TextEdit) and target.has_focus())):
+					mode = "native"
+					_mouse(true,origin)
+				else: mode = "scroll"
+			elif vertical: mode = "scroll"
+
 		if mode=="scroll":
 			var change: float = previous.y-event.position.y
 			active.get_v_scroll_bar().value += change
@@ -148,7 +159,14 @@ func _threshold() -> float:
 	var density: float = float(Mobile.native_info.get("density",maxf(1,float(DisplayServer.screen_get_dpi())/160)))
 	return maxf(4,8*density*get_viewport().get_visible_rect().size.y/maxf(1,physical.y))
 
+func _bar_point(point: Vector2) -> Vector2:
+	if is_instance_valid(target) and target is VScrollBar and mode!="scroll":
+		var rect := target.get_global_rect()
+		point.x = rect.get_center().x
+	return point
+
 func _mouse(pressed: bool, point: Vector2) -> void:
+	point = _bar_point(point)
 	# Establish hover before a mouse press; BaseButton requires it.
 	if pressed: _motion(point,Vector2.ZERO)
 	var event := InputEventMouseButton.new()
@@ -162,6 +180,7 @@ func _mouse(pressed: bool, point: Vector2) -> void:
 	_enqueue_replay(event)
 
 func _motion(point: Vector2, relative: Vector2) -> void:
+	point = _bar_point(point)
 	var event := InputEventMouseMotion.new()
 	event.device = DEVICE
 	event.position = point
@@ -171,7 +190,9 @@ func _motion(point: Vector2, relative: Vector2) -> void:
 	_enqueue_replay(event)
 
 func _enqueue_replay(event: InputEvent) -> void:
-	if replay_queue.is_empty(): replay_owner = weakref(active) if is_instance_valid(active) else null
+	if replay_queue.is_empty():
+		replay_owner = weakref(active) if is_instance_valid(active) else null
+		replay_target = weakref(target) if is_instance_valid(target) else null
 	replay_queue.append(event)
 	if not replay_scheduled:
 		replay_scheduled = true
@@ -181,12 +202,18 @@ func _flush_replay() -> void:
 	# Never nest another input dispatch inside the original touch callback.
 	# Coordinates are already viewport-local; global Input would transform them twice.
 	var owner = replay_owner.get_ref() if replay_owner!=null else null
-	if replay_owner!=null and (owner==null or not owner.is_visible_in_tree() or not owner.can_process()):
+	var control = replay_target.get_ref() if replay_target!=null else null
+	var invalid_target: bool = replay_target!=null and (control==null or not control.is_visible_in_tree() or not control.can_process())
+	if invalid_target or (replay_owner!=null and (owner==null or not owner.is_visible_in_tree() or not owner.can_process())):
 		_cancel()
 	var batch := replay_queue.duplicate()
 	replay_queue.clear()
 	replay_scheduled = false
 	for event in batch:
+		if event is InputEventMouseButton and event.pressed:
+			if not is_instance_valid(owner) or _pick(event.position)!=owner or _target_at(owner,event.position)!=control:
+				_cancel()
+				break
 		get_viewport().push_input(event,true)
 		if event is InputEventMouseButton: replay_down = event.pressed
 
@@ -202,6 +229,7 @@ func _process(delta: float) -> void:
 func _cancel() -> void:
 	replay_queue.clear()
 	replay_owner = null
+	replay_target = null
 	if replay_down: _mouse(false,Vector2(-10000,-10000))
 	finger = -1
 	active = null
