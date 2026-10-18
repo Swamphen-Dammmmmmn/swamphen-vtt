@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 var title := "显示设置"
@@ -29,7 +31,7 @@ func _ready() -> void:
 	var header := HBoxContainer.new()
 	header.set_meta("mobile_drag","native")
 	body.add_child(header)
-	var label := Style.text(title,20)
+	var label := Style.text(title,Typography.SECTION)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(label)

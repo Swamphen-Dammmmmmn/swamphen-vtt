@@ -1,5 +1,7 @@
 extends Control
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal deletion_confirmed(token_id: int)
 var target_id := -1
 var panel: PanelContainer
@@ -15,7 +17,7 @@ func _ready() -> void:
 	var column := GoStyle.column(BoardUiStyle.CONTENT_GAP)
 	panel.add_child(column)
 	var title := GoStyle.label("删除棋子")
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", Typography.SECTION)
 	column.add_child(title)
 	message = GoStyle.label("")
 	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

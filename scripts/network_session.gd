@@ -62,7 +62,7 @@ func _ready() -> void:
 	transport.room_ended.connect(_room_ended)
 
 func open_host(secret: String) -> Error:
-	if application.adventure.is_empty() or secret.is_empty() or secret.length()>128: return ERR_INVALID_PARAMETER
+	if application.adventure.is_empty() or secret.length()>128: return ERR_INVALID_PARAMETER
 	close()
 	hosting = true
 	password = secret

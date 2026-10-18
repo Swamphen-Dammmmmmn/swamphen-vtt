@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Motion = preload("res://ui/components/page_motion.gd")
 const ButtonFocus = preload("res://ui/components/button_focus.gd")
 
@@ -8,8 +10,8 @@ const MAX_WIDTH := 1120.0
 const PAGE_MARGIN := 32
 const SECTION_GAP := 24
 const ITEM_GAP := 12
-const TITLE_SIZE := 32
-const BODY_SIZE := 16
+const TITLE_SIZE := Typography.PAGE_TITLE
+const BODY_SIZE := Typography.BODY
 const BUTTON_HEIGHT := 44.0
 const FIELD_LABEL_WIDTH := 112.0
 const CUSTOMIZE_PANEL_WIDTH := 440.0
@@ -48,6 +50,8 @@ static func card_button(control: Button, height := BUTTON_HEIGHT) -> void:
 static func text(value: String, font_size := BODY_SIZE, secondary := false) -> Label:
 	var label := Label.new()
 	label.text = value
+	if font_size >= Typography.SECTION:
+		label.add_theme_font_override("font", Typography.MEDIUM)
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", Color("64748b") if secondary else Color("334155"))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

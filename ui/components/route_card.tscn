@@ -12,14 +12,13 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="Summary" type="Label" parent="Content"]
+theme_type_variation = &"TypographySubtitle"
 layout_mode = 2
 text = "已固定 · 0 英尺"
-theme_override_font_sizes/font_size = 18
 
 [node name="Hint" type="Label" parent="Content"]
 layout_mode = 2
-theme_type_variation = &"MutedLabel"
-theme_override_font_sizes/font_size = 13
+theme_type_variation = &"TypographyMutedStatus"
 text = "点击棋盘添加路径点"
 
 [node name="Buttons" type="HBoxContainer" parent="Content"]

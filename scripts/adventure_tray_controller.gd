@@ -1,4 +1,6 @@
 extends Node
+
+const LibraryPresentation = preload("res://ui/components/features/library/library_presentation.gd")
 const Members = preload("res://scripts/adventure_members.gd")
 const Trays = preload("res://scripts/adventure_trays.gd")
 const TrayPanel = preload("res://ui/components/adventure_tray_panel.gd")
@@ -185,10 +187,11 @@ func _pick_library() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var page := Shell.instantiate()
 	root.add_child(page)
-	page.configure("从棋子库添加","复制为当前冒险中的备用棋子。")
+	page.configure_library("从棋子库添加", "tokens", LibraryPresentation.Mode.SELECT)
 	page.back_requested.connect(_close_overlay)
 	var library := Library.new()
-	library.selection_only = true
+	library.mode = LibraryPresentation.Mode.SELECT
+	library.page = page
 	page.content.add_child(library)
 	var loaded := TokenStore.read_catalog()
 	var records: Array[Dictionary] = []

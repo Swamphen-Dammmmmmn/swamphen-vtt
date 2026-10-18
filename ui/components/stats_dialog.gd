@@ -1,5 +1,7 @@
 extends Control
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal stats_saved(index: int, hp: int, maximum: int, ac: int, temporary: int)
 var token_index := -1
 var history_id := -1
@@ -39,7 +41,7 @@ func _ready() -> void:
 	var header := GoStyle.row(8)
 	content.add_child(header)
 	heading = GoStyle.label("生命值")
-	heading.add_theme_font_size_override("font_size", 20)
+	heading.add_theme_font_size_override("font_size", Typography.SECTION)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	header.add_child(heading)

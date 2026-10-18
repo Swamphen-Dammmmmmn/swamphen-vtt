@@ -1,4 +1,6 @@
 extends Control
+
+const Typography = preload("res://ui/theme/typography.gd")
 var mobile_touch: Node
 var mobile_previous_tool := ""
 var mobile_tool_state: Dictionary = {}
@@ -110,7 +112,7 @@ func _ready() -> void:
 	var fold_space := Control.new()
 	fold_space.custom_minimum_size = Vector2(40,44)
 	header.add_child(fold_space)
-	heading = Style.text("地图",20)
+	heading = Style.text("地图",Typography.SECTION)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	header.add_child(heading)
@@ -129,9 +131,9 @@ func _ready() -> void:
 	name_input.text_changed.connect(func(text: String): values["title"] = text; _mark_unsaved())
 	selection = Style.column(12)
 	panel_body.add_child(selection)
-	selection_title = Style.text("未选择地台",18)
+	selection_title = Style.text("未选择地台",Typography.SUBTITLE)
 	selection.add_child(selection_title)
-	selection_size = Style.text("",14,true)
+	selection_size = Style.text("",Typography.CAPTION,true)
 	selection.add_child(selection_size)
 	var horizontal := Layout.pair(selection)
 	_position_number(horizontal,"X · 英尺","x",5)
@@ -339,7 +341,7 @@ func _refresh_list() -> void:
 		var locate := _button("定位",func(): preview.focus_platform(item["id"]))
 		locate.size_flags_horizontal = Control.SIZE_SHRINK_END
 		row.add_child(locate)
-	if list_rows.get_child_count()==0: list_rows.add_child(Style.text("尚未添加地台。" if query.is_empty() else "没有符合搜索的地台。",14,true))
+	if list_rows.get_child_count()==0: list_rows.add_child(Style.text("尚未添加地台。" if query.is_empty() else "没有符合搜索的地台。",Typography.CAPTION,true))
 
 func _choose_platform(entry: Dictionary) -> void:
 	_cancel_operation()

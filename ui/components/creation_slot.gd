@@ -1,5 +1,7 @@
 extends Button
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 var entry: Dictionary = {}
 var slot_height := BoardUiStyle.CREATION_SLOT_HEIGHT
 var thumbnail: Control
@@ -52,6 +54,6 @@ func configure(data: Dictionary) -> void:
 	title.text = str(entry.get("title", ""))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", Typography.CAPTION)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(title)

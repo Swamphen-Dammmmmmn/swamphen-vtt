@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Store = preload("res://scripts/local_identity.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const Field = preload("res://ui/components/page_field.gd")
@@ -28,12 +30,12 @@ func _ready() -> void:
 	form.add_child(nickname)
 	nickname.setup("昵称", "")
 	nickname.input.max_length = 40
-	form.add_child(Style.text("身份码",16))
+	form.add_child(Style.text("身份码",Typography.BODY))
 	code = LineEdit.new()
 	code.editable = false
 	code.custom_minimum_size.y = Style.BUTTON_HEIGHT
 	form.add_child(code)
-	form.add_child(Style.text("在其他设备使用相同身份码，可在同一个团中沿用原成员身份、棋子和个人托盘权限。\n请妥善保存身份码，避免泄露；持有该码的人可能获得同样的权限。",14,true))
+	form.add_child(Style.text("在其他设备使用相同身份码，可在同一个团中沿用原成员身份、棋子和个人托盘权限。\n请妥善保存身份码，避免泄露；持有该码的人可能获得同样的权限。",Typography.CAPTION,true))
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation",8)
 	form.add_child(actions)
@@ -47,7 +49,7 @@ func _ready() -> void:
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation",8)
 	form.add_child(footer)
-	feedback = Style.text("",14,true)
+	feedback = Style.text("",Typography.CAPTION,true)
 	feedback.autowrap_mode = TextServer.AUTOWRAP_OFF
 	feedback.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	feedback.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -59,7 +61,7 @@ func _ready() -> void:
 	if not loaded["ok"]:
 		nickname.input.editable = false
 		for button in [copy,modify,save_button]: button.disabled = true
-		var error := Style.text(loaded["message"],14)
+		var error := Style.text(loaded["message"],Typography.CAPTION)
 		error.add_theme_color_override("font_color",Color("b33c3c"))
 		form.add_child(error)
 		return
@@ -127,7 +129,7 @@ func guard_leave(action: Callable) -> bool:
 	dialog = Modal.new()
 	page.add_overlay(dialog)
 	dialog.configure("昵称尚未保存", "离开前是否保存？")
-	var error := Style.text("",14)
+	var error := Style.text("",Typography.CAPTION)
 	error.add_theme_color_override("font_color",Color("b33c3c"))
 	error.hide()
 	dialog.content.add_child(error)

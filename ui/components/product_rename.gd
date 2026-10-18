@@ -1,4 +1,5 @@
 extends "res://ui/components/page_modal.gd"
+
 const Field = preload("res://ui/components/page_field.gd")
 signal name_saved
 var name_field: Control
@@ -6,7 +7,7 @@ var confirm: Button
 var working := false
 
 func configure_product(title: String, max_length: int, save_name: Callable) -> void:
-	content.add_child(Style.text("重命名", 24))
+	content.add_child(Style.text("重命名", Typography.DIALOG_TITLE))
 	name_field = Field.new()
 	content.add_child(name_field)
 	name_field.setup("名称", "填写名称")

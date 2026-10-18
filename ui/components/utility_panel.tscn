@@ -27,9 +27,9 @@ grow_vertical = 2
 mouse_filter = 1
 
 [node name="Title" type="Label" parent="Shell/Header/Row"]
+theme_type_variation = &"TypographySection"
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
 text = "辅助面板"
 clip_text = true
 mouse_filter = 2

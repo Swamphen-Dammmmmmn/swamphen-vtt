@@ -16,7 +16,7 @@ def main():
     target=destination/"licenses"
     target.mkdir(exist_ok=True)
     count=0
-    for source_root in (ROOT/"addons",ROOT/"assets"/"environment",ROOT/"dev"/"vendor"):
+    for source_root in (ROOT/"addons",ROOT/"assets"/"environment",ROOT/"dev"/"vendor",ROOT/"ui"/"theme"/"fonts"):
         for source in source_root.rglob("*"):
             if source.is_file() and (source.name.upper().startswith(("LICENSE","COPYING","NOTICE","THIRD_PARTY_NOTICES")) or source.name=="OFL.txt"):
                 output=target/"third-party"/source.relative_to(ROOT)

@@ -1,4 +1,5 @@
 extends RefCounted
+const PreviewImage = preload("res://scripts/library_preview_image.gd")
 const StoragePaths = preload("res://scripts/storage_paths.gd")
 const Platforms = preload("res://scripts/platform_library_store.gd")
 const Data = preload("res://scripts/map_data.gd")
@@ -27,14 +28,8 @@ static func _pack(data: Dictionary, id: String, thumbnail: Image) -> Dictionary:
 		layers.append({"source_id":item["source_id"],"offset_feet":[at.x,at.y,at.z],"platform":platform})
 	var record := {"format_version":VERSION,"id":id,"title":str(data["title"]).strip_edges(),"environment":data["environment"],"platforms":layers,"images":images}
 	if thumbnail!=null and not thumbnail.is_empty():
-		var small: Image = thumbnail.duplicate()
-		var scale := minf(320.0/small.get_width(),200.0/small.get_height())
-		small.resize(maxi(1,roundi(small.get_width()*scale)),maxi(1,roundi(small.get_height()*scale)),Image.INTERPOLATE_LANCZOS)
-		small.convert(Image.FORMAT_RGBA8)
-		var frame := Image.create(320,200,false,Image.FORMAT_RGBA8)
-		frame.fill(Color("e5e7eb"))
-		frame.blit_rect(small,Rect2i(Vector2i.ZERO,small.get_size()),(Vector2i(320,200)-small.get_size())/2)
-		record["preview_png"] = Marshalls.raw_to_base64(frame.save_png_to_buffer())
+		var small := PreviewImage.prepare(thumbnail)
+		record["preview_png"] = Marshalls.raw_to_base64(small.save_png_to_buffer())
 	return {"ok":true,"record":record}
 
 static func save(data: Dictionary, id := "", thumbnail: Image = null) -> Dictionary:
@@ -76,7 +71,10 @@ static func save(data: Dictionary, id := "", thumbnail: Image = null) -> Diction
 	if error!=OK:
 		var recovered := not original or DirAccess.rename_absolute(backup,path)==OK
 		return _error("保存失败，编辑内容已保留。"+("原文件已恢复。" if recovered else "原文件保留在备份中。"))
-	ProductCatalog.record_saved("maps",id,decoded["record"])
+	# Prefer the caller's raw capture over the decode compatibility classification.
+	var catalog_record: Dictionary = decoded["record"]
+	catalog_record["thumbnail"] = thumbnail
+	ProductCatalog.record_saved("maps",id,catalog_record)
 	return {"ok":true,"id":id}
 
 static func _decode(record: Dictionary, filename: String) -> Dictionary:
@@ -126,7 +124,7 @@ static func _decode(record: Dictionary, filename: String) -> Dictionary:
 		data["platforms"].append(item)
 	var thumbnail: Image
 	if record.get("preview_png") is String and record["preview_png"].length()<1024*1024:
-		thumbnail = Platforms._png(Marshalls.base64_to_raw(record["preview_png"]),Vector2i(320,200))
+		thumbnail = PreviewImage.decode(Marshalls.base64_to_raw(record["preview_png"]))
 	return {"ok":true,"record":{"id":id,"title":data["title"],"parameters":data,"thumbnail":thumbnail}}
 
 static func get_record(id: String) -> Dictionary:

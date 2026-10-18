@@ -1,5 +1,7 @@
 extends "res://ui/components/utility_panel.gd"
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const CalculatorEngine = preload("res://scripts/calculator_engine.gd")
 var engine := CalculatorEngine.new()
 var entry: LineEdit
@@ -19,7 +21,7 @@ func _ready() -> void:
 	content().add_child(entry)
 	entry.text_submitted.connect(func(_text: String): calculate())
 	answer = GoStyle.label("结果：—")
-	answer.add_theme_font_size_override("font_size", 22)
+	answer.add_theme_font_size_override("font_size", Typography.EMPHASIS)
 	answer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content().add_child(answer)
 	feedback = GoStyle.label("")

@@ -1,5 +1,9 @@
 extends RefCounted
 
+const LibraryPresentation = preload("res://ui/components/features/library/library_presentation.gd")
+
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Style = preload("res://ui/components/page_style.gd")
 const Field = preload("res://ui/components/page_field.gd")
 const Notice = preload("res://ui/components/page_notice.gd")
@@ -88,92 +92,68 @@ static func _narrow(page: Page, width: float) -> VBoxContainer:
 	fit.call_deferred()
 	return column
 
-static func _home(page: Page, has_board: bool) -> void:
-	if Mobile.enabled:
-		_mobile_home(page)
-		return
-	page.configure("紫水鸡棋盘", "三维跑团棋盘", false)
-	var box := _narrow(page, 440)
-	var panel := Style.card()
-	box.add_child(panel)
-	var menu := Style.column(12)
-	panel.add_child(menu)
-	menu.add_child(Style.text("开始一场冒险", 24))
-	menu.add_child(Style.text("选择冒险开团，或通过邀请码加入团。", 16, true))
-	menu.add_child(_button("开团", _route(page, "adventures"), true, GoIconSet.PLAY, 56))
-	menu.add_child(_button("加团", _route(page, "join"), false, GoIconSet.USERS, 56))
-	menu.add_child(_button("身份", _route(page, "identity"), false, GoIconSet.USER, 56))
-	menu.add_child(HSeparator.new())
-	menu.add_child(_button("定制", _route(page, "customize"), false, GoIconSet.EDIT))
-	menu.add_child(_button("软件设置", _route(page, "settings"), false, GoIconSet.SETTINGS))
-	menu.add_child(_button("教程", _route(page, "tutorials"), false, GoIconSet.HELP))
-	var exit_button := _button("退出", _route(page, "quit"), false, GoIconSet.POWER, Style.BUTTON_HEIGHT, true)
-	for state in ["normal","hover","pressed","hover_pressed"]:
-		var face := exit_button.get_theme_stylebox(state).duplicate() as StyleBoxFlat
-		face.bg_color = Color("942f2f") if state in ["pressed","hover_pressed"] else (Color("c74b4b") if state=="hover" else Color("b33c3c"))
-		face.border_color = face.bg_color
-		exit_button.add_theme_stylebox_override(state,face)
-		exit_button.add_theme_color_override("font_"+("color" if state=="normal" else state+"_color"),Color.WHITE)
-		exit_button.add_theme_color_override("icon_"+state+"_color",Color.WHITE)
-	exit_button.add_theme_color_override("font_focus_color",Color.WHITE)
-	menu.add_child(exit_button)
-	box.add_child(Style.text("本地冒险与联机跑团", 14, true))
+static func _home(page: Page, _has_board: bool) -> void:
+	var home := preload("res://ui/components/features/home/home_screen.gd").new()
+	page.use_fullscreen_content(home)
+	page.notification_area_provider = home.notification_area
+	home.navigation_requested.connect(func(destination: String, detail: String): page.navigation_requested.emit(destination, detail))
 
 static func _adventures(page: Page, _has_board: bool) -> void:
-	page.configure("选择冒险","打开已保存的冒险，作为本地DM游玩。")
+	page.configure_library("选择冒险", "adventures", LibraryPresentation.Mode.SELECT)
 	var library := AdventureLibrary.new()
 	library.page = page
-	library.selection_only = true
+	library.mode = LibraryPresentation.Mode.SELECT
+	library.show_management_action = true
+	library.manage_requested.connect(_route(page,"adventure_library"))
 	page.content.add_child(library)
 	library.edit_requested.connect(func(id: String): page.navigation_requested.emit("open_adventure",id))
-	page.content.add_child(_button("前往冒险库",_route(page,"adventure_library")))
 
 static func _join(page: Page) -> void:
-	var join_page := preload("res://ui/pages/network_page.gd").new()
-	join_page.page = page
-	join_page.network = page.get_tree().current_scene.network_session
-	page.content.add_child(join_page)
+	page.configure_fluent("加入团")
+
+	# Create form panel
+	var form_panel := preload("res://ui/components/layout/form_panel.gd").new()
+	page.content.add_child(form_panel)
+
+	# Create join form
+	var join_form := preload("res://ui/components/features/network/join_form.gd").new()
+	form_panel.content_area.add_child(join_form)
+
+	var network: Node = page.get_tree().current_scene.network_session
+
+	# Register sensitive fields
+	page.register_sensitive_field(join_form.password_input())
+
+	# Connect signals
+	join_form.join_requested.connect(func(invite_code: String, password: String):
+		network.join(invite_code, password)
+		join_form.clear_password()
+	)
+
+	join_form.settings_requested.connect(func():
+		page.navigation_requested.emit("network_settings", "")
+	)
+
+	# Connect network status updates
+	network.status_changed.connect(join_form.update_network_status.bind(network))
+
+	# Initialize status
+	join_form.update_network_status(network.status, network)
 
 static func _customize(page: Page) -> void:
-	page.configure("定制", "管理可复用的本地产物。")
-	var notice := Notice.new()
-	var box := _narrow(page, 440)
-	var panel := Style.card()
-	box.add_child(panel)
-	var menu := Style.column(12)
-	panel.add_child(menu)
-	menu.add_child(Style.text("选择产物类型", 24))
-	var items := [
-		["棋子库", "保存可以带入不同冒险的自定义棋子。", GoIconSet.USER],
-		["预制件／合成体库", "将房屋等多个预制件组合为可整体复用的产物。", GoIconSet.HOME],
-		["地台库", "保存单独的一块场地，供地图组合使用。", GoIconSet.LOCATION],
-		["地图库", "将多个地台组成一张完整场景。", GoIconSet.MAP],
-		["冒险库", "组合多张地图、棋子与棋子盘，用于备团和开团。", GoIconSet.CROWN]
-	]
-	for item in items:
-		var title: String = item[0]
-		var action := func(): notice.show_message(title + "尚未开发。本轮仅保留入口，不进入库内页面。")
-		if title == "棋子库":
-			action = _route(page, "token_library")
-		elif title == "地台库":
-			action = _route(page, "platform_library")
-		elif title == "地图库":
-			action = _route(page,"map_library")
-		elif title == "冒险库":
-			action = _route(page,"adventure_library")
-		var entry := _button(title, action, false, item[2], 56)
-		entry.disabled = title=="预制件／合成体库"
-		entry.tooltip_text = item[1]
-		menu.add_child(entry)
-	box.add_child(notice)
+	var hub := preload("res://ui/components/features/library/customize_hub.gd").new()
+	page.use_fullscreen_content(hub)
+	hub.back_requested.connect(func(): page.back_requested.emit())
+	hub.navigation_requested.connect(func(destination: String, detail: String): page.navigation_requested.emit(destination, detail))
 
 static func _token_library(page: Page, detail := "") -> void:
-	page.configure("棋子库", "管理可复用的本地棋子，放入冒险时产生独立复制件。")
+	page.configure_library("棋子库", "tokens")
 	if detail == "saved":
-		var success := Style.text("棋子已保存到本地。", 16)
-		success.add_theme_color_override("font_color", Color("28785e"))
+		var success := Notice.new()
 		page.content.add_child(success)
+		success.show_message("棋子已保存到本地。")
 	var library := TokenLibrary.new()
+	library.page = page
 	page.content.add_child(library)
 	var loaded := TokenStore.read_catalog()
 	var records: Array[Dictionary] = []
@@ -219,18 +199,13 @@ static func _token_library(page: Page, detail := "") -> void:
 		var modal := Modal.new()
 		page.add_overlay(modal)
 		modal.configure("删除棋子？", "确定删除“%s”？删除后无法恢复。已放入冒险的复制件不受影响。" % data["title"])
-		var error_label := Style.text("", 14)
-		error_label.add_theme_color_override("font_color", Color("b33c3c"))
-		error_label.hide()
-		modal.content.add_child(error_label)
 		modal.add_action("取消", modal.dismiss)
 		var confirm := modal.add_action("确认删除", Callable(), false, true, true)
 		confirm.pressed.connect(func():
 			confirm.disabled = true
 			var result := TokenStore.delete(data["id"])
 			if not result["ok"]:
-				error_label.text = result["message"]
-				error_label.show()
+				modal.set_error(result["message"])
 				confirm.disabled = false
 				return
 			modal.dismiss()
@@ -261,10 +236,6 @@ static func _choose_upgrade(page: Page, id: String) -> void:
 	var modal := Modal.new()
 	page.add_overlay(modal)
 	modal.configure("升级“%s”" % record["title"], "继承占地、外观、名称、标签和初始数值。升级完成后留在棋子库；已放入冒险的棋子不受影响。")
-	var error_label := Style.text("", 14)
-	error_label.add_theme_color_override("font_color", Color("b33c3c"))
-	error_label.hide()
-	modal.content.add_child(error_label)
 	var copy_button := modal.add_action("生成高级副本", Callable(), true)
 	var convert_button := modal.add_action("转换原棋子…", Callable())
 	var cancel_button := modal.add_action("取消", modal.dismiss)
@@ -272,8 +243,7 @@ static func _choose_upgrade(page: Page, id: String) -> void:
 		for button in [copy_button, convert_button, cancel_button]: button.disabled = true
 		var result := TokenStore.upgrade(id)
 		if not result["ok"]:
-			error_label.text = result["message"]
-			error_label.show()
+			modal.set_error(result["message"])
 			for button in [copy_button, convert_button, cancel_button]: button.disabled = false
 			return
 		modal.dismiss()
@@ -288,10 +258,6 @@ static func _confirm_upgrade(page: Page, id: String, title: String) -> void:
 	var modal := Modal.new()
 	page.add_overlay(modal)
 	modal.configure("转换原棋子？", "将“%s”转换为高级棋子，保留原编号。确认后立即保存转换结果，原基础版本不再保留；需要保留原件时请取消并选择生成高级副本。" % title)
-	var error_label := Style.text("", 14)
-	error_label.add_theme_color_override("font_color", Color("b33c3c"))
-	error_label.hide()
-	modal.content.add_child(error_label)
 	var cancel := modal.add_action("取消", modal.dismiss)
 	var confirm := modal.add_action("确认转换", Callable(), false, true, true)
 	confirm.pressed.connect(func():
@@ -299,8 +265,7 @@ static func _confirm_upgrade(page: Page, id: String, title: String) -> void:
 		cancel.disabled = true
 		var result := TokenStore.upgrade(id, true)
 		if not result["ok"]:
-			error_label.text = result["message"]
-			error_label.show()
+			modal.set_error(result["message"])
 			confirm.disabled = false
 			cancel.disabled = false
 			return
@@ -347,7 +312,7 @@ static func _tutorial(page: Page, detail: String) -> void:
 	page.configure(topic[0], "操作教程")
 	var path: String = "res://docs/教程/" + topic[1]
 	if not FileAccess.file_exists(path):
-		page.content.add_child(Style.text("教程文件暂不可用。", 16, true))
+		page.content.add_child(Style.text("教程文件暂不可用。", Typography.BODY, true))
 		return
 	var source := FileAccess.get_file_as_string(path)
 	var link_pattern := RegEx.new()
@@ -361,7 +326,7 @@ static func _tutorial(page: Page, detail: String) -> void:
 			_flush_paragraph(page, paragraph)
 			paragraph.clear()
 			if line.begins_with("#"):
-				page.content.add_child(Style.text(line.trim_prefix("### ").trim_prefix("## "), 20))
+				page.content.add_child(Style.text(line.trim_prefix("### ").trim_prefix("## "), Typography.SECTION))
 		else:
 			line = link_pattern.sub(line, "$1", true).replace("**", "").replace("`", "")
 			if not line.begins_with("| ---"):
@@ -384,7 +349,7 @@ static func _refresh_token_library(page: Page) -> void:
 			child.set_entries(entries, loaded["error"], loaded["warnings"])
 
 static func _platform_library(page: Page) -> void:
-	page.configure("地台库","管理可复用的地台，导入地图时创建独立副本。")
+	page.configure_library("地台库", "platforms")
 	var library := PlatformLibrary.new()
 	library.page = page
 	page.content.add_child(library)
@@ -399,7 +364,7 @@ static func _platform_create(page: Page, id := "") -> void:
 		var loaded := PlatformStore.get_record(id)
 		if not loaded["ok"]:
 			editor.free()
-			page.content.add_child(Style.text(loaded["message"],20))
+			page.content.add_child(Style.text(loaded["message"],Typography.SECTION))
 			page.content.add_child(_button("返回地台库",_route(page,"platform_library")))
 			return
 		editor.values = loaded["record"]["parameters"]
@@ -409,7 +374,7 @@ static func _platform_create(page: Page, id := "") -> void:
 	editor.return_requested.connect(_route(page,"platform_library"))
 
 static func _map_library(page: Page) -> void:
-	page.configure("地图库","组合独立地台，保存完整地图。")
+	page.configure_library("地图库", "maps")
 	var library := MapLibrary.new()
 	library.page = page
 	page.content.add_child(library)
@@ -417,7 +382,7 @@ static func _map_library(page: Page) -> void:
 	library.edit_requested.connect(func(id: String): page.navigation_requested.emit("map_create",id))
 
 static func _adventure_library(page: Page) -> void:
-	page.configure("冒险库","组织多张地图，保存本地备团内容。")
+	page.configure_library("冒险库", "adventures")
 	var library := AdventureLibrary.new()
 	library.page = page
 	page.content.add_child(library)
@@ -432,7 +397,7 @@ static func _adventure_create(page: Page, id := "") -> void:
 		var loaded := AdventureStore.get_record(id)
 		if not loaded["ok"]:
 			editor.free()
-			page.content.add_child(Style.text(loaded["message"],20))
+			page.content.add_child(Style.text(loaded["message"],Typography.SECTION))
 			page.content.add_child(_button("返回冒险库",_route(page,"adventure_library")))
 			return
 		editor.values = loaded["record"]["parameters"]
@@ -449,7 +414,7 @@ static func _map_create(page: Page, id := "") -> void:
 		var loaded := MapStore.get_record(id)
 		if not loaded["ok"]:
 			editor.free()
-			page.content.add_child(Style.text(loaded["message"],20))
+			page.content.add_child(Style.text(loaded["message"],Typography.SECTION))
 			page.content.add_child(_button("返回地图库",_route(page,"map_library")))
 			return
 		editor.values = loaded["record"]["parameters"]
@@ -465,37 +430,59 @@ static func _identity(page: Page) -> void:
 	page.content.add_child(identity)
 
 static func _network_room(page: Page) -> void:
-	var room := preload("res://ui/pages/network_page.gd").new()
-	room.page = page
-	room.network = page.get_tree().current_scene.network_session
-	room.host_mode = true
-	page.content.add_child(room)
+	page.configure_fluent("联机房间")
+
+	# Create form panel
+	var form_panel := preload("res://ui/components/layout/form_panel.gd").new()
+	page.content.add_child(form_panel)
+
+	# Create host form
+	var host_form := preload("res://ui/components/features/network/host_form.gd").new()
+	form_panel.content_area.add_child(host_form)
+
+	var network: Node = page.get_tree().current_scene.network_session
+
+	# Register sensitive password field
+	page.register_sensitive_field(host_form.password_input())
+
+	# Connect signals using bound methods to avoid accessing freed nodes
+	host_form.open_requested.connect(network.open_host)
+	host_form.close_requested.connect(network.close)
+	host_form.copy_requested.connect(func():
+		if not network.room_code.is_empty():
+			DisplayServer.clipboard_set(network.room_code)
+	)
+	host_form.settings_requested.connect(func():
+		page.navigation_requested.emit("network_settings", "")
+	)
+
+	# Connect network status updates using bound method
+	network.status_changed.connect(host_form.update_network_status.bind(network))
+
+	# Initialize status
+	host_form.update_network_status(network.status, network)
 
 static func _network_settings(page: Page) -> void:
-	page.configure("连接设置")
-	preload("res://ui/pages/network_page.gd").add_settings(page.content)
+	page.configure_fluent("连接设置")
 
-static func _mobile_home(page: Page) -> void:
-	page.configure("紫水鸡棋盘","",false)
-	var panel := Style.card()
-	panel.add_theme_stylebox_override("panel",BoardUiStyle.card_face(16))
-	page.content.add_child(panel)
-	var menu := Style.column(12)
-	panel.add_child(menu)
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation",12)
-	grid.add_theme_constant_override("v_separation",12)
-	menu.add_child(grid)
-	for item in [["开团","adventures",GoIconSet.PLAY],["加团","join",GoIconSet.USERS],["身份","identity",GoIconSet.USER],["定制","customize",GoIconSet.EDIT],["软件设置","settings",GoIconSet.SETTINGS],["教程","tutorials",GoIconSet.HELP]]:
-		var button := _button(item[0],_route(page,item[1]),item[1]=="adventures",item[2],56)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		grid.add_child(button)
-	var exit_button := _button("退出",_route(page,"quit"),false,GoIconSet.POWER,56,true)
-	for state in ["normal","hover","pressed","hover_pressed"]:
-		var face := exit_button.get_theme_stylebox(state).duplicate() as StyleBoxFlat
-		face.bg_color = Color("b33c3c")
-		exit_button.add_theme_stylebox_override(state,face)
-		exit_button.add_theme_color_override("font_"+("color" if state=="normal" else state+"_color"),Color.WHITE)
-		exit_button.add_theme_color_override("icon_"+state+"_color",Color.WHITE)
-	menu.add_child(exit_button)
+	# Create form panel
+	var form_panel := preload("res://ui/components/layout/form_panel.gd").new()
+	page.content.add_child(form_panel)
+
+	# Create connection settings form
+	var settings_form := preload("res://ui/components/features/network/connection_settings_form.gd").new()
+	form_panel.content_area.add_child(settings_form)
+
+	# Load current settings
+	var Settings = preload("res://scripts/network_settings.gd")
+	var options := Settings.read()
+	settings_form.load_settings(options["address"], options["certificate"])
+
+	# Connect save signal
+	settings_form.save_requested.connect(func(address: String, certificate_path: String):
+		var error := Settings.save(address, certificate_path)
+		if error == OK:
+			settings_form.set_result(true, "已保存，下次连接生效")
+		else:
+			settings_form.set_result(false, "无法保存，请检查地址和公开证书。")
+	)

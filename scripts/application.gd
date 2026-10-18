@@ -26,6 +26,8 @@ const InstanceEditor = preload("res://ui/components/instance_token_editor.gd")
 var token_edit_layer: CanvasLayer
 var board: Board
 var current_page: Page
+var retained_network_page: Page
+var network_settings_origin := "join"
 var current_menu: Control
 var current_route := "home"
 var session_role := "dm"
@@ -89,7 +91,7 @@ func _ready() -> void:
 	$Pages/Root/Background.color = PageStyle.BACKGROUND
 	var startup := "home"
 	for argument in OS.get_cmdline_user_args():
-		if argument in ["--page=join", "--page=network_settings", "--page=identity", "--page=token_library", "--page=token_customize", "--page=settings", "--page=platform_library", "--page=platform_create", "--page=map_library", "--page=map_create", "--page=adventure_library", "--page=adventure_create", "--page=adventures", "--page=adventure_play"]:
+		if argument in ["--page=customize", "--page=join", "--page=network_settings", "--page=identity", "--page=token_library", "--page=token_customize", "--page=settings", "--page=platform_library", "--page=platform_create", "--page=map_library", "--page=map_create", "--page=adventure_library", "--page=adventure_create", "--page=adventures", "--page=adventure_play"]:
 			startup = argument.trim_prefix("--page=")
 	var detail := "advanced" if OS.get_cmdline_user_args().has("--advanced-token") and startup == "token_customize" else ""
 	if startup=="adventure_play":
@@ -131,7 +133,7 @@ func _request_software_restart(action: String) -> void:
 		_quit_application()
 	,true)
 
-func _clear_page() -> void:
+func _clear_page(keep_network_page := false) -> void:
 	var focused := get_viewport().gui_get_focus_owner()
 	if focused != null:
 		focused.release_focus()
@@ -140,12 +142,21 @@ func _clear_page() -> void:
 		current_menu.queue_free()
 		current_menu = null
 	if current_page != null:
-		if current_page.has_meta("password_input"):
-			var input := current_page.get_meta("password_input") as LineEdit
-			input.clear()
 		current_page.hide()
-		current_page.queue_free()
+		if keep_network_page:
+			current_page.process_mode = Node.PROCESS_MODE_DISABLED
+			retained_network_page = current_page
+		else:
+			current_page.clear_sensitive_fields()
+			current_page.queue_free()
 		current_page = null
+
+func _discard_retained_network_page() -> void:
+	if is_instance_valid(retained_network_page):
+		retained_network_page.clear_sensitive_fields()
+		retained_network_page.queue_free()
+	retained_network_page = null
+	network_settings_origin = "join"
 
 func _navigate(destination: String, detail := "") -> void:
 	if is_instance_valid(window_close_layer) or window_close_busy: return
@@ -194,7 +205,11 @@ func _navigate(destination: String, detail := "") -> void:
 	# An active session can only reach the home page through its end flow.
 	if destination == "home" and (board != null or not adventure.is_empty()):
 		destination = "session_menu"
-	_clear_page()
+	var keep_network_page := current_route in ["join", "network_room"] and destination == "network_settings"
+	if keep_network_page: network_settings_origin = current_route
+	var restore_network_page := current_route == "network_settings" and destination == network_settings_origin and is_instance_valid(retained_network_page)
+	if not keep_network_page and not restore_network_page: _discard_retained_network_page()
+	_clear_page(keep_network_page)
 	current_route = destination
 	if destination == "board":
 		$Pages/Root.hide()
@@ -220,6 +235,12 @@ func _navigate(destination: String, detail := "") -> void:
 		current_menu.configure(session_role,destination=="session_end",adventure.get("title","冒险"))
 		return
 	$Pages/Root/Background.color = PageStyle.BACKGROUND
+	if restore_network_page:
+		current_page = retained_network_page
+		retained_network_page = null
+		current_page.process_mode = Node.PROCESS_MODE_INHERIT
+		current_page.show()
+		return
 	current_page = PageScene.instantiate()
 	$Pages/Root.add_child(current_page)
 	current_page.navigation_requested.connect(_navigate)
@@ -249,7 +270,7 @@ func _back() -> void:
 	elif current_route=="network_room":
 		_navigate("session_menu")
 	elif current_route=="network_settings":
-		_navigate("session_menu" if board!=null else "join")
+		_navigate(network_settings_origin)
 	elif current_route == "adventure_create":
 		_navigate("adventure_library")
 	elif current_route == "adventure_library":
@@ -331,7 +352,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif current_route == "session_end":
 			get_viewport().set_input_as_handled()
 			_navigate("session_menu")
-		elif current_route=="session_maps":
+		elif current_route in ["session_maps", "network_settings"]:
 			get_viewport().set_input_as_handled()
 			_back()
 		elif Mobile.enabled and event.device == -420:
@@ -581,6 +602,8 @@ func _save_for_window_close(editor: Control, instance: Control) -> bool:
 
 func _quit_application() -> void:
 	if quitting: return
+	_discard_retained_network_page()
+	if is_instance_valid(current_page): current_page.clear_sensitive_fields()
 	quitting = true
 	window_close_busy = true
 	network_session.close()

@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal action_requested(action: String)
 signal notes_changed(text: String)
 var expanded := false
@@ -20,7 +22,7 @@ func _ready() -> void:
 		GoStyle.style_button(button, GoStyle.Tone.COMPACT)
 		button.custom_minimum_size = Vector2(0, 26)
 		button.autowrap_mode = TextServer.AUTOWRAP_OFF
-		button.add_theme_font_size_override("font_size", 13)
+		button.add_theme_font_size_override("font_size", Typography.STATUS)
 		for state in [&"normal", &"hover", &"pressed", &"disabled"]:
 			var style := StyleBoxFlat.new()
 			style.bg_color = Color.TRANSPARENT if state == &"normal" else Color("edf2f8")
@@ -41,7 +43,7 @@ func _ready() -> void:
 	$Content/Header/AC.pressed.connect(func(): action_requested.emit("ac"))
 	temporary_label = Label.new()
 	temporary_label.add_theme_color_override("font_color",Color("168de1"))
-	temporary_label.add_theme_font_size_override("font_size",13)
+	temporary_label.add_theme_font_size_override("font_size",Typography.STATUS)
 	temporary_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Content/Header.add_child(temporary_label)
 	$Content/Header.move_child(temporary_label,4)
@@ -61,7 +63,7 @@ func _ready() -> void:
 	notes_editor.placeholder_text = "备注"
 	notes_editor.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	notes_editor.custom_minimum_size = Vector2(300,120)
-	notes_editor.add_theme_font_size_override("font_size",16)
+	notes_editor.add_theme_font_size_override("font_size",Typography.BODY)
 	$Content.add_child(notes_editor)
 	notes_editor.hide()
 	notes_editor.text_changed.connect(func():

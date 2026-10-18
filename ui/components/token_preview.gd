@@ -1,4 +1,5 @@
 extends "res://ui/components/token_thumbnail.gd"
+
 const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 
 var yaw := 0.6
@@ -23,8 +24,8 @@ func _ready() -> void:
 	footprint = Node3D.new()
 	model_root.add_child(footprint)
 	size_label = Label3D.new()
-	size_label.font = preload("res://ui/theme/preview_size_font.tres")
-	size_label.font_size = 40
+	size_label.font = Typography.WORLD_REGULAR
+	size_label.font_size = Typography.PREVIEW_MEASURE
 	size_label.modulate = Color("334155")
 	size_label.outline_modulate = Color("f8fafc")
 	size_label.outline_size = 2

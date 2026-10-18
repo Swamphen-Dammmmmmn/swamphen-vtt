@@ -1,4 +1,5 @@
 extends "res://ui/components/creation_palette.gd"
+
 const Style = preload("res://ui/components/page_style.gd")
 const CardMenu = preload("res://ui/components/card_menu.gd")
 signal tray_action(action: String, id: String)
@@ -52,7 +53,7 @@ func _ready() -> void:
 	row.add_theme_constant_override("separation",8)
 	get_child(0).add_child(row)
 	get_child(0).move_child(row,get_child(0).get_child_count()-2)
-	selected_label = Style.text("",14,true)
+	selected_label = Style.text("",Typography.CAPTION,true)
 	selected_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	selected_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	selected_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -1,4 +1,6 @@
 extends VBoxContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 signal map_chosen(id: String)
 var entries: Array = []
@@ -22,7 +24,7 @@ func _ready() -> void:
 	grid.add_theme_constant_override("h_separation",12)
 	grid.add_theme_constant_override("v_separation",12)
 	add_child(grid)
-	empty = Style.text("",18,true)
+	empty = Style.text("",Typography.SUBTITLE,true)
 	add_child(empty)
 	resized.connect(_fit)
 	_refresh()
@@ -42,17 +44,17 @@ func _refresh() -> void:
 		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		if item.get("thumbnail")!=null: image.texture = ImageTexture.create_from_image(item["thumbnail"])
 		column.add_child(image)
-		var title := Style.text(item["data"]["title"],20)
+		var title := Style.text(item["data"]["title"],Typography.SECTION)
 		title.autowrap_mode = TextServer.AUTOWRAP_OFF
 		title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		title.tooltip_text = title.text
 		column.add_child(title)
-		column.add_child(Style.text("当前地图" if item["id"]==current_id else "%d 块地台" % item["data"]["platforms"].size(),14,true))
+		column.add_child(Style.text("当前地图" if item["id"]==current_id else "%d 块地台" % item["data"]["platforms"].size(),Typography.CAPTION,true))
 		var people: Array[String] = []
 		for member in party.get("positions",{}):
 			if party["positions"][member]==item["id"] and (member=="dm" or (is_instance_valid(network) and member in (network.peer_members.values() if host_mode else network.online_members))):
 				people.append(str(party["members"][member]["nickname"]))
-		if not people.is_empty(): column.add_child(Style.text(" · ".join(people),14,true))
+		if not people.is_empty(): column.add_child(Style.text(" · ".join(people),Typography.CAPTION,true))
 		if host_mode and is_instance_valid(network) and network.active:
 			var visible := CheckButton.new()
 			visible.text = "向PL开放"

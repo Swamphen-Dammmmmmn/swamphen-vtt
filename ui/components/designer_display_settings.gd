@@ -1,10 +1,12 @@
 extends RefCounted
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 
 static func populate(body: VBoxContainer, preview: Control, map_mode: bool, normal: float, fast: float, speed_changed: Callable, fit: Callable) -> void:
-	body.add_child(Style.text("网格与区域",16))
+	body.add_child(Style.text("网格与区域",Typography.BODY))
 	if map_mode:
 		_toggle(body,"地图参考网格",preview.map_grid.visible,preview.set_map_grid)
 	_toggle(body,"地台参考网格",preview.grid_shown,preview.set_grid_visible)

@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal entry_chosen(entry: Dictionary)
 signal state_changed(category: String, opened: bool)
 const Slot = preload("res://ui/components/creation_slot.gd")
@@ -56,7 +58,7 @@ func _ready() -> void:
 	header.custom_minimum_size.y = BoardUiStyle.ACTION_HEIGHT
 	column.add_child(header)
 	title = GoStyle.label("基础棋子")
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", Typography.SUBTITLE)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.size_flags_horizontal = Control.SIZE_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -95,7 +97,7 @@ func _ready() -> void:
 	status.mouse_filter = Control.MOUSE_FILTER_PASS
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	status.add_theme_font_size_override("font_size", 13)
+	status.add_theme_font_size_override("font_size", Typography.STATUS)
 	status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	footer.add_child(status)

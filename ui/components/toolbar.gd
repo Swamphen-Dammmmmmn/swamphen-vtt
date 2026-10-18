@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal tool_requested(tool: String)
 signal category_changed(category: String)
 signal panel_requested(panel: String)
@@ -99,7 +101,7 @@ func _make_button(title: String, icon_name: StringName) -> Button:
 	button.custom_minimum_size = Vector2(0, 40)
 	button.focus_mode = Control.FOCUS_NONE
 	button.toggle_mode = true
-	button.add_theme_font_size_override("font_size", 14)
+	button.add_theme_font_size_override("font_size", Typography.CAPTION)
 	BoardUiStyle.sidebar_button(button)
 	GoStyle.apply_icon(button, icon_name, 14)
 	return button

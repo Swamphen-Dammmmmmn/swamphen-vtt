@@ -1,8 +1,6 @@
-[gd_resource type="SystemFont" format=3]
+[gd_resource type="FontVariation" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/theme/fonts/world_font_alias.gd" id="1"]
 
 [resource]
-font_names = PackedStringArray("Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC")
-multichannel_signed_distance_field = true
-msdf_size = 64
-msdf_pixel_range = 16
-generate_mipmaps = true
+script = ExtResource("1")

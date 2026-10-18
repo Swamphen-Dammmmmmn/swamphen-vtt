@@ -1,5 +1,7 @@
 extends Button
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Style = preload("res://ui/components/page_style.gd")
 
 func setup(title: String, description: String, icon_name: StringName, status := "") -> void:
@@ -29,12 +31,12 @@ func setup(title: String, description: String, icon_name: StringName, status := 
 	var icon := GoUi.icons().node(icon_name, 24, Color("2563a6"))
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(icon)
-	var name_label := Style.text(title, 20)
+	var name_label := Style.text(title, Typography.SECTION)
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(name_label)
 	if not status.is_empty():
-		row.add_child(Style.text(status, 14, true))
-	box.add_child(Style.text(description, 16, true))
+		row.add_child(Style.text(status, Typography.CAPTION, true))
+	box.add_child(Style.text(description, Typography.BODY, true))
 	tooltip_text = title + "：" + description
 	# Button does not derive minimum size from children; account for wrapped text.
 	box.minimum_size_changed.connect(func(): custom_minimum_size.y = maxf(148, box.get_combined_minimum_size().y + 40))

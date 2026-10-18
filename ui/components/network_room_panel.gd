@@ -1,4 +1,6 @@
 extends VBoxContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const Field = preload("res://ui/components/page_field.gd")
 const Settings = preload("res://scripts/network_settings.gd")
@@ -31,9 +33,10 @@ func _ready() -> void:
 	password = Field.new()
 	form.add_child(password)
 	password.setup("团密码","",true)
+	password.input.placeholder_text = "选填，留空则凭邀请码加入" if host_mode else "房间没设密码时，只填邀请码即可加入"
 	if host_mode:
 		if network.hosting and network.active: password.input.text = network.password
-		form.add_child(Style.text("邀请码",16))
+		form.add_child(Style.text("邀请码",Typography.BODY))
 		room_label = LineEdit.new()
 		room_label.editable = false
 		room_label.custom_minimum_size.y = 44
@@ -58,7 +61,7 @@ func _ready() -> void:
 		Style.button(close_button)
 		form.add_child(close_button)
 		close_button.pressed.connect(network.close)
-	feedback = Style.text("",14,true)
+	feedback = Style.text("",Typography.CAPTION,true)
 	feedback.autowrap_mode = TextServer.AUTOWRAP_OFF
 	feedback.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	feedback.custom_minimum_size.y = 24
@@ -70,10 +73,9 @@ func _ready() -> void:
 	settings.pressed.connect(func(): page.navigation_requested.emit("network_settings",""))
 	network.status_changed.connect(_status)
 	_status(network.status)
-	page.set_meta("password_input",password.input)
+	page.register_sensitive_field(password.input)
 
 func _submit() -> void:
-	if password.input.text.is_empty(): password.set_error("请填写团密码。") ; return
 	if host_mode:
 		network.open_host(password.input.text)
 	else:
@@ -92,39 +94,13 @@ func _status(message: String) -> void:
 		password.input.editable = not network.active
 		if network.active and network.hosting: password.input.text = network.password
 
+# Compatibility entry: settings have one implementation.
 static func add_settings(parent: Control) -> void:
-	var options := Settings.read()
-	var form := Style.column(16)
+	var form := preload("res://ui/components/features/network/connection_settings_form.gd").new()
 	parent.add_child(form)
-	var address := Field.new()
-	form.add_child(address)
-	address.setup("连接协调地址", "")
-	address.input.max_length = 512
-	address.input.text = options["address"]
-	var certificate := Field.new()
-	form.add_child(certificate)
-	certificate.setup("公开证书", "")
-	certificate.input.max_length = 1024
-	certificate.input.text = options["certificate"]
-	var choose := Button.new()
-	choose.text = "选择公开证书"
-	Style.button(choose)
-	form.add_child(choose)
-	var browser := FileDialog.new()
-	browser.access = FileDialog.ACCESS_FILESYSTEM
-	browser.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	browser.use_native_dialog = true
-	browser.filters = PackedStringArray(["*.crt,*.pem ; 公开证书"])
-	form.add_child(browser)
-	browser.file_selected.connect(func(path: String): certificate.input.text = path)
-	choose.pressed.connect(func(): browser.popup_centered_ratio())
-	var status := Style.text("",14,true)
-	form.add_child(status)
-	var save := Button.new()
-	save.text = "保存连接设置"
-	Style.button(save,true)
-	form.add_child(save)
-	save.pressed.connect(func():
-		var error := Settings.save(address.input.text,certificate.input.text)
-		status.text = "已保存，下次连接生效" if error==OK else "无法保存，请检查地址和公开证书。"
+	var options := Settings.read()
+	form.load_settings(options["address"], options["certificate"])
+	form.save_requested.connect(func(address: String, certificate: String):
+		var result := Settings.save(address, certificate)
+		form.set_result(result == OK, "已保存，下次连接生效" if result == OK else "无法保存，请检查地址和公开证书。")
 	)

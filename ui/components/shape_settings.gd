@@ -1,5 +1,7 @@
 extends "res://ui/components/utility_panel.gd"
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal parameters_changed(parameters: Dictionary)
 signal action_requested(action: String)
 
@@ -79,7 +81,7 @@ func _ready() -> void:
 		button.tooltip_text = "相对当前朝向旋转 %+d°" % amount
 		sector_buttons.add_child(button)
 	status = editor_status
-	instruction = EditorStyle.text("", 14, true)
+	instruction = EditorStyle.text("", Typography.CAPTION, true)
 	content().add_child(instruction)
 	instruction.hide()
 	var buttons := VBoxContainer.new()

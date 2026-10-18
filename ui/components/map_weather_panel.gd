@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 const Weather = preload("res://scripts/map_weather.gd")
@@ -48,10 +50,10 @@ func show_tool(key: String, values: Dictionary) -> void:
 	add_theme_constant_override("separation",12)
 	match key:
 		"weather_atmosphere":
-			time_label = Style.text("时间氛围",18)
+			time_label = Style.text("时间氛围",Typography.SUBTITLE)
 			add_child(time_label)
 			_presets("time_preset",["morning","noon","evening"])
-			weather_label = Style.text("天气氛围",18)
+			weather_label = Style.text("天气氛围",Typography.SUBTITLE)
 			add_child(weather_label)
 			_presets("weather_preset",["clear","cloudy","overcast"])
 			_adjustment(self,"明暗","brightness",0.01)
@@ -141,7 +143,7 @@ func _presets(group: String, keys: Array) -> void:
 		var preview := PresetPreview.new()
 		preview.data = _preset_data(group,key)
 		body.add_child(preview)
-		var label := Style.text(Weather.TIMES[key] if group=="time_preset" else Weather.CONDITIONS[key],14)
+		var label := Style.text(Weather.TIMES[key] if group=="time_preset" else Weather.CONDITIONS[key],Typography.CAPTION)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		body.add_child(label)

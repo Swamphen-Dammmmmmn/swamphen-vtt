@@ -1,5 +1,7 @@
 extends "res://ui/components/utility_panel.gd"
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal values_changed(values: Array)
 signal reset_requested
 signal interval_changed(value: float)
@@ -23,7 +25,7 @@ func _ready() -> void:
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", EditorLayout.LABEL_GAP)
 		content().add_child(row)
-		var label := Style.text("", 14, true)
+		var label := Style.text("", Typography.CAPTION, true)
 		row.add_child(label)
 		var input := LineEdit.new()
 		input.max_length = 32
@@ -47,7 +49,7 @@ func _ready() -> void:
 	var interval_row := VBoxContainer.new()
 	interval_row.add_theme_constant_override("separation", EditorLayout.LABEL_GAP)
 	content().add_child(interval_row)
-	interval_label = Style.text("拖动间隔", 14, true)
+	interval_label = Style.text("拖动间隔", Typography.CAPTION, true)
 	interval_row.add_child(interval_label)
 	interval_input = LineEdit.new()
 	interval_input.max_length = 32

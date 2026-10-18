@@ -1,4 +1,5 @@
 extends RefCounted
+const PreviewImage = preload("res://scripts/library_preview_image.gd")
 const StoragePaths = preload("res://scripts/storage_paths.gd")
 const Parameters = preload("res://scripts/platform_parameters.gd")
 const Landing = preload("res://scripts/platform_landing.gd")
@@ -111,14 +112,8 @@ static func pack(data: Dictionary, id: String, thumbnail: Image = null) -> Dicti
 			dependencies[image_id] = Marshalls.raw_to_base64(loaded["data"])
 	var record := {"format_version":VERSION,"id":id,"parameters":payload,"images":dependencies}
 	if thumbnail!=null and not thumbnail.is_empty():
-		var small: Image = thumbnail.duplicate()
-		var scale := minf(320.0/small.get_width(),200.0/small.get_height())
-		small.resize(maxi(1,roundi(small.get_width()*scale)),maxi(1,roundi(small.get_height()*scale)),Image.INTERPOLATE_LANCZOS)
-		small.convert(Image.FORMAT_RGBA8)
-		var framed := Image.create(320,200,false,Image.FORMAT_RGBA8)
-		framed.fill(Color("e5e7eb"))
-		framed.blit_rect(small,Rect2i(Vector2i.ZERO,small.get_size()),(Vector2i(320,200)-small.get_size())/2)
-		record["preview_png"] = Marshalls.raw_to_base64(framed.save_png_to_buffer())
+		var small := PreviewImage.prepare(thumbnail)
+		record["preview_png"] = Marshalls.raw_to_base64(small.save_png_to_buffer())
 	# Validate the same representation that readers will receive before replacing a file.
 	var normalized := _decode(record,id+".json")
 	if not normalized["ok"]: return normalized
@@ -231,7 +226,7 @@ static func _decode(record: Dictionary, filename: String) -> Dictionary:
 	data["tokens"] = tokens
 	var thumbnail: Image
 	if record.get("preview_png") is String and record["preview_png"].length()<1024*1024:
-		thumbnail = _png(Marshalls.base64_to_raw(record["preview_png"]),Vector2i(320,200))
+		thumbnail = PreviewImage.decode(Marshalls.base64_to_raw(record["preview_png"]))
 	return {"ok":true,"record":{"id":id,"title":data["title"],"parameters":data,"thumbnail":thumbnail}}
 
 static func read_all() -> Dictionary:

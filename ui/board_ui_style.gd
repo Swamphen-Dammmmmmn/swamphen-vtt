@@ -1,6 +1,8 @@
 class_name BoardUiStyle
 extends RefCounted
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 static var configured := false
 const BORDER_COLOR := Color("596a80")
 const CARD_RADIUS := 12
@@ -49,7 +51,7 @@ static func place_floating(control: Control, anchor: Rect2, bounds: Vector2, lef
 
 static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margin: float) -> void:
 	menu.theme = GoUi.theme()
-	menu.add_theme_font_size_override("font_size", roundi(14 * preload("res://scripts/ui_preferences.gd").shared().floating_text))
+	menu.add_theme_font_size_override("font_size", roundi(Typography.CAPTION * preload("res://scripts/ui_preferences.gd").shared().floating_text))
 	menu.add_theme_constant_override("v_separation", 12)
 	menu.add_theme_stylebox_override("panel", card_face(ACTION_PADDING))
 	menu.reset_size()
@@ -61,7 +63,7 @@ static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margi
 
 static func action_button(button: Button, height: float = ACTION_HEIGHT, primary := false, danger := false) -> void:
 	button.custom_minimum_size.y = maxf(48,height) if OS.has_feature("android") or OS.get_cmdline_user_args().has("--mobile-preview") else height
-	button.add_theme_font_size_override("font_size", 14)
+	button.add_theme_font_size_override("font_size", Typography.CAPTION)
 	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 		var face := StyleBoxFlat.new()
 		face.set_corner_radius_all(CONTROL_RADIUS)
@@ -103,10 +105,10 @@ static func style_controls(root: Node, height: float = CONTROL_HEIGHT) -> void:
 		action_button(root, height, primary)
 	elif root is LineEdit:
 		root.custom_minimum_size.y = maxf(48,height) if OS.has_feature("android") or OS.get_cmdline_user_args().has("--mobile-preview") else height
-		root.add_theme_font_size_override("font_size", 14)
+		root.add_theme_font_size_override("font_size", Typography.CAPTION)
 	elif root is OptionButton:
 		root.custom_minimum_size.y = maxf(48,height) if OS.has_feature("android") or OS.get_cmdline_user_args().has("--mobile-preview") else height
-		root.add_theme_font_size_override("font_size", 14)
+		root.add_theme_font_size_override("font_size", Typography.CAPTION)
 	for child in root.get_children():
 		style_controls(child, height)
 
@@ -116,8 +118,10 @@ static func configure() -> void:
 	configured = true
 	var look := preload("res://addons/gohud/themes/gohud_light.tres").duplicate(true) as Theme
 	var original := preload("res://ui/theme/modern.tres")
-	look.default_font = original.default_font
-	look.default_font_size = 14
+	Typography.apply_theme(original)
+	original.default_font_size = Typography.LEGACY_BODY
+	Typography.apply_theme(look)
+	look.default_font_size = Typography.CAPTION
 	for type in look.get_type_list():
 		for key in look.get_stylebox_list(type):
 			var face := look.get_stylebox(key, type) as StyleBoxFlat
@@ -158,7 +162,7 @@ static func configure() -> void:
 	var config := GoConfig.new()
 	config.preset = &"default_light"
 	config.theme = look
-	config.base_font_size = 14
+	config.base_font_size = Typography.CAPTION
 	GoUi.config = config
 
 static func card_face(padding: float = 10.0) -> StyleBoxFlat:

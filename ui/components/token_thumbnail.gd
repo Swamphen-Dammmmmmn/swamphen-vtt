@@ -1,5 +1,7 @@
 extends SubViewportContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Sticker = preload("res://scripts/token_sticker.gd")
 const Images = preload("res://scripts/token_image_store.gd")
 const Components = preload("res://scripts/token_components.gd")
@@ -42,7 +44,7 @@ func _ready() -> void:
 	image_warning = Label.new()
 	image_warning.text = "图片资源缺失或损坏"
 	image_warning.add_theme_color_override("font_color", Color("b33c3c"))
-	image_warning.add_theme_font_size_override("font_size", 13)
+	image_warning.add_theme_font_size_override("font_size", Typography.STATUS)
 	image_warning.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	image_warning.hide()
 	add_child(image_warning)

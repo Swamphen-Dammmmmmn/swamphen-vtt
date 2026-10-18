@@ -1,5 +1,7 @@
 extends Control
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Instance = preload("res://scripts/token_instance.gd")
 const UtilityPopup = preload("res://ui/components/designer_utility_popup.gd")
 const Style = preload("res://ui/components/page_style.gd")
@@ -75,7 +77,7 @@ func _ready() -> void:
 	))
 
 func _label(text: String, color: Color) -> Label:
-	var label := Style.text(text,14)
+	var label := Style.text(text,Typography.CAPTION)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.add_theme_color_override("font_color",color)
 	return label

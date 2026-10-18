@@ -1,5 +1,6 @@
 extends "res://ui/pages/token_customize.gd"
 
+
 const ImageStore = preload("res://scripts/token_image_store.gd")
 const StickerData = preload("res://scripts/token_sticker.gd")
 var image_dialog: FileDialog
@@ -108,7 +109,7 @@ func _ready() -> void:
 	heading.get_child(1).hide()
 	heading.add_theme_constant_override("separation", 8)
 	heading_title.text = "棋子设置"
-	heading_title.add_theme_font_size_override("font_size", 20)
+	heading_title.add_theme_font_size_override("font_size", Typography.SECTION)
 	var header_space := Control.new()
 	header_space.custom_minimum_size = Vector2(44, 44)
 	header_space.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -162,7 +163,7 @@ func _button(text: String, action: Callable, height := 44.0) -> Button:
 	return button
 
 func _build_appearance_form(parent: Control) -> void:
-	parent.add_child(Style.text("实际占地 · 格", 16))
+	parent.add_child(Style.text("实际占地 · 格", Typography.BODY))
 	var footprint_row := _pair_row(parent, "宽", "长")
 	width_input = footprint_row[0]
 	length_input = footprint_row[1]
@@ -176,7 +177,7 @@ func _build_appearance_form(parent: Control) -> void:
 	editor_panel.add_child(editor_content)
 	var heading := HBoxContainer.new()
 	editor_content.add_child(heading)
-	editor_title = Style.text("底座", 20)
+	editor_title = Style.text("底座", Typography.SECTION)
 	editor_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(editor_title)
 	var header_space := Control.new()
@@ -198,7 +199,7 @@ func _build_appearance_form(parent: Control) -> void:
 	for item in [["shape", "形状与尺寸"], ["display", "材质与显示"], ["image", "图片"]]:
 		var key: String = item[0]
 		var button := _button(item[1], func(): _switch_attribute(key), 36)
-		button.add_theme_font_size_override("font_size", 14)
+		button.add_theme_font_size_override("font_size", Typography.CAPTION)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tabs.add_child(button)
 		attribute_buttons[key] = button
@@ -216,7 +217,7 @@ func _build_appearance_form(parent: Control) -> void:
 	shape_choice = _add_choice(shape_body, "样式", ["圆", "椭圆", "矩形", "正多边形"])
 	sides_input = _add_choice(shape_body, "边数", ["3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
 	component_rows["sides"] = sides_input.get_parent()
-	dimension_label = Style.text("尺寸 · 英尺", 16)
+	dimension_label = Style.text("尺寸 · 英尺", Typography.BODY)
 	shape_body.add_child(dimension_label)
 	var dimensions := _pair_row(shape_body, "直径", "长")
 	component_inputs["width_ft"] = dimensions[0]
@@ -224,7 +225,7 @@ func _build_appearance_form(parent: Control) -> void:
 	component_inputs["height_ft"] = dimensions[1]
 	component_rows["width_ft"] = dimensions[0].get_parent()
 	component_rows["length_ft"] = dimensions[1].get_parent()
-	thickness_label = Style.text("厚度", 14, true)
+	thickness_label = Style.text("厚度", Typography.CAPTION, true)
 	shape_body.add_child(thickness_label)
 	component_inputs["thickness_ft"] = _numeric_input(shape_body)
 	_build_contour_form(shape_body)
@@ -308,7 +309,7 @@ func _build_component_list() -> void:
 		_flat_button(select)
 		row.add_child(select)
 		component_tabs[key] = select
-		var mark := Style.text("", 12, true)
+		var mark := Style.text("", Typography.TAG, true)
 		mark.autowrap_mode = TextServer.AUTOWRAP_OFF
 		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(mark)
@@ -415,13 +416,13 @@ func _build_contour_form(parent: Control) -> void:
 	contour_body = Style.column(12)
 	parent.add_child(contour_body)
 	_separator(contour_body)
-	contour_body.add_child(Style.text("自动轮廓", 16))
+	contour_body.add_child(Style.text("自动轮廓", Typography.BODY))
 	var edges := _pair_row(contour_body, "包边 · 英尺", "连接条宽 · 英尺")
 	contour_inputs["border_ft"] = edges[0]
 	contour_inputs["bridge_ft"] = edges[1]
-	contour_body.add_child(Style.text("填补孔洞上限 · 平方英寸", 14, true))
+	contour_body.add_child(Style.text("填补孔洞上限 · 平方英寸", Typography.CAPTION, true))
 	contour_inputs["hole_sq_in"] = _numeric_input(contour_body)
-	contour_body.add_child(Style.text("圆滑程度 · %", 14, true))
+	contour_body.add_child(Style.text("圆滑程度 · %", Typography.CAPTION, true))
 	var smoothing_row := HBoxContainer.new()
 	smoothing_row.add_theme_constant_override("separation", 8)
 	contour_body.add_child(smoothing_row)
@@ -706,7 +707,7 @@ func _pair_row(parent: Control, first: String, second: String) -> Array[LineEdit
 		group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		group.add_theme_constant_override("separation", 6)
 		row.add_child(group)
-		group.add_child(Style.text(title, 14, true))
+		group.add_child(Style.text(title, Typography.CAPTION, true))
 		inputs.append(_numeric_input(group))
 	return inputs
 
@@ -935,7 +936,7 @@ func _highlight_button(button: Button, selected: bool) -> void:
 func _add_choice(parent: Control, title: String, choices: Array) -> OptionButton:
 	var row := Style.column(6)
 	parent.add_child(row)
-	row.add_child(Style.text(title, 14, true))
+	row.add_child(Style.text(title, Typography.CAPTION, true))
 	var choice := OptionButton.new()
 	choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for item in choices: choice.add_item(item)
@@ -982,7 +983,7 @@ func _build_sticker_form(parent: Control) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		faces.add_child(button)
 		sticker_face_buttons[key] = button
-	sticker_notice = Style.text("至少导入一面的图片才能保存", 14, true)
+	sticker_notice = Style.text("至少导入一面的图片才能保存", Typography.CAPTION, true)
 	parent.add_child(sticker_notice)
 	var image_row := Layout.pair(parent,300.0)
 	var image_column := Style.column(6)
@@ -993,13 +994,13 @@ func _build_sticker_form(parent: Control) -> void:
 	sticker_picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sticker_picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image_column.add_child(sticker_picture)
-	sticker_empty = Style.text("未导入图片", 14, true)
+	sticker_empty = Style.text("未导入图片", Typography.CAPTION, true)
 	sticker_empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sticker_empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	sticker_empty.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	sticker_empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sticker_picture.add_child(sticker_empty)
-	sticker_info = Style.text("", 14, true)
+	sticker_info = Style.text("", Typography.CAPTION, true)
 	image_column.add_child(sticker_info)
 	var image_actions := Style.column(8)
 	image_actions.size_flags_horizontal = Control.SIZE_FILL
@@ -1019,7 +1020,7 @@ func _build_sticker_form(parent: Control) -> void:
 	sticker_rows = Style.column(12)
 	parent.add_child(sticker_rows)
 	_separator(sticker_rows)
-	sticker_rows.add_child(Style.text("布局", 16))
+	sticker_rows.add_child(Style.text("布局", Typography.BODY))
 	var adjustment := Layout.pair(editor_content)
 	sticker_adjustment_actions = adjustment
 	for item in [["position", "调整位置"], ["rotation", "调整旋转"]]:
@@ -1042,7 +1043,7 @@ func _build_sticker_form(parent: Control) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		flips.add_child(button)
 		sticker_options[key] = button
-	sticker_rows.add_child(Style.text("图案背色", 14, true))
+	sticker_rows.add_child(Style.text("图案背色", Typography.CAPTION, true))
 	sticker_backing = ColorWell.new()
 	sticker_backing.color = Color.WHITE
 	sticker_backing.popup_host = self

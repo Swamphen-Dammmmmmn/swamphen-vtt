@@ -51,6 +51,10 @@ export/convert_text_resources_to_binary=false
 
 enabled=PackedStringArray("res://addons/dev_workflow/plugin.cfg")
 
+[gui]
+
+theme/custom_font="res://ui/theme/fonts/HarmonyOS_Sans_SC_Regular.ttf"
+
 [rendering]
 
 renderer/rendering_method.mobile="mobile"

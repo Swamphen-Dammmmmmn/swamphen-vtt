@@ -3,6 +3,7 @@ extends Node
 const Paths = preload("res://scripts/storage_paths.gd")
 const Files = preload("res://scripts/product_files.gd")
 const STORES := {"tokens":"res://scripts/token_library_store.gd","platforms":"res://scripts/platform_library_store.gd","maps":"res://scripts/map_library_store.gd","adventures":"res://scripts/adventure_library_store.gd"}
+const PreviewImage = preload("res://scripts/library_preview_image.gd")
 const VERSION := 1
 signal changed(kind: String)
 var jobs: Dictionary = {}
@@ -105,7 +106,7 @@ func request_preview(entry: Dictionary, view: TextureRect) -> void:
 	view.set_meta("catalog_entry",kind+":"+id)
 	view.texture = null
 	var path := _image(kind,id,str(entry.get("preview_revision","")))
-	if not path.is_empty() and FileAccess.file_exists(path):
+	if int(entry.get("preview_version",0)) == PreviewImage.VERSION and not path.is_empty() and FileAccess.file_exists(path):
 		if not textures.has(path):
 			var image := _read_image(path)
 			if image!=null:
@@ -113,24 +114,20 @@ func request_preview(entry: Dictionary, view: TextureRect) -> void:
 				textures[path] = ImageTexture.create_from_image(image)
 		if textures.has(path): view.texture = textures[path]; return
 	var key := kind+":"+id
-	if not preview_waiters.has(key): preview_waiters[key] = {"kind":kind,"id":id,"views":[]}
+	if not preview_waiters.has(key): preview_waiters[key] = {"kind":kind,"id":id,"views":[],"refresh_preview":int(entry.get("preview_version",0)) != PreviewImage.VERSION}
 	preview_waiters[key].views.append(weakref(view))
 
 func _read_image(path: String) -> Image:
 	var file := FileAccess.open(path,FileAccess.READ)
 	if file==null or file.get_length()>1048576: return null
-	var bytes := file.get_buffer(file.get_length())
-	if bytes.size()<24 or bytes.slice(0,8).hex_encode()!="89504e470d0a1a0a": return null
-	# PNG dimensions are big-endian, reject large or malformed cache images before decoding.
-	if bytes.slice(16,24).hex_encode()!="00000140000000c8": return null
-	var image := Image.new()
-	return image if image.load_png_from_buffer(bytes)==OK else null
+	return PreviewImage.decode(file.get_buffer(file.get_length()), false)
 
-func _enqueue(kind: String, id: String, stamp: String, record: Dictionary = {}) -> void:
+func _enqueue(kind: String, id: String, stamp: String, record: Dictionary = {}, refresh_preview := false) -> void:
 	var key := kind+":"+id
 	if attempted.get(key)==stamp and record.is_empty(): return
-	if not jobs.has(key): jobs[key] = {"kind":kind,"id":id,"stamp":stamp,"record":record}
-	elif not record.is_empty(): jobs[key] = {"kind":kind,"id":id,"stamp":stamp,"record":record}
+	if not jobs.has(key): jobs[key] = {"kind":kind,"id":id,"stamp":stamp,"record":record,"refresh_preview":refresh_preview}
+	elif not record.is_empty(): jobs[key] = {"kind":kind,"id":id,"stamp":stamp,"record":record,"refresh_preview":refresh_preview}
+	elif refresh_preview: jobs[key]["refresh_preview"] = true
 
 func record_saved(kind: String, id: String, record: Dictionary = {}) -> void:
 	var key := kind+":"+id
@@ -174,30 +171,28 @@ func _store(kind: String, record: Dictionary, supplied: Image = null, schedule_m
 		"maps": summary["platform_count"] = data.platforms.size()
 		"adventures": summary["map_count"] = data.maps.size()
 	var before := _meta(kind,id,"")
-	var meta := {"version":VERSION,"id":id,"title":record.title,"kind":record.get("kind",kind),"tags":record.get("tags",[]),"summary":summary,"stamp":stamp,"preview_revision":""}
+	var meta := {"version":VERSION,"id":id,"title":record.title,"kind":record.get("kind",kind),"tags":record.get("tags",[]),"summary":summary,"stamp":stamp,"preview_revision":"","preview_version":PreviewImage.VERSION}
 	if kind=="tokens": meta["visual_key"] = TokenPreviews._key(data)
 	var image: Image = supplied if supplied!=null else _stored_image(record)
+	var legacy_frame := image != null and bool(image.get_meta("legacy_library_frame", false))
+	if legacy_frame: meta.preview_version = 0
 	if image!=null and not image.is_empty():
-		var small: Image = image.duplicate()
-		small.convert(Image.FORMAT_RGBA8)
-		var scale := minf(320.0/small.get_width(),200.0/small.get_height())
-		small.resize(maxi(1,roundi(small.get_width()*scale)),maxi(1,roundi(small.get_height()*scale)),Image.INTERPOLATE_LANCZOS)
-		var framed := Image.create(320,200,false,Image.FORMAT_RGBA8)
-		framed.fill(Color("e5e7eb"))
-		framed.blit_rect(small,Rect2i(Vector2i.ZERO,small.get_size()),(Vector2i(320,200)-small.get_size())/2)
+		var small := PreviewImage.prepare(image)
 		var revision := Crypto.new().generate_random_bytes(16).hex_encode()
 		var path := _image(kind,id,revision)
 		DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-		if framed.save_png(path+".tmp.png")==OK and DirAccess.rename_absolute(path+".tmp.png",path)==OK: meta.preview_revision = revision
+		if small.save_png(path+".tmp.png")==OK and DirAccess.rename_absolute(path+".tmp.png",path)==OK: meta.preview_revision = revision
 	elif kind=="tokens":
-		if before.get("visual_key")==meta.visual_key: meta.preview_revision = before.get("preview_revision","")
+		if before.get("visual_key")==meta.visual_key:
+			meta.preview_revision = before.get("preview_revision","")
+			meta.preview_version = before.get("preview_version",0)
 	if _write(kind,id,meta):
 		var old_path := _image(kind,id,str(before.get("preview_revision","")))
 		var new_path := _image(kind,id,str(meta.preview_revision))
 		if old_path!=new_path and not old_path.is_empty() and FileAccess.file_exists(old_path):
 			DirAccess.remove_absolute(old_path)
 			textures.erase(old_path)
-	if schedule_missing and str(meta.preview_revision).is_empty(): _enqueue(kind,id,stamp,record)
+	if schedule_missing and (str(meta.preview_revision).is_empty() or legacy_frame): _enqueue(kind,id,stamp,record,legacy_frame)
 
 func _process(_delta: float) -> void:
 	if busy: return
@@ -207,7 +202,7 @@ func _process(_delta: float) -> void:
 			var view = reference.get_ref()
 			if view==null: pending.views.erase(reference)
 			elif TokenPreviews._visible(view):
-				_enqueue(pending.kind,pending.id,_stamp(pending.kind,pending.id))
+				_enqueue(pending.kind,pending.id,_stamp(pending.kind,pending.id),{},pending.get("refresh_preview",false))
 				preview_waiters.erase(waiting_key)
 				break
 		if pending.views.is_empty(): preview_waiters.erase(waiting_key)
@@ -232,7 +227,8 @@ func _repair(key: String, job: Dictionary) -> void:
 	elif loaded.ok and generation==int(epochs.get(key,0)) and _stamp(job.kind,job.id)==job.stamp:
 		var record: Dictionary = loaded.record
 		var image: Image = _stored_image(record)
-		if image==null or image.is_empty(): image = await _render(job.kind,record)
+		if job.get("refresh_preview",false) or image==null or image.is_empty() or image.get_size()==PreviewImage.MAX_SIZE:
+			image = await _render(job.kind,record)
 		if generation==int(epochs.get(key,0)) and _stamp(job.kind,job.id)==job.stamp: _store(job.kind,record,image,false)
 	busy = false
 	changed.emit.call_deferred(str(job.kind))

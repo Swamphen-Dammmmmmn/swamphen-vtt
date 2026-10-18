@@ -1,5 +1,7 @@
 extends "res://ui/components/utility_panel.gd"
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 signal action_requested(action: String)
 var establish: Button
 var status: Label
@@ -11,7 +13,7 @@ func _ready() -> void:
 	establish = GoStyle.button("创建", func(): action_requested.emit("new"), GoStyle.Tone.PRIMARY)
 	editor_footer.add_child(establish)
 	status = editor_status
-	instruction = EditorStyle.text("", 14, true)
+	instruction = EditorStyle.text("", Typography.CAPTION, true)
 	content().add_child(instruction)
 	instruction.hide()
 	set_state(false, false, false)

@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Surface = preload("res://scripts/token_surface.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const ColorWell = preload("res://ui/components/color_well.gd")
@@ -21,10 +23,10 @@ func _ready() -> void:
 	add_theme_constant_override("separation", 12)
 	var heading := HBoxContainer.new()
 	add_child(heading)
-	var heading_label := Style.text("材质预设", 14, true)
+	var heading_label := Style.text("材质预设", Typography.CAPTION, true)
 	heading_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(heading_label)
-	preset_status = Style.text("", 14)
+	preset_status = Style.text("", Typography.CAPTION)
 	preset_status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	preset_status.custom_minimum_size.x = 72
 	preset_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -56,7 +58,7 @@ func _ready() -> void:
 		inset.add_child(content)
 		var preview := _preview(Surface.defaults(kind, "7ba5cc"))
 		content.add_child(preview)
-		var label := Style.text(Surface.TITLES[i], 13)
+		var label := Style.text(Surface.TITLES[i], Typography.STATUS)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		content.add_child(label)
 		button.pressed.connect(func():
@@ -70,7 +72,7 @@ func _ready() -> void:
 	color_input = ColorWell.new()
 	color_input.popup_host = popup_host
 	Style.card_button(color_input)
-	add_child(Style.text("颜色", 14, true))
+	add_child(Style.text("颜色", Typography.CAPTION, true))
 	add_child(color_input)
 	color_input.color_changed.connect(func(color: Color):
 		if syncing: return
@@ -137,7 +139,7 @@ func _update_preset() -> void:
 func _knob(key: String, title: String) -> VBoxContainer:
 	var group := Style.column(6)
 	add_child(group)
-	group.add_child(Style.text(title, 14, true))
+	group.add_child(Style.text(title, Typography.CAPTION, true))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	group.add_child(row)

@@ -1,5 +1,7 @@
 extends RefCounted
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 # Shared desktop property layout; specialized board popovers keep their own sizes.
 const Style = preload("res://ui/components/page_style.gd")
 const PADDING := 16.0
@@ -11,11 +13,11 @@ const STATUS_HEIGHT := 24.0
 static func field(parent: Control, title: String) -> VBoxContainer:
 	var group := Style.column(LABEL_GAP)
 	parent.add_child(group)
-	group.add_child(Style.text(title, 14, true))
+	group.add_child(Style.text(title, Typography.CAPTION, true))
 	return group
 
 static func status() -> Label:
-	var label := Style.text("", 14, true)
+	var label := Style.text("", Typography.CAPTION, true)
 	label.custom_minimum_size.y = STATUS_HEIGHT
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS

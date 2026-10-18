@@ -1,4 +1,8 @@
 extends VBoxContainer
+
+const LibraryPresentation = preload("res://ui/components/features/library/library_presentation.gd")
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const Data = preload("res://scripts/adventure_data.gd")
 const Store = preload("res://scripts/adventure_library_store.gd")
@@ -33,7 +37,7 @@ func _ready() -> void:
 	add_theme_constant_override("separation",16)
 	var row := Style.column(8)
 	add_child(row)
-	var name_label := Style.text("冒险名称",16)
+	var name_label := Style.text("冒险名称",Typography.BODY)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	row.add_child(name_label)
 	name_input = LineEdit.new()
@@ -57,13 +61,13 @@ func _ready() -> void:
 	grid.add_theme_constant_override("h_separation",12)
 	grid.add_theme_constant_override("v_separation",12)
 	add_child(grid)
-	empty = Style.text("",18,true)
+	empty = Style.text("",Typography.SUBTITLE,true)
 	add_child(empty)
 	var header_actions := HBoxContainer.new()
 	header_actions.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header_actions.add_theme_constant_override("separation",12)
 	page.get_node("Layout/Header").add_child(header_actions)
-	save_state = Style.text("",14,true)
+	save_state = Style.text("",Typography.CAPTION,true)
 	save_state.autowrap_mode = TextServer.AUTOWRAP_OFF
 	save_state.custom_minimum_size.x = 64
 	save_state.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -112,12 +116,12 @@ func _card(item: Dictionary) -> void:
 	var thumbnail: Image = item.get("thumbnail")
 	if thumbnail!=null: picture.texture = ImageTexture.create_from_image(thumbnail)
 	column.add_child(picture)
-	var title := Style.text(item["data"]["title"],20)
+	var title := Style.text(item["data"]["title"],Typography.SECTION)
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title.tooltip_text = title.text
 	column.add_child(title)
-	column.add_child(Style.text("%d 块地台" % item["data"]["platforms"].size(),14,true))
+	column.add_child(Style.text("%d 块地台" % item["data"]["platforms"].size(),Typography.CAPTION,true))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
 	column.add_child(row)
@@ -187,11 +191,11 @@ func _pick_map() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var shell := Shell.instantiate()
 	picker.add_child(shell)
-	shell.configure("添加地图","从地图库复制到冒险，后续修改与原件独立。")
+	shell.configure_library("添加地图", "maps", LibraryPresentation.Mode.SELECT)
 	shell.back_requested.connect(_close_picker)
 	var library := MapLibrary.new()
 	library.page = shell
-	library.selection_only = true
+	library.mode = LibraryPresentation.Mode.SELECT
 	shell.content.add_child(library)
 	library.edit_requested.connect(func(id: String):
 		var loaded := MapStore.get_record(id)

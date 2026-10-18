@@ -213,6 +213,9 @@ func local_safe_rect(control: Control) -> Rect2:
 func _prepare_popup(reference: WeakRef) -> void:
 	var popup = reference.get_ref()
 	if popup==null: return
+	# Reparenting a fixed toolbar re-enters its popup into the tree; keep one lifetime binding.
+	if popup.get_meta("mobile_popup_prepared",false): return
+	popup.set_meta("mobile_popup_prepared",true)
 	popup.about_to_popup.connect(_fit_popup.bind(reference))
 
 func _fit_popup(reference: WeakRef) -> void:

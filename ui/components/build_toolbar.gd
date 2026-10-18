@@ -1,4 +1,6 @@
 extends PanelContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 const EXPANDED_WIDTH := 152.0
@@ -49,7 +51,7 @@ func _ready() -> void:
 	previous = _arrow(false)
 	paging.add_child(previous)
 	previous.pressed.connect(func(): _change_category(category_index-1))
-	page_number = Style.text("",12,true)
+	page_number = Style.text("",Typography.TAG,true)
 	page_number.autowrap_mode = TextServer.AUTOWRAP_OFF
 	page_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	page_number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

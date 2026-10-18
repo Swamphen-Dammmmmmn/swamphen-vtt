@@ -2,9 +2,7 @@
 [ext_resource type="Theme" path="res://ui/theme/modern.tres" id="1"]
 [ext_resource type="Script" path="res://ui/components/token_name.gd" id="2"]
 
-[sub_resource type="SystemFont" id="NameFont"]
-font_names = PackedStringArray("Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC")
-font_weight = 700
+[ext_resource type="FontFile" path="res://ui/theme/fonts/HarmonyOS_Sans_SC_Bold.ttf" id="NameFont"]
 
 [node name="TokenCard" type="PanelContainer"]
 theme = ExtResource("1")
@@ -29,11 +27,11 @@ size_flags_vertical = 8
 mouse_filter = 2
 
 [node name="Name" type="Label" parent="Content/Header"]
+theme_type_variation = &"TypographyTokenName"
 layout_mode = 2
 size_flags_horizontal = 1
 size_flags_vertical = 8
-theme_override_fonts/font = SubResource("NameFont")
-theme_override_font_sizes/font_size = 28
+theme_override_fonts/font = ExtResource("NameFont")
 text = "棋子"
 text_overrun_behavior = 3
 mouse_filter = 2

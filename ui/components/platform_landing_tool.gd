@@ -1,4 +1,6 @@
 extends VBoxContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const Layout = preload("res://ui/components/editor_layout.gd")
 const Landing = preload("res://scripts/platform_landing.gd")
@@ -53,7 +55,7 @@ func _ready() -> void:
 		pause_gesture()
 		brush_size = roundi(value)
 	)
-	summary = Style.text("",14,true)
+	summary = Style.text("",Typography.CAPTION,true)
 	add_child(summary)
 
 func attach(data: Dictionary) -> void:

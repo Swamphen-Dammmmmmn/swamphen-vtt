@@ -1,4 +1,6 @@
 extends PanelContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const MenuScene = preload("res://ui/components/adventure_menu.tscn")
 const PageScene = preload("res://ui/components/page_shell.tscn")
@@ -31,7 +33,7 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
 	add_child(row)
-	state_label = Style.text("",14,true)
+	state_label = Style.text("",Typography.CAPTION,true)
 	state_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	state_label.add_theme_stylebox_override("normal",BoardUiStyle.card_face(8))
@@ -69,12 +71,12 @@ func open_menu() -> void:
 	modal.add_child(menu)
 	menu.configure_editor(return_title)
 	if is_instance_valid(save_button):
-		menu_product = Style.text(str(product_title.call()) if product_title.is_valid() else "",18)
+		menu_product = Style.text(str(product_title.call()) if product_title.is_valid() else "",Typography.SUBTITLE)
 		menu_product.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		menu_product.autowrap_mode = TextServer.AUTOWRAP_OFF
 		menu.content.add_child(menu_product)
 		menu.content.move_child(menu_product,1)
-		menu_state = Style.text(state_label.text,14,true)
+		menu_state = Style.text(state_label.text,Typography.CAPTION,true)
 		menu.content.add_child(menu_state)
 		menu.content.move_child(menu_state,2)
 		save_button.reparent(menu.content)

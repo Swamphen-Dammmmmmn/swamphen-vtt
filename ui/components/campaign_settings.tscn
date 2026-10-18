@@ -24,13 +24,13 @@ popup/item_2/text = "实际直线距离"
 popup/item_2/id = 2
 
 [node name="Scope" type="Label" parent="Shell/Body/Content" index="2"]
+theme_type_variation = &"TypographyStatus"
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 text = "尺子与棋子移动共用此规则。"
 
 [node name="Storage" type="Label" parent="Shell/Body/Content" index="3"]
+theme_type_variation = &"TypographyTag"
 custom_minimum_size = Vector2(278, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
 autowrap_mode = 3
 text = "更改后自动保存在本机。"

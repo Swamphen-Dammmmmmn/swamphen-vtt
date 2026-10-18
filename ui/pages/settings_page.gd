@@ -1,242 +1,173 @@
-extends MarginContainer
+extends Control
 
-signal back_requested
-const Style = preload("res://ui/components/page_style.gd")
-const Layout = preload("res://ui/components/editor_layout.gd")
+# Settings page: coordinates settings shell and category content
+
+signal back_requested()
+
+const SettingsShell = preload("res://ui/components/features/settings/settings_shell.gd")
 const GraphicsPanel = preload("res://ui/components/graphics_settings_panel.gd")
+const InterfaceSettings = preload("res://ui/components/features/settings/interface_settings.gd")
+const CameraSettings = preload("res://ui/components/features/settings/camera_settings.gd")
+const PlaceholderCategory = preload("res://ui/components/features/settings/placeholder_category.gd")
+const ConnectionSettingsForm = preload("res://ui/components/features/network/connection_settings_form.gd")
+const SoftwareUpdatePanel = preload("res://ui/components/software_update_panel.gd")
+const AboutSettings = preload("res://ui/components/features/settings/about_settings.gd")
 const Preferences = preload("res://scripts/ui_preferences.gd")
 const CameraPreferences = preload("res://scripts/camera_preferences.gd")
-const CATEGORIES := [["video", "视频"], ["interface", "界面"], ["camera", "镜头"], ["tutorial", "教程与提示"], ["audio", "音效"], ["network", "联机"], ["updates","关于与更新"]]
-var camera_preferences: RefCounted
-var camera_inputs: Dictionary = {}
-var body: VBoxContainer
-var scroll: ScrollContainer
-var footer: Label
-var buttons: Dictionary = {}
-var category := ""
-var preferences: RefCounted
-var interface_inputs: Dictionary = {}
+const NetworkSettings = preload("res://scripts/network_settings.gd")
+
+var _shell: SettingsShell
+var _current_category := ""
+var _current_content: Node
+var _preferences: RefCounted
+var _camera_preferences: RefCounted
 
 func _ready() -> void:
-	if Mobile.enabled:
-		Mobile.changed.connect(_fit_mobile)
-		_fit_mobile.call_deferred()
-	for edge in ["left", "right", "top", "bottom"]: add_theme_constant_override("margin_" + edge, 24)
-	var page := Style.column(16)
-	add_child(page)
-	var header := HBoxContainer.new()
-	header.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	header.custom_minimum_size.y = 44
-	header.add_theme_constant_override("separation", 16)
-	page.add_child(header)
-	var back := Button.new()
-	back.text = "返回"
-	back.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	Style.button(back)
-	header.add_child(back)
-	back.pressed.connect(func(): back_requested.emit())
-	var title := Style.text("软件设置", 28)
-	title.autowrap_mode = TextServer.AUTOWRAP_OFF
-	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	header.add_child(title)
-	var surface := Style.card()
-	surface.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	page.add_child(surface)
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 24)
-	surface.add_child(columns)
-	var navigation := ScrollContainer.new()
-	navigation.custom_minimum_size.x = 180
-	Layout.scroll(navigation)
-	columns.add_child(navigation)
-	var list := Style.column(8)
-	navigation.add_child(list)
-	for entry in CATEGORIES:
-		var button := Button.new()
-		button.text = "关于" if entry[0]=="updates" and Mobile.enabled else entry[1]
-		button.toggle_mode = true
-		# Keep the native pressed face persistent for the selected category.
-		button.set_meta("page_motion_prepared", true)
-		Style.card_button(button)
-		list.add_child(button)
-		buttons[entry[0]] = button
-		button.pressed.connect(_select.bind(entry[0]))
-	columns.add_child(VSeparator.new())
-	var right := Style.column(12)
-	right.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_child(right)
-	scroll = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	Layout.scroll(scroll)
-	right.add_child(scroll)
-	body = Style.column(12)
-	body.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	scroll.add_child(body)
-	footer = Layout.status()
-	right.add_child(footer)
-	preferences = Preferences.shared()
-	preferences.storage_status_changed.connect(_interface_status)
-	preferences.changed.connect(_sync_interface)
-	Graphics.changed.connect(_video_status)
-	camera_preferences = CameraPreferences.shared()
-	camera_preferences.changed.connect(_sync_camera)
+	# Create settings shell
+	_shell = SettingsShell.new()
+	_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(_shell)
+	_shell.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	_shell.back_requested.connect(func(): back_requested.emit())
+	_shell.category_selected.connect(_on_category_selected)
+
+	# Load preferences
+	_preferences = Preferences.shared()
+	_camera_preferences = CameraPreferences.shared()
+
+	# Select initial category
 	var initial := "video"
-	for entry in CATEGORIES:
-		if OS.get_cmdline_user_args().has("--settings-tab=" + entry[0]): initial = entry[0]
-	_select(initial)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--settings-tab="):
+			initial = arg.trim_prefix("--settings-tab=")
+			break
+	_shell.select_category(initial)
 
-func _select(key: String) -> void:
-	if key == category:
-		buttons[key].set_pressed_no_signal(true)
+func _on_category_selected(key: String) -> void:
+	if key == _current_category:
 		return
+
+	# Cancel pending display changes
 	Graphics.cancel_display()
-	category = key
-	interface_inputs.clear()
-	camera_inputs.clear()
-	for child in body.get_children():
-		body.remove_child(child)
-		child.queue_free()
-	for name in buttons: buttons[name].set_pressed_no_signal(name == key)
-	scroll.scroll_vertical = 0
+
+	_current_category = key
+	_shell.clear_content()
+
+	# Clean up old content
+	if _current_content != null:
+		_disconnect_category_signals()
+		_current_content = null
+
+	var content_area := _shell.get_content_area()
+
+	# Create content based on category
 	if key == "video":
-		var options := GraphicsPanel.new()
-		body.add_child(options)
-		options.state.hide()
-		_video_status()
+		var panel := GraphicsPanel.new()
+		panel.set_meta("fluent_variant", true)
+		content_area.add_child(panel)
+		_current_content = panel
+		Graphics.changed.connect(_on_graphics_changed)
+		_on_graphics_changed()
+
 	elif key == "interface":
-		_build_interface()
-		_interface_status(preferences.storage_message, preferences.storage_failed)
-	elif key == "network":
-		preload("res://ui/pages/network_page.gd").add_settings(body)
-		Layout.set_status(footer, "")
-	elif key == "updates":
-		if Mobile.enabled:
-			body.add_child(Style.text("紫水鸡棋盘",24))
-			body.add_child(Style.text(str(ProjectSettings.get_setting("application/config/version","")),16,true))
-			body.add_child(Style.text("GNU GPL v3.0",16,true))
-		else: body.add_child(preload("res://ui/components/software_update_panel.gd").new())
-		Layout.set_status(footer, "")
+		var settings := InterfaceSettings.new()
+		content_area.add_child(settings)
+		_current_content = settings
+		settings.value_changed.connect(_on_interface_value_changed)
+		settings.reset_requested.connect(_preferences.reset_defaults)
+		_preferences.changed.connect(_on_preferences_changed)
+		_preferences.storage_status_changed.connect(_on_interface_status)
+		settings.sync_preferences(_preferences)
+		_on_interface_status(_preferences.storage_message, _preferences.storage_failed)
+
 	elif key == "camera":
-		_build_camera()
+		var settings := CameraSettings.new()
+		content_area.add_child(settings)
+		_current_content = settings
+		settings.value_changed.connect(_on_camera_value_changed)
+		settings.reset_requested.connect(_camera_preferences.reset_defaults)
+		_camera_preferences.changed.connect(_on_camera_preferences_changed)
+		settings.sync_preferences(_camera_preferences)
+		_on_camera_status()
+
+	elif key == "network":
+		var form := ConnectionSettingsForm.new()
+		content_area.add_child(form)
+		_current_content = form
+
+		var options := NetworkSettings.read()
+		form.load_settings(options["address"], options["certificate"])
+
+		form.save_requested.connect(func(address: String, certificate_path: String):
+			var error := NetworkSettings.save(address, certificate_path)
+			if error == OK:
+				form.set_result(true, "已保存，下次连接生效")
+			else:
+				form.set_result(false, "无法保存，请检查地址和公开证书。")
+		)
+		_shell.set_status("")
+
+	elif key == "updates":
+		var about := AboutSettings.new()
+		content_area.add_child(about)
+		_current_content = about
+		_shell.set_status("")
+
 	else:
-		body.add_child(Style.text(buttons[key].text, 20))
-		body.add_child(Style.text("此分类暂未开放。", 16, true))
-		Layout.set_status(footer, "")
-	Style.Motion.fade_in(body)
+		# Placeholder for tutorial/audio
+		var placeholder := PlaceholderCategory.new()
+		var title_map := {"tutorial": "教程与提示", "audio": "音效"}
+		placeholder.set_meta("category_title", title_map.get(key, ""))
+		content_area.add_child(placeholder)
+		_current_content = placeholder
+		_shell.set_status("")
 
-func _build_camera() -> void:
-	body.add_child(Style.text("操作速度", 20))
-	for entry in [["pan", "平移速度"], ["rotation", "旋转速度"], ["zoom", "缩放速度"]]:
-		var labels: Array = []
-		for value in CameraPreferences.SPEEDS: labels.append("%d%%" % roundi(value * 100))
-		var input := _option(entry[1], labels)
-		camera_inputs[entry[0]] = input
-		input.item_selected.connect(_camera_speed.bind(entry[0]))
-	var reverse := _option("缩放方向", ["正常", "反转"])
-	camera_inputs["reverse_zoom"] = reverse
-	reverse.item_selected.connect(func(index: int): camera_preferences.set_value("reverse_zoom", index == 1))
-	body.add_child(HSeparator.new())
-	body.add_child(Style.text("镜头平滑", 20))
-	var smooth := _option("平滑过渡", ["关闭", "开启"])
-	camera_inputs["smooth"] = smooth
-	smooth.item_selected.connect(func(index: int): camera_preferences.set_value("smooth", index == 1))
-	var strength := _option("平滑强度", ["轻微", "标准", "明显"])
-	camera_inputs["strength"] = strength
-	strength.item_selected.connect(func(index: int): camera_preferences.set_value("strength", index))
-	var reset := Button.new()
-	reset.text = "恢复镜头默认"
-	Style.card_button(reset)
-	body.add_child(reset)
-	reset.pressed.connect(camera_preferences.reset_defaults)
-	_sync_camera()
+func _disconnect_category_signals() -> void:
+	if Graphics.changed.is_connected(_on_graphics_changed):
+		Graphics.changed.disconnect(_on_graphics_changed)
+	if _preferences != null:
+		if _preferences.changed.is_connected(_on_preferences_changed):
+			_preferences.changed.disconnect(_on_preferences_changed)
+		if _preferences.storage_status_changed.is_connected(_on_interface_status):
+			_preferences.storage_status_changed.disconnect(_on_interface_status)
+	if _camera_preferences != null and _camera_preferences.changed.is_connected(_on_camera_preferences_changed):
+		_camera_preferences.changed.disconnect(_on_camera_preferences_changed)
 
-func _camera_speed(index: int, key: String) -> void:
-	camera_preferences.set_value(key, CameraPreferences.SPEEDS[index])
+func _on_graphics_changed() -> void:
+	if _current_category == "video":
+		_shell.set_status(Graphics.status)
 
-func _sync_camera() -> void:
-	if category != "camera": return
-	for key in camera_inputs:
-		var value: Variant = camera_preferences.values[key]
-		var index: int = CameraPreferences.SPEEDS.find(float(value)) if key in ["pan", "rotation", "zoom"] else int(value)
-		camera_inputs[key].select(index)
-	camera_inputs["strength"].disabled = not camera_preferences.values["smooth"]
-	Layout.set_status(footer, camera_preferences.status, camera_preferences.failed)
+func _on_interface_value_changed(key: String, value: Variant) -> void:
+	if key == "creation_rows":
+		_preferences.set_rows(int(value) + 1)
+	elif key == "creation_mode":
+		_preferences.set_mode("pages" if int(value) == 0 else "scroll")
+	elif key == "motion":
+		_preferences.set_option("motion", int(value))
+	else:
+		_preferences.set_option(key, value)
 
-func _build_interface() -> void:
-	body.add_child(Style.text("界面大小", 20))
-	_preference("ui_scale", "整体界面缩放", Preferences.UI_SCALES)
-	_preference("info_scale", "棋子信息栏", Preferences.INFO_SCALES)
-	_preference("floating_text", "对象浮窗文字", Preferences.TEXT_SCALES)
-	body.add_child(Style.text("信息栏和浮窗在整体界面缩放之外额外调整；信息栏仍保留镜头缩放限制。", 14, true))
-	body.add_child(HSeparator.new())
-	body.add_child(Style.text("动效", 20))
-	var motion := _option("过渡动画", ["标准", "减弱", "关闭"])
-	interface_inputs["motion"] = motion
-	motion.item_selected.connect(func(index: int): preferences.set_option("motion", index))
-	body.add_child(HSeparator.new())
-	body.add_child(Style.text("底部创建栏", 20))
-	var rows := _option("显示行数", ["1 行", "2 行", "3 行"])
-	interface_inputs["creation_rows"] = rows
-	rows.item_selected.connect(func(index: int): preferences.set_rows(index + 1))
-	var mode := _option("浏览方式", ["分页", "上下滚动"])
-	interface_inputs["creation_mode"] = mode
-	mode.item_selected.connect(func(index: int): preferences.set_mode("pages" if index == 0 else "scroll"))
-	body.add_child(Style.text("共用于基础棋子、高级棋子及后续地景。窗口空间不足时暂时减少实际行数，空间恢复后使用原设置。", 14, true))
-	var reset := Button.new()
-	reset.text = "恢复界面默认"
-	Style.card_button(reset)
-	body.add_child(reset)
-	reset.pressed.connect(preferences.reset_defaults)
-	_sync_interface()
+func _on_preferences_changed() -> void:
+	if _current_category == "interface" and _current_content is InterfaceSettings:
+		_current_content.sync_preferences(_preferences)
 
-func _preference(key: String, title: String, choices: Array) -> void:
-	var labels: Array = []
-	for value in choices: labels.append("%d%%" % roundi(value * 100))
-	var input := _option(title, labels)
-	interface_inputs[key] = input
-	input.item_selected.connect(func(index: int): preferences.set_option(key, float(choices[index])))
+func _on_interface_status(message: String, failed: bool) -> void:
+	if _current_category == "interface":
+		_shell.set_status(message, failed)
 
-func _sync_interface() -> void:
-	if category != "interface": return
-	for key in interface_inputs:
-		var choices: Array = Preferences.UI_SCALES if key == "ui_scale" else (Preferences.INFO_SCALES if key == "info_scale" else Preferences.TEXT_SCALES)
-		var value: int
-		if key == "motion": value = preferences.motion
-		elif key == "creation_rows": value = preferences.creation_rows - 1
-		elif key == "creation_mode": value = 0 if preferences.creation_mode == "pages" else 1
-		else: value = choices.find(preferences.get(key))
-		interface_inputs[key].select(value)
+func _on_camera_value_changed(key: String, value: Variant) -> void:
+	_camera_preferences.set_value(key, value)
 
-func _option(title: String, items: Array) -> OptionButton:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	body.add_child(row)
-	row.add_child(Style.field_label(title))
-	row.get_child(0).size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var option := OptionButton.new()
-	option.size_flags_horizontal = Control.SIZE_SHRINK_END
-	option.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.resized.connect(func(): option.custom_minimum_size.x = clampf(row.size.x * 0.45, 160, 400))
-	for item in items: option.add_item(item)
-	row.add_child(option)
-	BoardUiStyle.style_controls(row, 44)
-	return option
+func _on_camera_preferences_changed() -> void:
+	if _current_category == "camera" and _current_content is CameraSettings:
+		_current_content.sync_preferences(_camera_preferences)
+	_on_camera_status()
 
-func _video_status() -> void:
-	if category == "video": Layout.set_status(footer, Graphics.status)
-
-func _interface_status(message: String, failed: bool) -> void:
-	if category == "interface": Layout.set_status(footer, message, failed)
+func _on_camera_status() -> void:
+	if _current_category == "camera":
+		_shell.set_status(_camera_preferences.status, _camera_preferences.failed)
 
 func _exit_tree() -> void:
-	if camera_preferences != null and camera_preferences.changed.is_connected(_sync_camera): camera_preferences.changed.disconnect(_sync_camera)
-	if Graphics.changed.is_connected(_video_status): Graphics.changed.disconnect(_video_status)
-	if preferences != null and preferences.storage_status_changed.is_connected(_interface_status): preferences.storage_status_changed.disconnect(_interface_status)
-	if preferences != null and preferences.changed.is_connected(_sync_interface): preferences.changed.disconnect(_sync_interface)
-
-func _fit_mobile() -> void:
-	var safe := Mobile.safe_rect(size)
-	add_theme_constant_override("margin_left",roundi(safe.position.x)+24)
-	add_theme_constant_override("margin_top",roundi(safe.position.y)+24)
-	add_theme_constant_override("margin_right",roundi(size.x-safe.end.x)+24)
-	add_theme_constant_override("margin_bottom",roundi(size.y-safe.end.y)+24)
+	_disconnect_category_signals()

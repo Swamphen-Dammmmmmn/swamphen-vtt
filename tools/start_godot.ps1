@@ -53,7 +53,7 @@ $taskArguments += ' --log-file "' + $LogFile + '"'
 if ($QuitAfter -gt 0) { $taskArguments += ' --quit-after ' + $QuitAfter }
 if ($MobilePreview -and -not $Page) { $Page = "home" }
 if ($Page) {
-    if ($Page -notin @('home','join','network_settings','identity','map_library','map_create','platform_library','platform_create','token_library','token_customize','settings','adventure_library','adventure_create','adventures','adventure_play')) { throw 'Unknown startup page.' }
+    if ($Page -notin @('home','customize','join','network_settings','identity','map_library','map_create','platform_library','platform_create','token_library','token_customize','settings','adventure_library','adventure_create','adventures','adventure_play')) { throw 'Unknown startup page.' }
     $taskArguments += ' -- --page=' + $Page
 }
 if ($MobilePreview) { $taskArguments += " --mobile-preview" }

@@ -1,5 +1,7 @@
 extends MarginContainer
 
+const Typography = preload("res://ui/theme/typography.gd")
+
 const Style = preload("res://ui/components/page_style.gd")
 signal action_requested(action: String)
 var panel: PanelContainer
@@ -26,13 +28,13 @@ func _ready() -> void:
 var save_notice: Label
 
 func configure(role: String, confirming := false, title := "冒险") -> void:
-	content.add_child(Style.text("保存并结束团" if confirming else "冒险菜单",24))
-	content.add_child(Style.text(title+" · "+("DM" if role=="dm" else "PL"),14,true))
-	save_notice = Style.text("",14,true)
+	content.add_child(Style.text("保存并结束团" if confirming else "冒险菜单",Typography.DIALOG_TITLE))
+	content.add_child(Style.text(title+" · "+("DM" if role=="dm" else "PL"),Typography.CAPTION,true))
+	save_notice = Style.text("",Typography.CAPTION,true)
 	content.add_child(save_notice)
 	save_notice.hide()
 	if confirming:
-		content.add_child(Style.text("保存当前冒险进度并返回主菜单。" if role=="dm" else "退出当前连接并返回主菜单。",16,true))
+		content.add_child(Style.text("保存当前冒险进度并返回主菜单。" if role=="dm" else "退出当前连接并返回主菜单。",Typography.BODY,true))
 		_add_action("保存并结束团" if role=="dm" else "退出团","end_session",true)
 		_add_action("继续冒险","board")
 	else:
@@ -80,7 +82,7 @@ func _fit() -> void:
 	scroll.custom_minimum_size.y = minf(natural, maxf(0,Mobile.safe_rect(size).size.y-104))
 
 func configure_editor(return_title: String) -> void:
-	content.add_child(Style.text("编辑器菜单",24))
+	content.add_child(Style.text("编辑器菜单",Typography.DIALOG_TITLE))
 	_add_action("继续编辑","resume",false,GoIconSet.PLAY)
 	_add_action("教程","tutorials",false,GoIconSet.HELP)
 	_add_action("软件设置","settings",false,GoIconSet.SETTINGS)

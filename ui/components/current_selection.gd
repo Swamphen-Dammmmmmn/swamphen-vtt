@@ -1,4 +1,6 @@
 extends PanelContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Style = preload("res://ui/components/page_style.gd")
 const Thumbnail = preload("res://ui/components/token_thumbnail.gd")
 signal cleared
@@ -18,7 +20,7 @@ func _ready() -> void:
 	add_child(column)
 	var header := HBoxContainer.new()
 	column.add_child(header)
-	var heading := Style.text("当前选择",14,true)
+	var heading := Style.text("当前选择",Typography.CAPTION,true)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(heading)
@@ -52,7 +54,7 @@ func _ready() -> void:
 	var details := Style.column(6)
 	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_margin.add_child(details)
-	title_label = Style.text("棋子",18)
+	title_label = Style.text("棋子",Typography.SUBTITLE)
 	title_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title_label.custom_minimum_size.y = 24
 	title_label.clip_text = true
@@ -61,7 +63,7 @@ func _ready() -> void:
 	var metadata := HBoxContainer.new()
 	metadata.add_theme_constant_override("separation",8)
 	details.add_child(metadata)
-	type_label = Style.text("",14,true)
+	type_label = Style.text("",Typography.CAPTION,true)
 	type_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	type_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	type_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -78,10 +80,10 @@ func _ready() -> void:
 	badge_face.content_margin_bottom = 2
 	state_badge.add_theme_stylebox_override("panel",badge_face)
 	metadata.add_child(state_badge)
-	state_label = Style.text("",12)
+	state_label = Style.text("",Typography.TAG)
 	state_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	state_badge.add_child(state_label)
-	empty = Style.text("未选择",14,true)
+	empty = Style.text("未选择",Typography.CAPTION,true)
 	column.add_child(empty)
 	configure({})
 

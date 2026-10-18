@@ -1,4 +1,6 @@
 extends Control
+
+const Typography = preload("res://ui/theme/typography.gd")
 var mobile_touch: Node
 var orbit_button := 0
 var orbit_pending := false
@@ -79,7 +81,7 @@ func _ready() -> void:
 	heading_space.custom_minimum_size = Vector2(44, 44)
 	heading_space.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	heading.add_child(heading_space)
-	heading_title = Style.text(("编辑" if not editing_record.is_empty() else "创建") + _type_name(), 20)
+	heading_title = Style.text(("编辑" if not editing_record.is_empty() else "创建") + _type_name(), Typography.SECTION)
 	heading_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading.add_child(heading_title)
 	form_scroll = ScrollContainer.new()
@@ -95,7 +97,7 @@ func _ready() -> void:
 	var tags: Array = editing_record.get("tags", [])
 	tag_entry.text = _type_name() + (" · 标签" if tags.is_empty() else " · %d 个标签" % tags.size())
 	Style.card_button(tag_entry, 44)
-	tag_entry.add_theme_font_size_override("font_size", 14)
+	tag_entry.add_theme_font_size_override("font_size", Typography.CAPTION)
 	tag_entry.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	tag_entry.tooltip_text = "查看类型与分类标签"
 	tag_entry.pressed.connect(_show_tags)
@@ -112,7 +114,7 @@ func _ready() -> void:
 	_add_field(stats_body, "hp", "当前 HP", "可留空", 6)
 	_add_field(stats_body, "max_hp", "最大 HP", "可留空", 6)
 	_add_field(stats_body, "ac", "AC", "可留空", 6)
-	stats_body.add_child(Style.text("HP 两项均留空表示未设置；只填一项时，另一项取相同值。", 14, true))
+	stats_body.add_child(Style.text("HP 两项均留空表示未设置；只填一项时，另一项取相同值。", Typography.CAPTION, true))
 	if not editing_record.is_empty():
 		var params: Dictionary = editing_record["parameters"]
 		fields["title"].input.text = editing_record["title"]
@@ -415,7 +417,7 @@ func _new_preview() -> Control:
 	return Preview.new()
 
 func _build_appearance_form(parent: Control) -> void:
-	parent.add_child(Style.text("外观", 16))
+	parent.add_child(Style.text("外观", Typography.BODY))
 	size_input = _add_choice(parent, "占地", ["1 × 1", "2 × 2", "3 × 3", "4 × 4", "5 × 5"])
 	base_input = _add_choice(parent, "底座", ["正方形", "圆形", "六边形"])
 	base_input.select(1)

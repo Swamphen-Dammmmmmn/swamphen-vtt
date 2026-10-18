@@ -1,4 +1,6 @@
 extends Control
+
+const Typography = preload("res://ui/theme/typography.gd")
 var mobile_touch: Node
 var mobile_previous_tool := ""
 var mobile_tool_state: Dictionary = {}
@@ -106,7 +108,7 @@ func _ready() -> void:
 	header.add_child(spacer)
 	heading_spacer = spacer
 	spacer.hide()
-	heading = Style.text("创建地台",20)
+	heading = Style.text("创建地台",Typography.SECTION)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(heading)
 	scroll = ScrollContainer.new()
@@ -142,7 +144,7 @@ func _ready() -> void:
 	)
 	category_notice = Style.column(12)
 	form.add_child(category_notice)
-	category_text = Style.text("",16,true)
+	category_text = Style.text("",Typography.BODY,true)
 	category_notice.add_child(category_text)
 	category_notice.hide()
 	_build_expansion_form()
@@ -229,7 +231,7 @@ func _ready() -> void:
 		var back := _button("返回地图组合",false)
 		content.get_child(0).add_child(back)
 		back.pressed.connect(func(): return_requested.emit())
-		var target_label := Style.text("正在编辑："+str(values["title"]),14,true)
+		var target_label := Style.text("正在编辑："+str(values["title"]),Typography.CAPTION,true)
 		target_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		target_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		content.add_child(target_label)
@@ -544,7 +546,7 @@ func _build_expansion_form() -> void:
 	expansion_form = Style.column(12)
 	form.add_child(expansion_form)
 	expansion_form.hide()
-	expansion_form.add_child(Style.text("水平追加 · 英尺",16))
+	expansion_form.add_child(Style.text("水平追加 · 英尺",Typography.BODY))
 	var x_pair := Layout.pair(expansion_form)
 	_expansion_number(x_pair,"X− 方向","x_negative",5,995)
 	_expansion_number(x_pair,"X+ 方向","x_positive",5,995)
@@ -552,7 +554,7 @@ func _build_expansion_form() -> void:
 	_expansion_number(z_pair,"Z− 方向","z_negative",5,995)
 	_expansion_number(z_pair,"Z+ 方向","z_positive",5,995)
 	_expansion_number(expansion_form,"底部追加 · 英尺","bottom",1,49)
-	expansion_result = Style.text("",14,true)
+	expansion_result = Style.text("",Typography.CAPTION,true)
 	expansion_form.add_child(expansion_result)
 
 func _expansion_number(parent: Control,title: String,key: String,interval: float,maximum: float) -> void:

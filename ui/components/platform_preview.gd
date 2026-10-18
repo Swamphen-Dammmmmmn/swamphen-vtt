@@ -1,4 +1,6 @@
 extends SubViewportContainer
+
+const Typography = preload("res://ui/theme/typography.gd")
 const Paint = preload("res://scripts/platform_paint.gd")
 const Grid = preload("res://scripts/platform_grid.gd")
 const Handles = preload("res://ui/components/range_handles.gd")
@@ -185,9 +187,10 @@ func show_expansion(data: Dictionary, active: bool, invalid := false) -> void:
 	var positions := [Vector3(origin.x-0.5,y,origin.y+l/2),Vector3(origin.x+w+0.5,y,origin.y+l/2),Vector3(origin.x+w/2,y,origin.y-0.5),Vector3(origin.x+w/2,y,origin.y+l+0.5)]
 	for index in range(4):
 		var label := Label3D.new()
+		label.font = Typography.WORLD_REGULAR
 		label.text = ["X−","X+","Z−","Z+"][index]
 		label.font = ThemeDB.fallback_font
-		label.font_size = 64
+		label.font_size = Typography.PREVIEW_DIRECTION
 		label.pixel_size = 0.008
 		label.modulate = color
 		label.outline_size = 0

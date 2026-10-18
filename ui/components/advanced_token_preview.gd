@@ -1,5 +1,6 @@
 extends "res://ui/components/token_preview.gd"
 
+
 const Contour = preload("res://scripts/token_contour.gd")
 const StickerGizmo = preload("res://ui/components/token_sticker_gizmo.gd")
 var sticker_gizmo: Node3D
@@ -132,8 +133,8 @@ func set_adjustment_mode(mode: String) -> void:
 func _ground_text(value: String, at: Vector3, color: Color, scale_factor: float) -> void:
 	var mesh := TextMesh.new()
 	mesh.text = value
-	mesh.font = preload("res://ui/theme/preview_size_font.tres")
-	mesh.font_size = 64
+	mesh.font = Typography.WORLD_REGULAR
+	mesh.font_size = Typography.PREVIEW_DIRECTION
 	mesh.pixel_size = 0.003 * scale_factor
 	mesh.depth = 0.001
 	var node := MeshInstance3D.new()
