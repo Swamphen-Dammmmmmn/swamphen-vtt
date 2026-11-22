@@ -1,0 +1,30 @@
+[remap]
+
+importer="2d_array_texture"
+type="CompressedTexture2DArray"
+uid="uid://cm025il4xs4b7"
+path.bptc="res://.godot/imported/bark_detail.png-3471c1ce61230856042c6324f4df0b49.bptc.ctexarray"
+path.astc="res://.godot/imported/bark_detail.png-3471c1ce61230856042c6324f4df0b49.astc.ctexarray"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+
+[deps]
+
+source_file="res://assets/scenery/textures/bark/bark_detail.png"
+dest_files=["res://.godot/imported/bark_detail.png-3471c1ce61230856042c6324f4df0b49.bptc.ctexarray", "res://.godot/imported/bark_detail.png-3471c1ce61230856042c6324f4df0b49.astc.ctexarray"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=true
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/channel_pack=1
+mipmaps/generate=true
+mipmaps/limit=-1
+slices/horizontal=8
+slices/vertical=8

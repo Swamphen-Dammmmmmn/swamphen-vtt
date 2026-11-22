@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/opening_system_sandbox.gd" id="1"]
+[node name="OpeningClosure" type="Node3D"]
+script = ExtResource("1")
+view_mode = 8
+capture_initial = true
+enable_navigation = false
+capture_directory = "res://artifacts/opening-closure-2026-10-25/captures/"

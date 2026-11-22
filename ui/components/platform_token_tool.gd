@@ -49,7 +49,7 @@ func _ready() -> void:
 	creation.placement_requested.connect(begin)
 	actions = Overlap.new()
 	editor.add_child(actions)
-	actions.action_requested.connect(func(target: Dictionary, action: String, _anchor: Rect2):
+	actions.action_requested.connect(func(target: Dictionary, action: String, _anchor_control: Control):
 		selected = target["id"]
 		action_target = ""
 		_refresh_selection_card()

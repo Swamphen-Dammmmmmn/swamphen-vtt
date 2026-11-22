@@ -5,8 +5,11 @@ const Typography = preload("res://ui/theme/typography.gd")
 const Instance = preload("res://scripts/token_instance.gd")
 const UtilityPopup = preload("res://ui/components/designer_utility_popup.gd")
 const Style = preload("res://ui/components/page_style.gd")
+const FluentButton = preload("res://ui/components/controls/fluent_button.gd")
+const SpinField = preload("res://ui/components/forms/editor_spin_field.gd")
+const T = preload("res://ui/theme/tokens/fluent_tokens.gd")
 var panel: PanelContainer
-var angle_input: SpinBox
+var angle_input: SpinField
 var direction: TextureRect
 var model_marker: Node3D
 var actor: Node3D
@@ -25,20 +28,20 @@ var preview_yaw := 0.0
 var radius := 1.0
 var center := Vector3.ZERO
 var target_id: Variant
-var close_button: Button
+var _turn_buttons: Array[Button] = []
 var editing_enabled := true
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel = UtilityPopup.new()
 	panel.title = "转向"
+	panel.fluent = true
 	add_child(panel)
 	panel.visibility_changed.connect(func():
 		if not panel.visible: _cancel_drag()
 	)
-	var body: VBoxContainer = panel.body
-	close_button = body.get_child(0).get_child(1)
-	body.add_child(_label("棋子朝向",Color("187ed4")))
+	var body: VBoxContainer = panel.content()
+	body.add_child(_label("棋子朝向"))
 	var row := GoStyle.row(10)
 	body.add_child(row)
 	var left := _button("左转 90°",func(): _turn(1))
@@ -49,51 +52,55 @@ func _ready() -> void:
 	direction.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	direction.custom_minimum_size = Vector2(32,32)
 	direction.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	direction.modulate = Color("187ed4")
+	direction.modulate = T.BRAND
 	direction.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	direction.resized.connect(func(): direction.pivot_offset = direction.size/2)
 	row.add_child(direction)
 	row.add_child(_button("右转 90°",func(): _turn(-1)))
-	body.add_child(GoStyle.divider())
-	body.add_child(_label("外观旋转 · °",Color("9a5a13")))
-	var angles := GoStyle.row(8)
-	body.add_child(angles)
-	angle_input = SpinBox.new()
-	angle_input.min_value = -180
-	angle_input.max_value = 180
-	angle_input.step = 0.1
+	var separator := HSeparator.new()
+	separator.theme_type_variation = &"FluentSeparator"
+	body.add_child(separator)
+	angle_input = SpinField.new()
+	angle_input.setup("外观偏转（度）", -180, 180, 0.1, 0)
+	angle_input.set_spin_variation(&"FluentSpinBox")
 	angle_input.tooltip_text = "相对棋子朝向的角度"
-	angle_input.custom_minimum_size = Vector2(100,44)
 	angle_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	angles.add_child(angle_input)
+	body.add_child(angle_input)
 	angle_input.value_changed.connect(func(value: float):
 		if not _can_edit(): return
 		_cancel_drag()
 		_commit(int(data.get("quarter_turn",0)),value)
 	)
-	angles.add_child(_button("对齐棋子朝向",func():
+	body.add_child(_button("对齐棋子朝向",func():
 		_cancel_drag()
 		_commit(int(data.get("quarter_turn",0)),0.0)
 	))
 
-func _label(text: String, color: Color) -> Label:
+func _label(text: String) -> Label:
 	var label := Style.text(text,Typography.CAPTION)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.add_theme_color_override("font_color",color)
+	label.theme_type_variation = &"FluentStrong"
 	return label
 
 func _button(text: String, action: Callable) -> Button:
-	var button := Button.new()
+	var button := FluentButton.new()
 	button.text = text
 	button.autowrap_mode = TextServer.AUTOWRAP_OFF
-	button.focus_mode = Control.FOCUS_NONE
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	Style.button(button)
+	button.minimum_height = T.TOUCH_BUTTON_HEIGHT if Mobile.enabled else T.BUTTON_HEIGHT
 	button.pressed.connect(action)
+	_turn_buttons.append(button)
 	return button
 
 func _can_edit() -> bool:
 	return is_instance_valid(actor) and (not allowed.is_valid() or allowed.call())
+
+func owns_keyboard() -> bool:
+	var focused := get_viewport().gui_get_focus_owner()
+	return panel.visible and focused != null and panel.is_ancestor_of(focused)
+
+func set_available_rect(area: Rect2) -> void:
+	panel.set_available_rect(area)
 
 func open(target: Node3D, values: Dictionary, view: Camera3D, to_screen: Callable, save: Callable, permission: Callable, at: Vector2) -> void:
 	close()
@@ -104,7 +111,7 @@ func open(target: Node3D, values: Dictionary, view: Camera3D, to_screen: Callabl
 	screen_point = to_screen
 	changed = save
 	allowed = permission
-	angle_input.set_value_no_signal(float(data.get("model_yaw_deg",0)))
+	angle_input.set_value(float(data.get("model_yaw_deg",0)))
 	rotating = true
 	panel.reveal_at(size,at)
 	_refresh_direction()
@@ -130,7 +137,7 @@ func _commit(quarter: int, offset: float) -> void:
 	offset = wrapf(offset,-180,180)
 	changed.call(quarter,offset)
 	Instance.apply_orientation(actor,data)
-	angle_input.set_value_no_signal(offset)
+	angle_input.set_value(offset)
 	_refresh_direction()
 
 func _refresh_direction() -> void:
@@ -158,10 +165,10 @@ func update_marker(target: Node3D, values: Dictionary, parent: Node3D) -> void:
 		if not enabled: _cancel_drag()
 		if enabled!=editing_enabled:
 			editing_enabled = enabled
-			for button in panel.find_children("*","Button",true,false):
-				if button!=close_button: button.disabled = not enabled
-			angle_input.editable = enabled
-		if not dragging and not angle_input.get_line_edit().has_focus(): angle_input.set_value_no_signal(float(data.get("model_yaw_deg",0)))
+			for button in _turn_buttons:
+				button.disabled = not enabled
+			angle_input.set_disabled(not enabled)
+		if not dragging and not angle_input.owns_keyboard(): angle_input.set_value(float(data.get("model_yaw_deg",0)))
 	if not is_instance_valid(ring):
 		ring = MeshInstance3D.new()
 		var mesh := TorusMesh.new()
@@ -234,7 +241,7 @@ func handle_pointer(event: InputEvent, on_ui: bool) -> bool:
 			var preview := data.duplicate()
 			preview["model_yaw_deg"] = preview_yaw
 			Instance.apply_orientation(actor,preview)
-			angle_input.set_value_no_signal(preview_yaw)
+			angle_input.set_value(preview_yaw)
 		return true
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
 		if dragging and not event.pressed:
@@ -270,7 +277,7 @@ func handle_pointer(event: InputEvent, on_ui: bool) -> bool:
 func _cancel_drag() -> void:
 	if dragging and is_instance_valid(actor):
 		Instance.apply_orientation(actor,data)
-		angle_input.set_value_no_signal(float(data.get("model_yaw_deg",0)))
+		angle_input.set_value(float(data.get("model_yaw_deg",0)))
 	dragging = false
 
 func _exit_tree() -> void:

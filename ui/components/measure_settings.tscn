@@ -7,3 +7,4 @@
 script = ExtResource("2")
 panel_title = "测距工具"
 preferred_width = 320.0
+fluent = true

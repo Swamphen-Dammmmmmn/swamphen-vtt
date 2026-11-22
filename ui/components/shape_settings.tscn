@@ -5,5 +5,6 @@
 
 [node name="ShapeSettings" instance=ExtResource("1")]
 script = ExtResource("2")
-panel_title = "形状工具"
-preferred_width = 320.0
+panel_title = "形状参数"
+preferred_width = 340.0
+fluent = true

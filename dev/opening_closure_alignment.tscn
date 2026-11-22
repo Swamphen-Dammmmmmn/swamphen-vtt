@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/author_opening_frame_alignment.gd" id="1"]
+[node name="OpeningClosure" type="Node"]
+script = ExtResource("1")
+output_directory = "res://artifacts/opening-closure-2026-10-25/"

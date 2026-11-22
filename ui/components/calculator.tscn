@@ -7,3 +7,4 @@
 script = ExtResource("2")
 panel_title = "计算器"
 preferred_width = 360.0
+fluent = true

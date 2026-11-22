@@ -3,10 +3,13 @@ extends Control
 const SEGMENT_LABEL = preload("res://ui/components/segment_label.tscn")
 const PATH_POINT = preload("res://ui/components/path_point.tscn")
 const TOKEN_NAME = preload("res://ui/components/token_name.tscn")
-const TOKEN_ACTIONS = preload("res://ui/components/token_actions.tscn")
+const AdventureWorkbar = preload("res://ui/components/features/adventure/adventure_workbar.gd")
+const VerticalCommandMenu = preload("res://ui/components/overlays/vertical_command_menu.gd")
+const Bar = preload("res://ui/theme/tokens/adventure_topbar_tokens.gd")
 
 signal tool_requested(tool: String)
 signal menu_requested
+signal floating_area_changed(area: Rect2)
 signal map_collection_requested
 signal tray_requested
 signal token_placement_requested(parameters: Dictionary)
@@ -22,24 +25,27 @@ signal path_point_selected(index: int)
 signal measurement_action_requested(action: String)
 signal entity_action_requested(target: Dictionary, action: String)
 signal entity_hovered(target: Dictionary)
+signal entity_context_dismissed
 signal entity_selection_requested(mouse: Vector2)
 signal route_action_requested(action: String)
 signal token_renamed(index: int, title: String)
 signal token_stats_changed(index: int, hp: int, maximum: int, ac: int, temporary: int)
 signal token_notes_changed(index: int, text: String)
 
-const TOKEN_MENU_ACTIONS := ["rename", "appearance", "copy", "delete", "store"]
-var tray_button: Button
-var tray_button_panel: PanelContainer
+const MEASUREMENT_LABEL_Z := 1 # Nodes (0) < distance labels (1) < token cards (2).
+const TOKEN_CARD_Z := 2 # Below context (5), topbar (6) and tools (10).
+var workbar: AdventureWorkbar
 var delete_dialog: Control
 var creation_palette: PanelContainer
+var _measure_restore_available := false
 var displayed_token := -1
 var current_tool := "select"
 var overlap_actions: ScrollContainer
-var overlap_menu: PopupMenu
-var menu_target: Dictionary = {}
-var map_button_panel: PanelContainer
-var map_navigation: Button
+var command_menu_layer: CanvasLayer
+var command_menu: VerticalCommandMenu
+var _menu_session_seq := 0
+var _active_menu_context: Dictionary = {}
+var _closing_menu_context: Dictionary = {}
 var network_notice: Label
 var network_notice_revision := 0
 
@@ -48,184 +54,344 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	Mobile.register_root(self)
+	$TokenNames.z_index = TOKEN_CARD_Z
+	$SavedMeasurement.z_index = MEASUREMENT_LABEL_Z
+	$Title.hide()
+	$BoardInfo.hide()
+
+	workbar = AdventureWorkbar.new()
+	workbar.z_index = 6
+	add_child(workbar)
+	creation_palette = workbar.creation_palette()
+
+	workbar.tool_requested.connect(_on_tool)
+	workbar.panel_requested.connect(_on_panel_requested)
+	workbar.menu_requested.connect(func(): menu_requested.emit())
+	workbar.map_collection_requested.connect(func(): map_collection_requested.emit())
+	workbar.creation_entry_chosen.connect(_on_creation_entry)
+	workbar.layout_height_changed.connect(func(_bottom_y: float): _on_workbar_layout_changed())
+
 	network_notice = Label.new()
 	add_child(network_notice)
 	network_notice.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	network_notice.offset_left = -440
 	network_notice.offset_right = -20
-	network_notice.offset_top = 78
-	network_notice.offset_bottom = 104
+	network_notice.offset_top = 68
+	network_notice.offset_bottom = 94
 	network_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	network_notice.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	network_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	network_notice.add_theme_color_override("font_color",Color("ffffff"))
+	network_notice.add_theme_color_override("font_color", Color("ffffff"))
 	network_notice.hide()
-	tray_button_panel = PanelContainer.new()
-	add_child(tray_button_panel)
-	tray_button_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	tray_button_panel.offset_left = 20
-	tray_button_panel.offset_right = 205
-	tray_button_panel.offset_top = -70
-	tray_button_panel.offset_bottom = -18
-	tray_button = Button.new()
-	tray_button.text = "棋子托盘 · 0"
-	tray_button_panel.add_child(tray_button)
-	BoardUiStyle.small_sidebar_entry(tray_button_panel,tray_button)
-	tray_button.pressed.connect(func(): tray_requested.emit())
-	var maps := PanelContainer.new()
-	map_button_panel = maps
-	maps.z_index = 1
-	add_child(maps)
-	maps.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	maps.offset_left = 20
-	maps.offset_right = 205
-	maps.offset_top = -130
-	maps.offset_bottom = -78
-	map_navigation = Button.new()
-	map_navigation.text = "地图集"
-	map_navigation.toggle_mode = true
-	map_navigation.focus_mode = Control.FOCUS_NONE
-	map_navigation.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	map_navigation.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	GoStyle.apply_icon(map_navigation,GoIconSet.MAP,18)
-	map_navigation.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	maps.add_child(map_navigation)
-	BoardUiStyle.small_sidebar_entry(maps,map_navigation)
-	map_navigation.pressed.connect(func():
-		set_map_navigation_active(true)
-		map_collection_requested.emit()
-	)
-	$Title.hide()
-	creation_palette = preload("res://ui/components/creation_palette.gd").new()
-	creation_palette.z_index = 6
-	add_child(creation_palette)
-	creation_palette.entry_chosen.connect(_on_creation_entry)
-	creation_palette.state_changed.connect($Toolbar.set_creation_state)
+
 	delete_dialog = preload("res://ui/components/token_delete_dialog.gd").new()
 	delete_dialog.z_index = 20
 	add_child(delete_dialog)
 	delete_dialog.deletion_confirmed.connect(func(id: int): token_deletion_confirmed.emit(id))
 	$TokenCreate.appearance_saved.connect(func(id: int, parameters: Dictionary): token_appearance_saved.emit(id, parameters))
 	$TokenCreate.placement_requested.connect(func(parameters: Dictionary): token_placement_requested.emit(parameters))
-	$TokenPlacementActions.action_requested.connect(func(action: String): token_placement_action_requested.emit(action))
-	$HomeCard.add_theme_stylebox_override("panel", BoardUiStyle.card_face(BoardUiStyle.ACTION_PADDING))
-	BoardUiStyle.action_button($HomeCard/Home, 36)
-	GoStyle.apply_icon($HomeCard/Home, GoIconSet.MENU, 18)
-	$HomeCard/Home.pressed.connect(func(): menu_requested.emit())
-	BoardUiStyle.small_sidebar_entry($SelectCard,$SelectCard/Select)
-	GoStyle.apply_icon($SelectCard/Select, GoIconSet.USER, 16)
-	$SelectCard/Select.tooltip_text = "操作棋子及可交互场景对象"
-	$SelectCard/Select.set_pressed_no_signal(true)
-	BoardUiStyle.refresh_sidebar_button($SelectCard/Select, true)
-	$SelectCard/Select.pressed.connect(func(): tool_requested.emit("select"))
-	$Toolbar.resized.connect(func():
-		$SelectCard.size.x = $Toolbar.size.x
-		map_button_panel.size.x = $Toolbar.size.x
-		tray_button_panel.size.x = $Toolbar.size.x
-	)
-	map_button_panel.size.x = $Toolbar.size.x
-	tray_button_panel.size.x = $Toolbar.size.x
-	$Toolbar.tool_requested.connect(_on_tool)
-	$Toolbar.panel_requested.connect(_on_panel_requested)
-	$Toolbar.resized.connect(_position_campaign_settings)
-	resized.connect(_position_shape_undo)
-	resized.connect(_position_measurement_undo)
-	$MeasurementActions.action_requested.connect(_on_measurement_action)
+	$TokenPlacementPanel.action_requested.connect(func(action: String): token_placement_action_requested.emit(action))
+	$TokenPlacementPanel.user_close_requested.connect(func(): token_placement_action_requested.emit("cancel"))
+
+	resized.connect(_on_workbar_layout_changed)
+
+	$MeasureSettings.user_close_requested.connect(func(): _close_tool_panel("measure"))
+	$ShapeSettings.user_close_requested.connect(func(): _close_tool_panel("shape"))
 	$MeasureSettings.action_requested.connect(_on_measurement_action)
-	$MeasurementUndo.set_mode("measure_undo")
-	$MeasurementUndo.action_requested.connect(func(action: String): measurement_action_requested.emit(action))
 	$MeasurementUndoTimer.timeout.connect(func():
-		$MeasurementUndo.hide()
+		hide_measurement_undo()
 		measurement_action_requested.emit("forget_measure")
 	)
+
+	command_menu_layer = CanvasLayer.new()
+	var parent_layer := get_canvas_layer_node()
+	command_menu_layer.layer = (parent_layer.layer if parent_layer != null else 1) + 2
+	add_child(command_menu_layer)
+	command_menu = VerticalCommandMenu.new()
+	command_menu_layer.add_child(command_menu)
+	command_menu.action_requested.connect(_on_command_menu_action)
+	command_menu.closed.connect(_on_command_menu_closed)
+
 	overlap_actions = preload("res://ui/components/overlap_actions.gd").new()
+	overlap_actions.fluent = true
 	add_child(overlap_actions)
 	overlap_actions.action_requested.connect(_on_entity_action)
 	overlap_actions.target_hovered.connect(func(target: Dictionary):
-		if not overlap_menu.visible:
+		if not _menu_open("overlap"):
 			entity_hovered.emit(target)
 	)
-	overlap_menu = PopupMenu.new()
-	add_child(overlap_menu)
-	overlap_menu.id_pressed.connect(func(id: int):
-		entity_action_requested.emit(menu_target, TOKEN_MENU_ACTIONS[id] if menu_target.get("kind") == "token" else "edit")
+
+	$MovementRoutePanel.action_requested.connect(func(action: String):
+		if current_tool != "route": return
+		if action in ["move_point", "delete_point"]:
+			point_action_requested.emit("move" if action == "move_point" else "delete")
+		else:
+			route_action_requested.emit(action)
 	)
-	overlap_menu.popup_hide.connect(func(): entity_hovered.emit({}))
-	$PointActions.set_actions([
-		{"id": "move", "label": "移动", "tooltip": "调整此路径点的位置"},
-		{"id": "delete", "label": "删除", "tooltip": "删除此点并连接前后路径"}
-	])
-	$PointActions.action_requested.connect(func(action: String): point_action_requested.emit(action))
-	$RouteCard.action_requested.connect(func(action: String): route_action_requested.emit(action))
+	$MovementRoutePanel.user_close_requested.connect(func(): _close_tool_panel("route"))
 	$CampaignSettings.mode_requested.connect(func(index: int): campaign_mode_requested.emit(index))
-	$ShapeSettings.parameters_changed.connect(func(parameters: Dictionary): shape_parameters_changed.emit(parameters))
+	$CampaignSettings.visibility_changed.connect(func():
+		if is_instance_valid(workbar):
+			workbar.set_auxiliary_panel_open("campaign_settings", $CampaignSettings.visible)
+	)
+	$Calculator.visibility_changed.connect(func():
+		if is_instance_valid(workbar):
+			workbar.set_auxiliary_panel_open("calculator", $Calculator.visible)
+	)
+	$ShapeSettings.parameters_changed.connect(func(parameters: Dictionary):
+		_sync_shape_summary()
+		shape_parameters_changed.emit(parameters)
+	)
+	$ShapeSettings.visibility_changed.connect(_sync_shape_summary)
 	$ShapeSettings.action_requested.connect(func(action: String): shape_action_requested.emit(action))
-	$ShapeActions.action_requested.connect(_on_shape_action)
-	$ShapeUndo.set_mode("undo")
-	$ShapeUndo.action_requested.connect(func(action: String): shape_action_requested.emit(action))
-	$ShapeMenu.add_item("编辑参数", 0)
-	$ShapeMenu.id_pressed.connect(func(_id: int): shape_action_requested.emit("edit"))
 	$ShapeUndoTimer.timeout.connect(func():
-		$ShapeUndo.hide()
+		hide_shape_undo()
 		shape_action_requested.emit("forget_delete")
 	)
-	_position_campaign_settings()
-	_populate_token_menu($TokenMenu)
-	$TokenMenu.id_pressed.connect(func(id: int): token_action_requested.emit(TOKEN_MENU_ACTIONS[id]))
+	_position_utility_panels()
+	_sync_shape_summary()
 	$RenameDialog.name_saved.connect(func(index: int, title: String): token_renamed.emit(index, title))
 	$StatsDialog.stats_saved.connect(func(index: int, hp: int, maximum: int, ac: int, temporary: int): token_stats_changed.emit(index, hp, maximum, ac, temporary))
 
+func _on_workbar_layout_changed() -> void:
+	var top := topbar_bottom()
+	if is_instance_valid(network_notice):
+		network_notice.offset_top = top + 8.0
+		network_notice.offset_bottom = top + 34.0
+	_position_utility_panels()
+	if is_instance_valid(overlap_actions):
+		overlap_actions.update_available_area(size, sidebar_right(), safe_floating_top())
+	floating_area_changed.emit(floating_area())
+
+func sidebar_right() -> float:
+	return Bar.BOARD_EDGE_MARGIN
+
+func topbar_bottom() -> float:
+	if is_instance_valid(workbar):
+		return maxf(Bar.PRIMARY_MIN_HEIGHT, workbar.occupied_bottom())
+	return Bar.PRIMARY_MIN_HEIGHT
+
+func safe_floating_top() -> float:
+	return topbar_bottom() + Bar.TOPBAR_FLOATING_GAP
+
+func floating_area() -> Rect2:
+	var top := safe_floating_top()
+	return Rect2(Vector2(0, top), Vector2(size.x, maxf(0, size.y - top)))
+
+func utility_panel_layout_snapshot() -> Dictionary:
+	var snapshots := {}
+	for panel in [$CampaignSettings, $Calculator, $ShapeSettings, $MeasureSettings, $TokenCreate, $TokenPlacementPanel, $MovementRoutePanel]:
+		if panel.visible:
+			var snapshot: Dictionary = panel.layout_snapshot()
+			snapshot["below_workbar"] = panel.position.y >= safe_floating_top() - 0.5
+			snapshot["above_bottom_margin"] = panel.position.y + panel.size.y <= size.y - 54.0 + 0.5
+			snapshots[str(panel.name)] = snapshot
+	return snapshots
+
+func mount_tray_panel(panel: Control) -> void:
+	if is_instance_valid(workbar):
+		workbar.mount_tray_panel(panel)
+
+func set_tray_count(count: int) -> void:
+	if is_instance_valid(workbar):
+		workbar.set_tray_count(count)
+
+func open_tray_drawer(key: String) -> void:
+	if is_instance_valid(workbar):
+		workbar.open_tray_category(key)
+
+func is_tray_drawer_open() -> bool:
+	return is_instance_valid(workbar) and workbar.is_secondary_expanded() and workbar.active_category() == "tray"
+
+func collapse_workbar_drawer() -> void:
+	if is_instance_valid(workbar):
+		workbar.collapse_secondary()
+
+func set_tray_navigation_active(_opened: bool) -> void:
+	pass
+
+func _exit_tree() -> void:
+	_active_menu_context = {}
+	_closing_menu_context = {}
+
+func _sync_shape_summary() -> void:
+	if is_instance_valid(workbar):
+		workbar.set_shape_summary($ShapeSettings.summary_text(), $ShapeSettings.visible)
+
+func _menu_open(kind := "") -> bool:
+	if not is_instance_valid(command_menu) or not command_menu.is_open():
+		return false
+	return kind.is_empty() or str(_active_menu_context.get("kind", "")) == kind
+
+func _close_command_menu(kind := "") -> bool:
+	if not _menu_open(kind):
+		return false
+	command_menu.close(false)
+	return true
+
+func _open_command_menu(kind: String, anchor: Control, actions: Array[Dictionary], target: Dictionary = {}) -> void:
+	if not is_instance_valid(command_menu) or not is_instance_valid(anchor):
+		return
+	var parent_layer := get_canvas_layer_node()
+	if is_instance_valid(command_menu_layer) and parent_layer != null:
+		command_menu_layer.layer = parent_layer.layer + 2
+	if command_menu.is_open():
+		command_menu.close(false)
+	_closing_menu_context = {}
+	_menu_session_seq += 1
+	_active_menu_context = {
+		"id": _menu_session_seq,
+		"kind": kind,
+		"target": target.duplicate(true),
+	}
+	command_menu.open(anchor, actions)
+	if not command_menu.is_open():
+		if kind == "overlap":
+			entity_hovered.emit({})
+		_active_menu_context = {}
+
+func _token_menu_entries() -> Array[Dictionary]:
+	return [
+		{"title": "重命名", "id": "rename", "icon": "res://ui/theme/icons/library/edit.svg"},
+		{"title": "编辑棋子", "id": "appearance", "icon": "res://ui/theme/icons/library/edit.svg"},
+		{"title": "复制", "id": "copy", "icon": "res://ui/theme/icons/library/copy.svg"},
+		{"title": "收纳到托盘…", "id": "store", "icon": "res://ui/theme/icons/topbar_tray.svg"},
+		{"title": "删除", "id": "delete", "danger": true, "separator_before": true},
+	]
+
+func _shape_menu_entries() -> Array[Dictionary]:
+	return [
+		{"title": "编辑参数", "id": "edit", "icon": "res://ui/theme/icons/library/edit.svg"},
+	]
+
+func _on_command_menu_action(action_id: String) -> void:
+	if not is_inside_tree() or is_queued_for_deletion():
+		_closing_menu_context = {}
+		return
+	# VerticalCommandMenu._activate() emits `closed` synchronously inside close() before emitting `action_requested`.
+	# Consume the exact session captured by `_on_command_menu_closed()` so activation never loses context
+	# and never acts on a newly opened replacement menu.
+	var ctx: Dictionary = _closing_menu_context if not _closing_menu_context.is_empty() else _active_menu_context
+	_closing_menu_context = {}
+	if not _active_menu_context.is_empty() and int(_active_menu_context.get("id", -1)) == int(ctx.get("id", -2)):
+		_active_menu_context = {}
+	var kind := str(ctx.get("kind", ""))
+	match kind:
+		"shape":
+			shape_action_requested.emit(action_id)
+		"overlap":
+			var target: Dictionary = ctx.get("target", {})
+			if not target.is_empty():
+				entity_action_requested.emit(target, action_id if target.get("kind") == "token" else "edit")
+
+func _on_command_menu_closed() -> void:
+	var ctx := _active_menu_context
+	_active_menu_context = {}
+	if ctx.is_empty():
+		return
+	if str(ctx.get("kind", "")) == "overlap":
+		entity_hovered.emit({})
+	_closing_menu_context = ctx
+	var closed_id := int(ctx.get("id", 0))
+	_expire_closing_menu_context.call_deferred(closed_id)
+
+func _expire_closing_menu_context(closed_id: int) -> void:
+	if int(_closing_menu_context.get("id", -1)) == closed_id:
+		_closing_menu_context = {}
+
 func rename_open() -> bool:
-	return $RenameDialog.visible or $StatsDialog.visible or delete_dialog.visible or ($TokenCreate.visible and $TokenCreate.editing_id >= 0)
+	return $RenameDialog.visible or $StatsDialog.visible or delete_dialog.visible or $TokenCreate.is_editing_instance()
 
 func session_shortcuts_blocked() -> bool:
-	return rename_open() or $TokenMenu.visible or $ShapeMenu.visible or overlap_menu.visible or $CampaignSettings.popup_visible() or $ShapeSettings.popup_visible() or $TokenCreate.visible
+	var workbar_popup := is_instance_valid(workbar) and workbar.popup_visible()
+	return rename_open() or _menu_open() or $CampaignSettings.popup_visible() or $ShapeSettings.popup_visible() or $TokenCreate.visible or workbar_popup
+
+func close_local_ui_for_escape() -> bool:
+	# 1. Active dropdowns / context popups via public component APIs (never collapsing the topbar secondary drawer)
+	if is_instance_valid(workbar) and workbar.close_popups():
+		return true
+	if _close_command_menu():
+		return true
+	for panel in [$CampaignSettings, $ShapeSettings, $TokenCreate]:
+		if panel.close_popups():
+			return true
+	# 2. Local modal / in-place editing panels and floating auxiliary windows
+	if delete_dialog.visible:
+		delete_dialog.hide()
+		return true
+	if $RenameDialog.visible:
+		$RenameDialog.hide()
+		return true
+	if $StatsDialog.visible:
+		$StatsDialog.hide()
+		return true
+	if overlap_actions.has_context_entries():
+		hide_entity_actions()
+		entity_context_dismissed.emit()
+		return true
+	var panels: Array[Control] = []
+	for panel in [$TokenCreate, $TokenPlacementPanel, $MovementRoutePanel, $ShapeSettings, $MeasureSettings, $Calculator, $CampaignSettings]:
+		if panel.visible: panels.append(panel)
+	panels.sort_custom(func(a: Control, b: Control): return a.get_index() > b.get_index())
+	if not panels.is_empty():
+		panels[0].request_close()
+		return true
+	# 3. Release focus from inputs or buttons inside the board UI before affecting tools
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused != null and is_ancestor_of(focused):
+		var release_only := focused is LineEdit or focused is TextEdit
+		focused.release_focus()
+		if release_only:
+			return true
+	return false
+
+func token_name_rect(index: int) -> Rect2:
+	if index >= 0 and index < $TokenNames.get_child_count():
+		return ($TokenNames.get_child(index) as Control).get_global_rect()
+	return Rect2()
 
 func open_rename(index: int, title: String) -> void:
-	creation_palette.close()
 	var card := $TokenNames.get_child(index) as Control
-	$RenameDialog.open(index, title, card.get_global_rect(), sidebar_right())
+	$RenameDialog.open(index, title, card.get_global_rect(), sidebar_right(), safe_floating_top())
 
 func open_stats(index: int, data: Dictionary, mode: String) -> void:
-	creation_palette.close()
 	var card := $TokenNames.get_child(index) as Control
 	$StatsDialog.left_margin = sidebar_right()
+	$StatsDialog.top_margin = safe_floating_top()
 	$StatsDialog.open(index, data, mode, card.get_global_rect())
 
-func _populate_token_menu(menu: PopupMenu) -> void:
-	menu.clear()
-	for label in ["重命名", "编辑棋子", "复制", "删除", "收纳到托盘…"]:
-		menu.add_item(label)
-
 func open_token_appearance(data: Dictionary) -> void:
-	creation_palette.close()
 	$RenameDialog.hide()
 	$StatsDialog.hide()
 	$TokenCreate.open_edit(data)
 
 func open_token_delete(data: Dictionary, measurement_count: int) -> void:
-	creation_palette.close()
 	$RenameDialog.hide()
 	$StatsDialog.hide()
 	$TokenCreate.close()
 	delete_dialog.open(data, measurement_count)
 
+func clear_token_stats_history(token_id: int) -> void:
+	$StatsDialog.clear_token_history(token_id)
+
+func clear_all_stats_history() -> void:
+	$StatsDialog.clear_all_history()
+
+func close_stats_if_editing_token(index: int) -> void:
+	$StatsDialog.close_if_editing_token(index)
+
 func reset_after_token_removal(token_id: int) -> void:
 	$RenameDialog.hide()
 	$StatsDialog.hide()
-	$StatsDialog.history.erase(token_id)
+	$StatsDialog.clear_token_history(token_id)
 	$TokenCreate.close()
 	delete_dialog.hide()
 	hide_token_actions()
 	hide_entity_actions()
 	# Rebuild index-based callbacks after the list changes.
-	for container in [$TokenNames, $TokenOperations]:
-		for child in container.get_children():
-			container.remove_child(child)
-			child.queue_free()
-
-func sidebar_right() -> float:
-	return $Toolbar.position.x + $Toolbar.size.x + 12.0
+	for child in $TokenNames.get_children():
+		$TokenNames.remove_child(child)
+		child.queue_free()
 
 func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, selected: bool, interactive: bool, info_zoom: float, editable: bool = true) -> void:
 	while $TokenNames.get_child_count() <= index:
@@ -235,75 +401,41 @@ func show_token_name(index: int, data: Dictionary, at: Vector2, in_front: bool, 
 			displayed_token = card_index
 			_on_token_action(action)
 		)
-		new_card.notes_changed.connect(func(text: String): token_notes_changed.emit(card_index,text))
+		new_card.notes_changed.connect(func(text: String): token_notes_changed.emit(card_index, text))
 		new_card.gui_input.connect(func(event: InputEvent):
-			if current_tool=="select" and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and event.pressed:
+			if current_tool == "select" and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 				entity_selection_requested.emit(get_global_mouse_position())
 				new_card.accept_event()
 		)
 		$TokenNames.add_child(new_card)
-		var actions := TOKEN_ACTIONS.instantiate()
-		actions.action_requested.connect(func(action: String):
-			displayed_token = card_index
-			_on_token_action(action)
-		)
-		$TokenOperations.add_child(actions)
 	var chip := $TokenNames.get_child(index) as Control
 	var stable: bool = Mobile.enabled and (selected or chip.expanded)
-	chip.scale = Vector2.ONE * (Interface.preferences.info_scale if stable else (8.0 / 9.0)*info_zoom*Interface.preferences.info_scale)
+	chip.scale = Vector2.ONE * (Interface.preferences.info_scale if stable else (8.0 / 9.0) * info_zoom * Interface.preferences.info_scale)
 	var details_interactive: bool = interactive and (not Mobile.enabled or selected or chip.expanded)
-	chip.update_data(data["title"], data["color"], data["hp"], data["max_hp"], data["ac"], int(data.get("temp_hp",0)), str(data.get("notes","")))
+	chip.update_data(data["title"], data["color"], data["hp"], data["max_hp"], data["ac"], int(data.get("temp_hp", 0)), str(data.get("notes", "")))
 	chip.set_editable(editable and details_interactive)
 	chip.set_selected(selected)
-	chip.expand_button.disabled = not details_interactive
-	chip.expand_button.mouse_filter = Control.MOUSE_FILTER_STOP if details_interactive else Control.MOUSE_FILTER_IGNORE
+	chip.set_details_interactive(details_interactive)
 	chip.mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
-	chip.get_node("Content/Header/HP").mouse_filter = Control.MOUSE_FILTER_STOP if details_interactive else Control.MOUSE_FILTER_IGNORE
-	chip.get_node("Content/Header/AC").mouse_filter = Control.MOUSE_FILTER_STOP if details_interactive else Control.MOUSE_FILTER_IGNORE
+	var top_limit := safe_floating_top()
 	chip.visible = in_front and get_global_rect().has_point(at)
 	chip.reset_size()
 	var dimensions := chip.get_combined_minimum_size() * chip.scale
 	chip.position = at - Vector2(dimensions.x / 2.0, dimensions.y + 52.0 * info_zoom)
 	chip.position.x = clampf(chip.position.x, sidebar_right(), maxf(sidebar_right(), size.x - dimensions.x - 16.0))
-	chip.position.y = clampf(chip.position.y, 64.0, maxf(64.0, size.y - dimensions.y - 100.0))
-	var operations := $TokenOperations.get_child(index) as Control
-	operations.set_meta("appearance_available", data.get("components", {}).is_empty())
-	operations.set_expanded(false)
-	operations.place_below(chip, size, sidebar_right())
-	if not chip.visible:
-		operations.hide()
+	chip.position.y = clampf(chip.position.y, top_limit, maxf(top_limit, size.y - dimensions.y - 100.0))
 
 func pointer_on_creation_palette() -> bool:
-	return creation_palette.visible and creation_palette.get_global_rect().has_point(get_global_mouse_position())
+	return is_instance_valid(workbar) and workbar.pointer_on_asset_drawer(get_global_mouse_position())
 
 func token_index_under_pointer() -> int:
-	if pointer_on_creation_palette():
+	if is_instance_valid(workbar) and workbar.hit_test(get_global_mouse_position()):
 		return -1
 	for index in range($TokenNames.get_child_count() - 1, -1, -1):
 		var card := $TokenNames.get_child(index) as Control
 		if card.visible and card.get_global_rect().has_point(get_global_mouse_position()):
 			return index
-		var operations := $TokenOperations.get_child(index) as Control
-		if card.visible and operations.visible and operations.expanded:
-			var surface := card.get_global_rect().merge(operations.get_global_rect())
-			if surface.has_point(get_global_mouse_position()):
-				return index
 	return -1
-
-func set_measure_card(measuring: bool, finished: bool, editing: bool = false) -> void:
-	$RouteCard/Content/Buttons/Confirm.text = "完成" if measuring else "确认"
-	$RouteCard/Content/Buttons/Confirm.visible = not (measuring and finished)
-	$RouteCard/Content/Buttons/Undo.visible = not (measuring and finished)
-	$RouteCard/Content/Buttons/Cancel.text = "取消本点修改" if editing and not measuring else "取消"
-	$RouteCard/Content/Buttons/Confirm.tooltip_text = "完成当前测距 · Enter" if measuring else "移动到最后一个固定点 · Enter"
-	$RouteCard/Content/Buttons/Cancel.tooltip_text = "取消当前测距" if measuring else ("恢复正在修改的路径点" if editing else "取消整条路线")
-	if measuring and finished:
-		$RouteCard/Content/Hint.hide()
-		$PointActions.hide()
-		for child in $PathPoints.get_children():
-			child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	elif measuring:
-		$RouteCard/Content/Hint.hide()
 
 func _on_tool(tool: String) -> void:
 	tool_requested.emit(tool)
@@ -315,10 +447,20 @@ func configure_campaign_settings(settings) -> void:
 	settings.storage_status_changed.connect($CampaignSettings.set_storage_status)
 
 func keyboard_owned_by_ui() -> bool:
-	if rename_open() or $ShapeMenu.visible or overlap_menu.visible or $CampaignSettings.popup_visible() or $ShapeSettings.popup_visible() or $TokenCreate.popup_visible():
+	if is_instance_valid(overlap_actions) and overlap_actions.owns_keyboard():
+		return true
+	var workbar_popup := is_instance_valid(workbar) and workbar.popup_visible()
+	if rename_open() or _menu_open() or $CampaignSettings.popup_visible() or $ShapeSettings.popup_visible() or $TokenCreate.popup_visible() or workbar_popup:
 		return true
 	var focused := get_viewport().gui_get_focus_owner()
-	return focused != null and (focused == self or is_ancestor_of(focused))
+	if focused != null and (focused is LineEdit or focused is TextEdit):
+		return true
+	if focused != null and $TokenNames.is_ancestor_of(focused):
+		return true
+	for panel in [$CampaignSettings, $Calculator, $ShapeSettings, $MeasureSettings, $TokenCreate, $TokenPlacementPanel, $MovementRoutePanel]:
+		if panel.visible and focused != null and (focused == panel or panel.is_ancestor_of(focused)):
+			return true
+	return false
 
 func release_keyboard_focus() -> void:
 	var focused := get_viewport().gui_get_focus_owner()
@@ -326,10 +468,17 @@ func release_keyboard_focus() -> void:
 		focused.release_focus()
 
 func suspend_pointer_input() -> void:
-	for panel in [$CampaignSettings, $Calculator, $ShapeSettings, $MeasureSettings, $TokenCreate]:
-		panel.dragging = false
+	if is_instance_valid(workbar):
+		workbar.close_popups()
+	_close_command_menu()
+	for panel in [$CampaignSettings, $Calculator, $ShapeSettings, $MeasureSettings, $TokenCreate, $TokenPlacementPanel, $MovementRoutePanel]:
+		panel.suspend_pointer_input()
 
 func set_navigation_suspended(suspended: bool) -> void:
+	if suspended:
+		if is_instance_valid(workbar):
+			workbar.close_popups()
+		_close_command_menu()
 	_set_navigation_focus(self, suspended)
 
 func _set_navigation_focus(node: Node, suspended: bool) -> void:
@@ -343,10 +492,16 @@ func _set_navigation_focus(node: Node, suspended: bool) -> void:
 	for child in node.get_children():
 		_set_navigation_focus(child, suspended)
 
+func request_panel(panel: String) -> void:
+	_on_panel_requested(panel)
+
 func _on_panel_requested(panel: String) -> void:
 	if panel == "campaign_settings":
-		$TokenMenu.hide()
-		$CampaignSettings.open()
+		_close_command_menu("token")
+		if $CampaignSettings.visible:
+			$CampaignSettings.close()
+		else:
+			$CampaignSettings.open()
 	elif panel == "calculator":
 		$Calculator.open()
 	elif panel in ["token_basic", "token_advanced"]:
@@ -354,31 +509,46 @@ func _on_panel_requested(panel: String) -> void:
 			return
 		$TokenCreate.close()
 		var category := "basic" if panel == "token_basic" else "advanced"
-		if creation_palette.visible and creation_palette.category == category:
-			creation_palette.close()
-		else:
-			creation_palette.open(sidebar_right(), category)
+		if is_instance_valid(creation_palette):
+			creation_palette.switch_embedded_category(category)
+		if is_instance_valid(workbar):
+			workbar.expand_category("tokens")
+
+func open_builtin_token_creation() -> void:
+	if is_instance_valid(creation_palette):
+		_on_creation_entry(creation_palette.BUILTIN_BASIC)
+	else:
+		$TokenCreate.open_creation()
 
 func _on_creation_entry(entry: Dictionary) -> void:
 	if entry.get("builtin", false):
+		if current_tool == "token_create":
+			tool_requested.emit("select")
 		$TokenCreate.open_creation()
 	else:
 		token_placement_requested.emit(entry["parameters"].duplicate(true))
 
-func _position_campaign_settings() -> void:
-	$CampaignSettings.place_initial(Vector2(sidebar_right(), $Toolbar.position.y))
-	$Calculator.place_initial(Vector2(sidebar_right() + 32, $Toolbar.position.y + 32))
-	$ShapeSettings.place_initial(Vector2(sidebar_right(), $Toolbar.position.y))
-	$MeasureSettings.place_initial(Vector2(sidebar_right(), $Toolbar.position.y))
-	$TokenCreate.place_initial(Vector2(sidebar_right(), $Toolbar.position.y))
+func _position_utility_panels() -> void:
+	var y_top := safe_floating_top()
+	var x_left := sidebar_right()
+	var area := floating_area()
+	for panel in [$CampaignSettings, $Calculator, $ShapeSettings, $MeasureSettings, $TokenCreate, $TokenPlacementPanel, $MovementRoutePanel]:
+		panel.set_available_rect(area)
+	$CampaignSettings.place_initial(Vector2(x_left, y_top))
+	$Calculator.place_initial(Vector2(x_left + $ShapeSettings.preferred_width + Bar.TOPBAR_FLOATING_GAP, y_top))
+	$ShapeSettings.place_initial(Vector2(x_left, y_top))
+	$MeasureSettings.place_initial(Vector2(x_left, y_top))
+	$TokenCreate.place_initial(Vector2(x_left, y_top))
+	$TokenPlacementPanel.place_initial(Vector2(x_left, y_top))
+	$MovementRoutePanel.place_initial(Vector2(x_left, y_top))
 
-func show_token_placement_actions(at: Vector2, fixed: bool) -> void:
-	$TokenPlacementActions.set_mode("confirm" if fixed else "cancel_preview")
-	$TokenPlacementActions.reveal()
-	$TokenPlacementActions.place_above(at, sidebar_right())
-
-func hide_token_placement_actions() -> void:
-	$TokenPlacementActions.hide()
+func set_token_placement_workflow(state: Dictionary) -> void:
+	$TokenPlacementPanel.set_workflow_state(state)
+	if state.get("active", false):
+		if not $TokenPlacementPanel.visible:
+			$TokenPlacementPanel.open()
+	elif $TokenPlacementPanel.visible:
+		$TokenPlacementPanel.close()
 
 func shape_parameters() -> Dictionary:
 	return $ShapeSettings.parameters()
@@ -387,184 +557,127 @@ func update_shape_state(plan) -> void:
 	if not plan.draft.is_empty():
 		$ShapeSettings.set_parameters(plan.draft)
 	$ShapeSettings.set_state(plan.selected >= 0, not plan.draft.is_empty(), plan.moving, plan.position_ready, plan.shapes.size(), plan.dirty())
+	_sync_shape_summary()
 
-func show_shape_actions(at: Vector2, confirming: bool = false, moving: bool = false) -> void:
-	$ShapeActions.set_mode("cancel_preview" if moving else ("confirm" if confirming else "hover"))
-	$ShapeActions.reveal()
-	$ShapeActions.place_above(at, sidebar_right())
 
 func hide_shape_actions() -> void:
-	$ShapeActions.hide()
-	$ShapeMenu.hide()
-
-func shape_surface_under_pointer() -> bool:
-	return $ShapeMenu.visible or $ShapeActions.pointer_near()
+	_close_command_menu("shape")
 
 func shape_menu_visible() -> bool:
-	return $ShapeMenu.visible
+	return _menu_open("shape")
 
 func open_shape_editor() -> void:
+	if is_instance_valid(workbar):
+		workbar.set_tool("shape")
 	$ShapeSettings.open()
-
-func close_shape_editor() -> void:
-	$ShapeSettings.close()
+	_sync_shape_summary()
 
 func show_shape_undo() -> void:
-	$ShapeUndo.reveal()
+	$ShapeSettings.set_delete_undo_available(true)
 	$ShapeUndoTimer.start()
-	_position_shape_undo()
 
 func hide_shape_undo() -> void:
-	$ShapeUndo.hide()
+	$ShapeSettings.set_delete_undo_available(false)
 	$ShapeUndoTimer.stop()
 
-func _position_shape_undo() -> void:
-	$ShapeUndo.place_above(Vector2(size.x / 2.0, size.y - 54), sidebar_right())
-
-func show_measurement_actions(at: Vector2, mode: String) -> void:
-	$MeasurementActions.set_mode(mode)
-	$MeasurementActions.reveal()
-	$MeasurementActions.place_above(at, sidebar_right())
-
-func hide_measurement_actions() -> void:
-	$MeasurementActions.hide()
-
-func measurement_surface_under_pointer() -> bool:
-	return overlap_menu.visible or $MeasurementActions.pointer_near()
-
 func measurement_menu_visible() -> bool:
-	return overlap_menu.visible
+	return _menu_open("overlap")
 
 func _on_measurement_action(action: String) -> void:
 	measurement_action_requested.emit(action)
 
 func show_entity_actions(entries: Array[Dictionary], at: Vector2, below: bool = false) -> void:
-	overlap_actions.present(entries, at, size, sidebar_right(), below)
+	overlap_actions.present(entries, at, size, sidebar_right(), below, safe_floating_top())
 
 func hide_entity_actions() -> void:
 	overlap_actions.hide()
-	overlap_menu.hide()
+	_close_command_menu("overlap")
 
 func entity_surface_under_pointer() -> bool:
-	return overlap_actions.pointer_near() or overlap_menu.visible
+	return overlap_actions.pointer_near() or _menu_open("overlap")
 
-func _on_entity_action(target: Dictionary, action: String, anchor: Rect2) -> void:
+func _on_entity_action(target: Dictionary, action: String, anchor_control: Control) -> void:
 	if action == "more":
-		menu_target = target.duplicate()
-		overlap_menu.clear()
-		if target["kind"] == "token":
-			_populate_token_menu(overlap_menu)
-
-		else:
-			overlap_menu.add_item("编辑参数", 0)
 		entity_hovered.emit(target)
-		_open_object_menu(overlap_menu, anchor)
+		var entries := _token_menu_entries() if target["kind"] == "token" else _shape_menu_entries()
+		_open_command_menu("overlap", anchor_control, entries, target)
 	else:
 		entity_action_requested.emit(target, action)
 
 func show_measurement_undo() -> void:
-	$MeasurementUndo.reveal()
+	_measure_restore_available = true
 	$MeasurementUndoTimer.start()
-	_position_measurement_undo()
 
 func hide_measurement_undo() -> void:
-	$MeasurementUndo.hide()
+	_measure_restore_available = false
 	$MeasurementUndoTimer.stop()
 
-func _position_measurement_undo() -> void:
-	$MeasurementUndo.place_above(Vector2(size.x / 2.0, size.y - 100), sidebar_right())
-
-func _on_shape_action(action: String) -> void:
-	if action == "more":
-		var card: Control = $ShapeActions
-		_open_object_menu($ShapeMenu, card.get_global_rect())
-	else:
-		shape_action_requested.emit(action)
-
 func _on_token_action(action: String) -> void:
-	if action == "more":
-		var card := $TokenOperations.get_child(displayed_token) as Control
-		$TokenMenu.set_item_disabled(1, false)
-		$TokenMenu.set_item_text(1, "编辑棋子")
-		_open_object_menu($TokenMenu, card.get_global_rect())
-	else:
-		token_action_requested.emit(action)
-
-func _open_object_menu(menu: PopupMenu, anchor: Rect2) -> void:
-	for other in [$TokenMenu, $ShapeMenu, overlap_menu]:
-		if other != menu:
-			other.hide()
-	BoardUiStyle.popup_at(menu, anchor, size, sidebar_right())
+	token_action_requested.emit(action)
 
 func set_tool(tool: String) -> void:
-	creation_palette.close()
+	# Do NOT auto-collapse topbar secondary drawer on tool changes!
 	$TokenCreate.close()
 	hide_entity_actions()
 	current_tool = tool
-	$Toolbar.set_tool(tool)
-	$SelectCard/Select.set_pressed_no_signal(tool == "select")
-	BoardUiStyle.refresh_sidebar_button($SelectCard/Select, true)
+	if tool == "route":
+		$MovementRoutePanel.open()
+	else:
+		$MovementRoutePanel.close()
+	if tool == "token_create":
+		$TokenPlacementPanel.open()
+	else:
+		$TokenPlacementPanel.close()
+	if is_instance_valid(workbar):
+		workbar.set_tool(tool)
+	if tool != "measure":
+		$MeasureSettings.close()
 	if tool == "measure":
 		$MeasureSettings.open()
-	else:
-		$MeasureSettings.close()
 	if tool == "shape":
 		$ShapeSettings.open()
 	else:
 		$ShapeSettings.close()
 		hide_shape_actions()
+	_sync_shape_summary()
 
 func set_status(message: String) -> void:
 	$Status.text = message
 	$Status.visible = not message.is_empty()
 
-func show_token_actions(index: int, at: Vector2) -> void:
-	displayed_token = index
-	if index < $TokenNames.get_child_count():
-		$TokenOperations.get_child(index).set_expanded(true)
-
 func hide_token_actions() -> void:
-	$TokenMenu.hide()
+	_close_command_menu("token")
 	displayed_token = -1
 
 func token_surface_under_pointer() -> bool:
-	return $TokenMenu.visible or token_index_under_pointer() >= 0
+	return _menu_open("token") or token_index_under_pointer() >= 0
 
 func token_menu_visible() -> bool:
-	return $TokenMenu.visible
+	return _menu_open("token")
 
 func pointer_on_ui() -> bool:
-	if is_instance_valid(map_button_panel) and map_button_panel.is_visible_in_tree() and map_button_panel.get_global_rect().has_point(get_global_mouse_position()): return true
+	var mouse := get_global_mouse_position()
+	if is_instance_valid(workbar) and workbar.hit_test(mouse):
+		return true
 	if rename_open():
 		return true
-	if $TokenMenu.visible or $ShapeMenu.visible or overlap_menu.visible or $CampaignSettings.popup_visible() or $ShapeSettings.popup_visible() or $TokenCreate.popup_visible():
+	if _menu_open() or $CampaignSettings.popup_visible() or $ShapeSettings.popup_visible() or $TokenCreate.popup_visible():
 		return true
 	var hovered := get_viewport().gui_get_hovered_control()
 	return hovered != null and hovered != self and is_ancestor_of(hovered)
 
-func show_point_actions(at: Vector2) -> void:
-	$PointActions.show()
-	_place($PointActions, at, true)
-
-func hide_point_actions() -> void:
-	$PointActions.hide()
-
-func show_route(amount: String, has_points: bool, editing: bool, at: Vector2) -> void:
-	$RouteCard.update_state(amount, has_points, editing)
-	$RouteCard.show()
-	_place($RouteCard, at, true)
+func set_movement_workflow(state: Dictionary) -> void:
+	$MovementRoutePanel.set_workflow_state(state)
 
 func show_distance(amount: String, at: Vector2) -> void:
-	$DistanceChip/Amount.text = amount
+	$DistanceChip.z_index = MEASUREMENT_LABEL_Z if current_tool == "measure" else 0
+	$DistanceChip.set_amount_text(amount)
 	$DistanceChip.reset_size()
 	$DistanceChip.show()
 	_place($DistanceChip, at, false)
 
 func hide_distance() -> void:
 	$DistanceChip.hide()
-
-func set_measure_summary(summary: String) -> void:
-	$RouteCard/Content/Summary.text = summary
 
 func hide_saved_measurement() -> void:
 	$SavedMeasurement.hide()
@@ -573,7 +686,7 @@ func show_saved_measurements(entries: Array[Dictionary]) -> void:
 	$SavedMeasurement.show()
 	while $SavedMeasurement.get_child_count() < entries.size():
 		var label := SEGMENT_LABEL.instantiate() as Control
-		label.get_node("Amount").add_theme_color_override("font_color", Color("80602b"))
+		label.set_tone(&"saved_measurement")
 		$SavedMeasurement.add_child(label)
 	for index in range($SavedMeasurement.get_child_count()):
 		var label := $SavedMeasurement.get_child(index) as Control
@@ -581,7 +694,7 @@ func show_saved_measurements(entries: Array[Dictionary]) -> void:
 			label.hide()
 			continue
 		var entry: Dictionary = entries[index]
-		label.get_node("Amount").text = entry["text"]
+		label.set_amount_text(str(entry["text"]))
 		label.set_meta("measurement_index", entry["index"])
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.tooltip_text = ""
@@ -600,6 +713,17 @@ func show_saved_measurement_nodes(anchors: Array[Dictionary]) -> void:
 		if node.visible:
 			node.position = anchors[index]["at"] - Vector2(12, 12)
 			node.set_pressed_no_signal(anchors[index]["highlighted"])
+
+func saved_measurements_at(screen_point: Vector2) -> Array[int]:
+	# Labels remain mouse-ignore: the board owns click/drag arbitration.
+	var indices: Array[int] = []
+	if not $SavedMeasurement.is_visible_in_tree():
+		return indices
+	for label: Control in $SavedMeasurement.get_children():
+		var index := int(label.get_meta("measurement_index", -1))
+		if index >= 0 and label.is_visible_in_tree() and label.get_global_rect().has_point(screen_point) and not indices.has(index):
+			indices.append(index)
+	return indices
 
 func show_path_points(anchors: Array[Vector2], selected_index: int, editing: bool) -> void:
 	while $PathPoints.get_child_count() < anchors.size():
@@ -620,12 +744,13 @@ func show_path_points(anchors: Array[Vector2], selected_index: int, editing: boo
 		button.tooltip_text = "" if current_tool == "measure" else "路径点"
 
 func show_segments(amounts: Array[String], anchors: Array[Vector2]) -> void:
+	$SegmentLabels.z_index = MEASUREMENT_LABEL_Z if current_tool == "measure" else 0
 	while $SegmentLabels.get_child_count() < amounts.size():
 		$SegmentLabels.add_child(SEGMENT_LABEL.instantiate())
 	for index in range($SegmentLabels.get_child_count()):
 		var chip := $SegmentLabels.get_child(index) as Control
 		if index < amounts.size():
-			chip.get_node("Amount").text = amounts[index]
+			chip.set_amount_text(amounts[index])
 			chip.reset_size()
 			chip.show()
 			_place(chip, anchors[index], true)
@@ -634,9 +759,7 @@ func show_segments(amounts: Array[String], anchors: Array[Vector2]) -> void:
 
 func clear_overlays() -> void:
 	hide_token_actions()
-	hide_point_actions()
 	hide_distance()
-	$RouteCard.hide()
 	for child in $SegmentLabels.get_children():
 		child.hide()
 	for child in $PathPoints.get_children():
@@ -644,29 +767,27 @@ func clear_overlays() -> void:
 
 func _place(control: Control, at: Vector2, above: bool) -> void:
 	var role := BoardUiStyle.FloatingRole.INFO
-	if control == $PointActions:
-		role = BoardUiStyle.FloatingRole.ACTION
-	elif control == $RouteCard:
-		role = BoardUiStyle.FloatingRole.CONFIRM
-	BoardUiStyle.place_floating(control, Rect2(at, Vector2.ZERO), size, sidebar_right(), role, not above)
+	BoardUiStyle.place_floating(control, Rect2(at, Vector2.ZERO), size, sidebar_right(), role, not above, safe_floating_top())
 
 func update_measure_state(drawing: bool, has_start: bool, editing: bool) -> void:
 	$MeasureSettings.set_state(drawing, has_start, editing)
 
-func set_measure_undo_available(allowed: bool) -> void:
-	$RouteCard/Content/Buttons/Undo.disabled = not allowed
+func set_measure_workflow(state: Dictionary) -> void:
+	var snapshot := state.duplicate()
+	snapshot["can_restore"] = _measure_restore_available
+	$MeasureSettings.set_workflow_state(snapshot)
+
+func _close_tool_panel(tool_id: String) -> void:
+	if current_tool == tool_id:
+		tool_requested.emit("select")
 
 func set_map_title(title: String) -> void:
-	map_navigation.text = title
-	map_navigation.tooltip_text = title
+	if is_instance_valid(workbar):
+		workbar.set_map_title(title)
 
 func set_map_navigation_active(opened: bool) -> void:
-	map_navigation.set_pressed_no_signal(opened)
-	BoardUiStyle.refresh_sidebar_button(map_navigation,true)
-
-func set_tray_navigation_active(opened: bool) -> void:
-	tray_button.set_pressed_no_signal(opened)
-	BoardUiStyle.refresh_sidebar_button(tray_button,true)
+	if is_instance_valid(workbar):
+		workbar.set_map_navigation_active(opened)
 
 func show_network_notice(message: String) -> void:
 	network_notice_revision += 1
@@ -675,7 +796,8 @@ func show_network_notice(message: String) -> void:
 	network_notice.tooltip_text = message
 	network_notice.visible = not message.is_empty()
 	get_tree().create_timer(5.0).timeout.connect(func():
-		if is_instance_valid(network_notice) and revision==network_notice_revision: network_notice.hide()
+		if is_instance_valid(network_notice) and revision == network_notice_revision:
+			network_notice.hide()
 	)
 
 func notes_editing() -> bool:

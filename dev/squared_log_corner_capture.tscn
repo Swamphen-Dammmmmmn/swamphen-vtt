@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/wall_sandbox.gd" id="1"]
+[node name="SquaredLogCornerCapture" type="Node3D"]
+script = ExtResource("1")
+initial_surface = "logs_squared"
+capture_initial = true
+initial_placing = false
+view_mode = 1
+capture_directory = "res://artifacts/squared-log-wall-2026-10-25/"

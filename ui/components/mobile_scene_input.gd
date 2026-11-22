@@ -149,9 +149,13 @@ func _over_ui(point: Vector2) -> bool:
 	return not host.get_global_rect().has_point(point) or (host.basic_open and host.options_panel.get_global_rect().has_point(point)) or host.basic_handle.get_global_rect().has_point(point)
 
 func _control_at(root: Node, point: Vector2) -> bool:
-	if root is Control and not root.is_visible_in_tree(): return false
-	if root is PanelContainer or root is BaseButton or root is LineEdit or root is TextEdit or root is ScrollContainer:
-		if root.get_global_rect().has_point(point): return true
+	if root is Control:
+		if not root.is_visible_in_tree() or not root.can_process(): return false
+		var inside: bool = root.get_global_rect().has_point(point)
+		if root.clip_contents and not inside: return false
+		if inside and root.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			if root is PanelContainer or root is BaseButton or root is LineEdit or root is TextEdit or root is ScrollContainer:
+				return true
 	for child in root.get_children():
 		if _control_at(child,point): return true
 	return false
@@ -573,7 +577,7 @@ func _interrupt_drag() -> void:
 		_queue_bridge(release)
 
 func _operation_pending() -> bool:
-	if kind == "board": return int(host.tool) == 4 or host.turn_control.dragging
+	if kind == "board": return host.turn_control.dragging
 	if kind != "free": return false
 	if editor_kind=="map": return not host.moving.is_empty() or not host.draft.is_empty()
 	return not host.token_tool.draft.is_empty() or not host.token_tool.moving.is_empty() or host.token_tool.turn_control.dragging
@@ -582,11 +586,9 @@ func _cancel_operation() -> void:
 	var ring_editing: bool = host.turn_control.dragging if kind=="board" else (kind=="free" and editor_kind=="platform" and host.token_tool.turn_control.dragging)
 	blocked_fingers.assign(fingers.keys())
 	_interrupt_drag()
-	if not ring_editing:
-		if kind=="board": host._on_tool("select")
-		elif kind=="free":
-			if host.has_method("_cancel_operation"): host._cancel_operation()
-			else: host.token_tool.cancel()
+	if not ring_editing and kind == "free":
+		if host.has_method("_cancel_operation"): host._cancel_operation()
+		else: host.token_tool.cancel()
 	reset()
 
 func reset(reset_boost := true) -> void:

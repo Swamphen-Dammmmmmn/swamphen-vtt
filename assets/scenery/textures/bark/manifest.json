@@ -1,0 +1,598 @@
+{
+  "version": 2,
+  "generator": "dev/generate_bark_textures.py",
+  "count": 64,
+  "size": [
+    512,
+    128
+  ],
+  "atlas_grid": [
+    8,
+    8
+  ],
+  "reference_color": "6d6557",
+  "surface_feet": [
+    10,
+    1.5
+  ],
+  "mipmaps": true,
+  "color_space": "color=sRGB; detail=linear RG tangent normal XY, B roughness",
+  "surfaces": [
+    {
+      "index": 0,
+      "family": "疏纵裂",
+      "seed": 24102471,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "2ec5d6d2246143ee5a06a90de32ef2cc7916371d7311963af57c335b8a89fa7d",
+      "detail_sha256": "f95ca7c9872bf2f372fbc1f2b8af9365a4b1d41d8ea8425ab68c7cc16db5ca96"
+    },
+    {
+      "index": 1,
+      "family": "细密裂",
+      "seed": 24207200,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "b8dea54dcf9930f6f3dca3c2755a475940f0f298053dd50c3f83c36e9e31a5b8",
+      "detail_sha256": "63febf09f46b3668b0f02e637e0d13abb966ff8f5f5cd255ec07ad9f07c0a31b"
+    },
+    {
+      "index": 2,
+      "family": "断续裂",
+      "seed": 24311929,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "2215f38f3606cfc0f9247462a5d0b261694e6e4f891cea1acacc73f8d00bd25c",
+      "detail_sha256": "ba3c63b93226393c127b798417642757418d65b5f8ad4b627a9831dcaf21997e"
+    },
+    {
+      "index": 3,
+      "family": "分叉裂",
+      "seed": 24416658,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "fca0ddb18ca47f9ce054e2e3d596ceb6bc56c1355b35449cf9d36a8c295e3d84",
+      "detail_sha256": "9af5aa24e5a7072bce187be901c19be419e55d014967db37147aa474b52775a2"
+    },
+    {
+      "index": 4,
+      "family": "疏纵裂",
+      "seed": 24521387,
+      "main_fissures": 8,
+      "open_cracks_only": true,
+      "color_sha256": "855f38af6ed0a3d13a3489bcaf5aae0c3581b6240c6a401a8d42f8d625fd101d",
+      "detail_sha256": "008bb4de713fdff47d94aac9ccea4e86a4306628930466dc12e42e151964c866"
+    },
+    {
+      "index": 5,
+      "family": "细密裂",
+      "seed": 24626116,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "9322340f2d591fee55e724ac0fc32af04bf4f6e69e8d5c823006b0a072d6dc80",
+      "detail_sha256": "c2f9a79d07686bef93c0c7ece9a678475f3788975b157184345c2696e9bb18c2"
+    },
+    {
+      "index": 6,
+      "family": "断续裂",
+      "seed": 24730845,
+      "main_fissures": 11,
+      "open_cracks_only": true,
+      "color_sha256": "9f95264deb2d5c5db590b7ad4a307bd28d92c34da4f635a566b44a25b85f4a69",
+      "detail_sha256": "481f291e9115ea4af49c4a97712afa9e82a6c09dbb2905cd8fc9f85f89e0f7cb"
+    },
+    {
+      "index": 7,
+      "family": "分叉裂",
+      "seed": 24835574,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "8bb0c5995b992694c284296abb8879a4ed8a41051f0b0b68afeb8da39b8e1a0a",
+      "detail_sha256": "f76a1a61b1d48f8d3f3ab1294a3063c198abe9623cbb85d31db61bb851620a25"
+    },
+    {
+      "index": 8,
+      "family": "疏纵裂",
+      "seed": 24940303,
+      "main_fissures": 8,
+      "open_cracks_only": true,
+      "color_sha256": "92f2a68e12eb0a053d10b86e841f778da0812f8c4b9be25fb6ac1bd63b1ecd51",
+      "detail_sha256": "62388eaa125a688ab9f78f99705faa1bc9fa0789315585b0ac42919de50b365b"
+    },
+    {
+      "index": 9,
+      "family": "细密裂",
+      "seed": 25045032,
+      "main_fissures": 16,
+      "open_cracks_only": true,
+      "color_sha256": "acd0bfc602a28dd36c334a5080a901490f9117cdc699639067e161093dd53ee1",
+      "detail_sha256": "c736ceed7174c2a2f093d463a56e87a67827b412c02e7f775ff580412b2a9f38"
+    },
+    {
+      "index": 10,
+      "family": "断续裂",
+      "seed": 25149761,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "a532a2484e6f77675d70c1a9f14ac2f85ac19fcbe267936f55f15409d19ff9ce",
+      "detail_sha256": "4d763ba3876e994f60ec37c22f56eea411e58ddec225d11d24bd5a23e35500f0"
+    },
+    {
+      "index": 11,
+      "family": "分叉裂",
+      "seed": 25254490,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "68be4e1df7dc8970563c4c266bb79bde23fe28d3ef22f770c41e0cef499e9b1d",
+      "detail_sha256": "c94a7de3b47e2f1831b15989aa074339e12abbd4b6dd16ee14af3b469466252c"
+    },
+    {
+      "index": 12,
+      "family": "疏纵裂",
+      "seed": 25359219,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "92358b1c8668c3b70b9bb4f6f2146c83381cd134380ce1849f2bf095e71deade",
+      "detail_sha256": "38e458be8c51ca156c7dc16bbf6a87e3e3e3628d948cecface4d9858c665ca2b"
+    },
+    {
+      "index": 13,
+      "family": "细密裂",
+      "seed": 25463948,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "b0998d6e033713c356b09ee597f1386dc7aeb57adabc870bd7f2ae33ff5113ab",
+      "detail_sha256": "957ae0c86f9e453442da3242c8b1984484b27ebd3c24fd5ad48b048db3aaabd4"
+    },
+    {
+      "index": 14,
+      "family": "断续裂",
+      "seed": 25568677,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "6b1190d59e424a7069f0f2fcc31647618951bf5b0b9cb162bc2f9b50b16a9ddd",
+      "detail_sha256": "f3c016105fe3c7540aff108e238d6d446ea33fb28aef9a11462079138c943b96"
+    },
+    {
+      "index": 15,
+      "family": "分叉裂",
+      "seed": 25673406,
+      "main_fissures": 13,
+      "open_cracks_only": true,
+      "color_sha256": "b89ccd2b980a3e7469a942f7da10ab30485211a41c7a7ac1549323cc43b8d416",
+      "detail_sha256": "c633681cfe5a966551084633f032b5223ea9a0817ea1754d70936dd48068b11a"
+    },
+    {
+      "index": 16,
+      "family": "疏纵裂",
+      "seed": 25778135,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "c88e6e2f5b9d00000be7b9b0b6c5b2a258c12be1651e9150e513d0d4da45133d",
+      "detail_sha256": "d1a11c47a8f5e5b5b42f3d96f88a1b6c1c143fec4d4f1e11f54ef66e6d395cc6"
+    },
+    {
+      "index": 17,
+      "family": "细密裂",
+      "seed": 25882864,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "e49d616c0946a8e88fbec1681717352c0a72bfde073bf26d6588a04ec831eda6",
+      "detail_sha256": "ee1996462f65173684d50e0ba6c4184cf792ff8b9d2193c5e16e6da36a7ec599"
+    },
+    {
+      "index": 18,
+      "family": "断续裂",
+      "seed": 25987593,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "e1634000c0fbb529fa8234c3ecaf00603a1862196211f499af213a8fcbd19d5e",
+      "detail_sha256": "c4829c7065646e27628e4b821efda9333add28fd3308a394728dae96675e9d2e"
+    },
+    {
+      "index": 19,
+      "family": "分叉裂",
+      "seed": 26092322,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "d9d7ac1a71e2d0a622d8d383bca784d730487fe98bb5f55d4a640a9ebaff5a51",
+      "detail_sha256": "b76bd026edd357544f9f4c4ec10ea0f51d3d82180aacc83c4461cf2e1a44a3ef"
+    },
+    {
+      "index": 20,
+      "family": "疏纵裂",
+      "seed": 26197051,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "e2d1cf206da0e9bc150ad3cd9a0ef4d650787d482c900c2f51bc5a26d6982926",
+      "detail_sha256": "92447767d8b702f15918dc4601af047b963b8f28ee4086e54f766adba39dd2b8"
+    },
+    {
+      "index": 21,
+      "family": "细密裂",
+      "seed": 26301780,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "a4d0bed73f347a930979dabbc947a92aa4d107c21bca355306c45c21487a10d4",
+      "detail_sha256": "77ab4596600dd2186de2836de8e077e6801326f65ae3afdc2d50f0c502753c23"
+    },
+    {
+      "index": 22,
+      "family": "断续裂",
+      "seed": 26406509,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "e04e35702b8d2f6ce840bc70b45c4b5ae61bfa4838f9d69fc780841979e60160",
+      "detail_sha256": "9ca48ac18e5e4a7dfa4c98b4bb1b2eacb221bf77c7f678c23e5c4e02b36809a7"
+    },
+    {
+      "index": 23,
+      "family": "分叉裂",
+      "seed": 26511238,
+      "main_fissures": 13,
+      "open_cracks_only": true,
+      "color_sha256": "21e17bccf49ed3a5f5a9032b067cd9bb86a69bcfc2955230f73ffcd108a6b185",
+      "detail_sha256": "3c4d7c87565a856f9db4f92946fd61560e228c2850020fcd9a38cf51e471d433"
+    },
+    {
+      "index": 24,
+      "family": "疏纵裂",
+      "seed": 26615967,
+      "main_fissures": 8,
+      "open_cracks_only": true,
+      "color_sha256": "25791b1094925247327e197573207b3692f182e2551ebfa773fe8b75301ee3ad",
+      "detail_sha256": "1070e6fe14e4fac8df6de9201c71d4cb6e9b181401056e1a451bc33c8367b89b"
+    },
+    {
+      "index": 25,
+      "family": "细密裂",
+      "seed": 26720696,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "4a73efe5974d91c17b4b08d838474968e4c62281bea4d6919f459cd2aa8e7d80",
+      "detail_sha256": "1fd8bafc3d06b1000f80dc35fd8fa758d7fda196cd7d9e077bd422d40eb72e9a"
+    },
+    {
+      "index": 26,
+      "family": "断续裂",
+      "seed": 26825425,
+      "main_fissures": 11,
+      "open_cracks_only": true,
+      "color_sha256": "a4fee346a3bca58ae217862b8ed7599680ae537800b34c76aab2e645083b0a2d",
+      "detail_sha256": "664a9b9fbf53a1b452dff60c38ba6d407b52b9d26cf2f499a47bd17dbef36a50"
+    },
+    {
+      "index": 27,
+      "family": "分叉裂",
+      "seed": 26930154,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "8733ac7ae7eaeb5d322c7bd804e2d6c7246fe064e37507177740bf0848b6076b",
+      "detail_sha256": "886d89e71a5e082e9622342349c20eda4b66bcfe8f111cbb5dbf49194119ab6b"
+    },
+    {
+      "index": 28,
+      "family": "疏纵裂",
+      "seed": 27034883,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "5055d6f048a588a3d0f5e04fe015e4f3cd4ccad6c7d3d5771aaeaa985ccc988c",
+      "detail_sha256": "f8d7dd0eea36579b79e54cc83510022bc8ed7f6fa575603803ae2a8c6d1341f8"
+    },
+    {
+      "index": 29,
+      "family": "细密裂",
+      "seed": 27139612,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "02f0c830bdfbb078d75544792687a8f83e9659b104eea18d7f46f6cab905e47e",
+      "detail_sha256": "dd4c4db86ed4d15beb50656e85b0465b4cc9de011004f439c6c8639fd21020cf"
+    },
+    {
+      "index": 30,
+      "family": "断续裂",
+      "seed": 27244341,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "b2d768cdc5db83729dad14eb39e7be97cb5cde9e68e973cd29ba84c89e9fe49d",
+      "detail_sha256": "e0da2c4770e9eacb93de318cb8974070939bc18b2127f610196aa4f047fc5343"
+    },
+    {
+      "index": 31,
+      "family": "分叉裂",
+      "seed": 27349070,
+      "main_fissures": 13,
+      "open_cracks_only": true,
+      "color_sha256": "2b14ccfa1c20a00c2096027c3bf7face91c7158073c07105a3c050efbc9413b0",
+      "detail_sha256": "07e6524aaeaf310fba58d24406d81b166d47f1d6eaafc0c55133be4ef594c4b5"
+    },
+    {
+      "index": 32,
+      "family": "疏纵裂",
+      "seed": 27453799,
+      "main_fissures": 8,
+      "open_cracks_only": true,
+      "color_sha256": "0b8718a1d702a5835b2e672d287649537d25c74be0c79358e0157d6d3d544f32",
+      "detail_sha256": "621768f7d2861d140fa3250aded1eb384338b569ca7fb2cab813bdfeec94bb45"
+    },
+    {
+      "index": 33,
+      "family": "细密裂",
+      "seed": 27558528,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "d20eec9549badfa55d9c7a7ec532a5367e7cd51ef958e81fc2f2f3184c32bc06",
+      "detail_sha256": "da349b4b88a3951be12ae01a60d2214d5770f783113292e8a8793d21eff60320"
+    },
+    {
+      "index": 34,
+      "family": "断续裂",
+      "seed": 27663257,
+      "main_fissures": 11,
+      "open_cracks_only": true,
+      "color_sha256": "60f92a0af4eefa1f7763253f12225267556859c2a146f8a829d1a9e309ff479b",
+      "detail_sha256": "f3480e1647df18f8af0862120f3f575e818b93774a8c0d83601e5ab110196d18"
+    },
+    {
+      "index": 35,
+      "family": "分叉裂",
+      "seed": 27767986,
+      "main_fissures": 13,
+      "open_cracks_only": true,
+      "color_sha256": "c7eead1faa06f42e9eaecd018d429d078b4e0de8b866f6853c0edc96ceceb1d1",
+      "detail_sha256": "9a5dc8bb7278f56aefb61b5423dbca4ff6e0b3a734b81851a1374919dcfe2e5d"
+    },
+    {
+      "index": 36,
+      "family": "疏纵裂",
+      "seed": 27872715,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "dbbf9c600ac4f3cd587a79e24c7acba8574215072746aceb5ae15efc04b222f5",
+      "detail_sha256": "7949b511f3258d9c894bb992a12fe6ab1509e8c129ea5f9e50ac36bd151b45a2"
+    },
+    {
+      "index": 37,
+      "family": "细密裂",
+      "seed": 27977444,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "3510c9644a9a8999342c750d66d01840240251313bf74bddc175b12ed99915fd",
+      "detail_sha256": "97cc849e91f61b411b46a801835116262d1209dc60c96cc7c242091a237c2253"
+    },
+    {
+      "index": 38,
+      "family": "断续裂",
+      "seed": 28082173,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "6ac94e86a0af4b7bece7616624eb25c1507bde5b515ba7424cae7b312bdd26a9",
+      "detail_sha256": "e434afd6e9490fb6c6381756425d25f506d278a3bc7552ae6d0c5a28d381cd34"
+    },
+    {
+      "index": 39,
+      "family": "分叉裂",
+      "seed": 28186902,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "51cf85fe1572ac3209391d180322a632827af358eb07d8cd554cdb9baf93d93b",
+      "detail_sha256": "f26d8f920b99334e5aa78bf4e236190f4fb44c7bbac9b48eb5b1eed6f7a86058"
+    },
+    {
+      "index": 40,
+      "family": "疏纵裂",
+      "seed": 28291631,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "a7a4b934ec27c02b3f6ceb0d8c77cd2664bf743579dfb57bbef46c15af0a3285",
+      "detail_sha256": "8a1a5bf2043fa2c0578f94d2401cdc46f2af2b7f440a4be38f6dc614a2d2663b"
+    },
+    {
+      "index": 41,
+      "family": "细密裂",
+      "seed": 28396360,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "1955c07eb0f8a07a0b3d810cbb1d3d1303dd97a6dd9f4553adf85ca33ec6980a",
+      "detail_sha256": "d185617603f2ef0f0183a5c0d3f37828ab55a21d91ce09beab9e42a782db8ee6"
+    },
+    {
+      "index": 42,
+      "family": "断续裂",
+      "seed": 28501089,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "c2bf8df9e31691926821242c2a2affe2112769adc4012a6db785a6de42590d38",
+      "detail_sha256": "20179ab738699b149afcba4102c43c7e922fbaa18655c6530a6ecf5fb279769a"
+    },
+    {
+      "index": 43,
+      "family": "分叉裂",
+      "seed": 28605818,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "8db88cef817a12db4b4472dbff3652df04a54e246d752feb8808b798cd109e37",
+      "detail_sha256": "7bee772a51d664f0d9faf9c270f6881f0b65a53a1ab7636e36fe3d5273cab531"
+    },
+    {
+      "index": 44,
+      "family": "疏纵裂",
+      "seed": 28710547,
+      "main_fissures": 8,
+      "open_cracks_only": true,
+      "color_sha256": "5a81435dccc9c7e7f1aad194d9c5dc0297c4a297e16d0a6799176596fc1b8662",
+      "detail_sha256": "796cc2baa5236b453e100a837e2dd4ae7560700289e68a94501b5c66a3668865"
+    },
+    {
+      "index": 45,
+      "family": "细密裂",
+      "seed": 28815276,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "db4e074016c144471d02b0ec3d01298e61bb56c9d0a488dc82a1d9ac71690dbf",
+      "detail_sha256": "4a712fdbcb61a82db41208fb1020359f7e3f4d17ab667b477ab9af0674ea295c"
+    },
+    {
+      "index": 46,
+      "family": "断续裂",
+      "seed": 28920005,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "be4ccc23da12b9c78ef6f21b63d28f5930779ee5288c5b94122a7a55cb1d5f02",
+      "detail_sha256": "9b6d7455807bb91be3e9999f7131f7e59f483bc88759bca7234a13777fe2ae37"
+    },
+    {
+      "index": 47,
+      "family": "分叉裂",
+      "seed": 29024734,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "18750917040723dfb1baaa5e317d3d4659b04effef787f15c8f736798dd0ccd4",
+      "detail_sha256": "e8afdf977ca9973685d382c13c931347f4c4668a016edd6cd4ecf8bc13cc3149"
+    },
+    {
+      "index": 48,
+      "family": "疏纵裂",
+      "seed": 29129463,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "6fccc28b945c51df671fa69e7e85ca30df81a499f1c743e58943e22c3848bb41",
+      "detail_sha256": "9f753e82f881543607b57b7f07fef69481764bb027d683ee1e88acf77be098af"
+    },
+    {
+      "index": 49,
+      "family": "细密裂",
+      "seed": 29234192,
+      "main_fissures": 16,
+      "open_cracks_only": true,
+      "color_sha256": "687e9e6e479dee4658a2fbce26a0132733a666bfecb87eb74dc25fba4d7c29a0",
+      "detail_sha256": "9aa60f6e7226fad22aaf581ca738978be51c810393738c5f320b93be51f9c039"
+    },
+    {
+      "index": 50,
+      "family": "断续裂",
+      "seed": 29338921,
+      "main_fissures": 11,
+      "open_cracks_only": true,
+      "color_sha256": "1f14acd0f4bd739d35c6d2fce5e40a173e4d342e9767910b1848d20c6e92f190",
+      "detail_sha256": "0a84ecb220dbfeec3c44215dcc3479dfd7174e8836afb0498055ca68646cefac"
+    },
+    {
+      "index": 51,
+      "family": "分叉裂",
+      "seed": 29443650,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "9606046730f3d20290aac9c7e0ae1d0c3486f91ea5b62cb09be07093d2c31d51",
+      "detail_sha256": "7996825efc92261670024d978bea8247e4d4be113656bdcee9995efcb7e6c21b"
+    },
+    {
+      "index": 52,
+      "family": "疏纵裂",
+      "seed": 29548379,
+      "main_fissures": 8,
+      "open_cracks_only": true,
+      "color_sha256": "c1db25ee83f591ceace4f87035037464400924064012807cbe8274ef340d695e",
+      "detail_sha256": "0ef764fc777594e0ed32dd27ac8ef9f4b472d7d8bbbe85dccbdf2a11c668d17c"
+    },
+    {
+      "index": 53,
+      "family": "细密裂",
+      "seed": 29653108,
+      "main_fissures": 14,
+      "open_cracks_only": true,
+      "color_sha256": "6f8e338d693eac9d360078973209fa8e4d121eeed66d2b6d2115a4af1590c14b",
+      "detail_sha256": "81ee68a0d72161d57eed525b9681fd0d7eda1cb6e5051cbc31355ac8f36bca09"
+    },
+    {
+      "index": 54,
+      "family": "断续裂",
+      "seed": 29757837,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "e1aa06f4438cab22b315f8a73ad66f76007c9c890a962c4e849fe614b207b16d",
+      "detail_sha256": "48e4d7106c3036c6d0b7d5484f0bd1a07e8c269afda11c9aecfabefbd11f1022"
+    },
+    {
+      "index": 55,
+      "family": "分叉裂",
+      "seed": 29862566,
+      "main_fissures": 13,
+      "open_cracks_only": true,
+      "color_sha256": "d1c38d957d35195e72e94c8655452c48547d09227b716d7a49ec96b971d5256e",
+      "detail_sha256": "a53497954da5d73b81c0940927d7498c30cc2c3dced0a79f7033140cce4ee01e"
+    },
+    {
+      "index": 56,
+      "family": "疏纵裂",
+      "seed": 29967295,
+      "main_fissures": 10,
+      "open_cracks_only": true,
+      "color_sha256": "3a50f78f4121b183f3b2038ca0d3b871218332845c6bb6c1440e028434069191",
+      "detail_sha256": "e72fc7ee76678eb43d9af90765d3640068c5f4e118fe8a28d575f040f08aa0bb"
+    },
+    {
+      "index": 57,
+      "family": "细密裂",
+      "seed": 30072024,
+      "main_fissures": 15,
+      "open_cracks_only": true,
+      "color_sha256": "756bd82e37d8a7202cf5d2829532e0d10511a165ec7e0449c51b24b5c4011144",
+      "detail_sha256": "d3cb4f1da5fb56502e44b9842a97ecaf51f718d42393cbae159410408f8899f7"
+    },
+    {
+      "index": 58,
+      "family": "断续裂",
+      "seed": 30176753,
+      "main_fissures": 11,
+      "open_cracks_only": true,
+      "color_sha256": "752fcb15fb1be8bf5d999810d24e082b00deff29036a8c541fd76bd426d48935",
+      "detail_sha256": "10980ea1e5d46ac36fefbfa4bf82e3c4d0fbd548194fd273dc27398ff0f2406a"
+    },
+    {
+      "index": 59,
+      "family": "分叉裂",
+      "seed": 30281482,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "16d8ecdfc14746762bca8f3d76b3941cc81c6944c7e4c26d5fe04cf01fb0cae9",
+      "detail_sha256": "598d2319d9f269085ef2e2d3ee4e994d81eaaa7e589db4938b1566ebb91a043e"
+    },
+    {
+      "index": 60,
+      "family": "疏纵裂",
+      "seed": 30386211,
+      "main_fissures": 9,
+      "open_cracks_only": true,
+      "color_sha256": "e863447a229e00d0db2e4deb260177a99c3caeda284a7ed3900ccce525d3ac33",
+      "detail_sha256": "de571378d32b3bd99bb8c2cee502e0698bd65176b5c955949bbf93d2d19b4d34"
+    },
+    {
+      "index": 61,
+      "family": "细密裂",
+      "seed": 30490940,
+      "main_fissures": 16,
+      "open_cracks_only": true,
+      "color_sha256": "374dcce20c0353caa7b1f410af337570d558dbcfd432b8447d3f37714677b269",
+      "detail_sha256": "e58ec926d44187130ba63b2ebbb6474bb34d38656780cab16b5f289526778699"
+    },
+    {
+      "index": 62,
+      "family": "断续裂",
+      "seed": 30595669,
+      "main_fissures": 12,
+      "open_cracks_only": true,
+      "color_sha256": "3d8411b729bd13fed28967f5b4d62247293585d09dc9f9a836ca27a742080655",
+      "detail_sha256": "9e94566061450aa2bcc43a1b97d59b4726d75745f91458425f169b557061c73d"
+    },
+    {
+      "index": 63,
+      "family": "分叉裂",
+      "seed": 30700398,
+      "main_fissures": 13,
+      "open_cracks_only": true,
+      "color_sha256": "7fd8a8b6a9a4a1551e49e78d5560ebe8505400908952baeca6027c3205d8b75a",
+      "detail_sha256": "8d8a75e3e6ff19abce7698f5304e11ae28bd0a2adb067212df96f1945e51b697"
+    }
+  ]
+}

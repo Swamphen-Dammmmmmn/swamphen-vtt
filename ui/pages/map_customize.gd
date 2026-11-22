@@ -166,7 +166,7 @@ func _ready() -> void:
 	add_child(handle)
 	actions = Overlap.new()
 	add_child(actions)
-	actions.action_requested.connect(func(target: Dictionary, action: String, _anchor: Rect2):
+	actions.action_requested.connect(func(target: Dictionary, action: String, _anchor_control: Control):
 		match action:
 			"select": _select(target["id"])
 			"move": _start_move(target["id"])

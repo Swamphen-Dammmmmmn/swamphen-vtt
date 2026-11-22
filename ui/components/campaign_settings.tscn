@@ -6,31 +6,5 @@
 [node name="CampaignSettings" instance=ExtResource("1")]
 script = ExtResource("2")
 panel_title = "团内设置"
-
-[node name="Label" type="Label" parent="Shell/Body/Content" index="0"]
-layout_mode = 2
-text = "全团距离计算方式"
-
-[node name="Algorithm" type="OptionButton" parent="Shell/Body/Content" index="1"]
-custom_minimum_size = Vector2(278, 38)
-layout_mode = 2
-item_count = 3
-selected = 0
-popup/item_0/text = "每格 5 英尺（含斜向）"
-popup/item_0/id = 0
-popup/item_1/text = "斜向交替 5 / 10 英尺"
-popup/item_1/id = 1
-popup/item_2/text = "实际直线距离"
-popup/item_2/id = 2
-
-[node name="Scope" type="Label" parent="Shell/Body/Content" index="2"]
-theme_type_variation = &"TypographyStatus"
-layout_mode = 2
-text = "尺子与棋子移动共用此规则。"
-
-[node name="Storage" type="Label" parent="Shell/Body/Content" index="3"]
-theme_type_variation = &"TypographyTag"
-custom_minimum_size = Vector2(278, 0)
-layout_mode = 2
-autowrap_mode = 3
-text = "更改后自动保存在本机。"
+preferred_width = 360.0
+fluent = true

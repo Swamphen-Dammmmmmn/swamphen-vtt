@@ -23,6 +23,7 @@ const OrbitCamera = preload("res://scripts/orbit_camera.gd")
 const Rules = preload("res://scripts/distance_rules.gd")
 const RoutePlan = preload("res://scripts/route_plan.gd")
 const MeasurementPlan = preload("res://scripts/measurement_plan.gd")
+const MeasurementTarget = preload("res://scripts/measurement_context_target.gd")
 const CampaignSettings = preload("res://scripts/campaign_settings.gd")
 const ShapePlan = preload("res://scripts/shape_plan.gd")
 const BoardUI = preload("res://ui/board_ui.gd")
@@ -38,7 +39,6 @@ var token_preview: Node3D
 var token_footprint: MeshInstance3D
 var token_placement_cell := Vector2i(-100, -100)
 var token_placement_fixed := false
-var token_cancel_anchor := Vector3.ZERO
 var shape_plan := ShapePlan.new()
 var shape_layer: Node3D
 var entity_entries: Array[Dictionary] = []
@@ -122,8 +122,9 @@ func _ready() -> void:
 	ui.add_child(turn_control)
 	turn_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	turn_control.z_index = 8
+	turn_control.set_available_rect(ui.floating_area())
+	ui.floating_area_changed.connect(turn_control.set_available_rect)
 	ui.set_map_title(session_map["title"])
-	ui.get_node("BoardInfo").hide()
 	ui.tool_requested.connect(_on_tool)
 	ui.token_placement_requested.connect(_begin_token_placement)
 	ui.token_appearance_saved.connect(_save_token_appearance)
@@ -140,6 +141,7 @@ func _ready() -> void:
 	ui.measurement_action_requested.connect(_on_measurement_action)
 	ui.entity_action_requested.connect(_on_entity_action)
 	ui.entity_hovered.connect(_highlight_entity)
+	ui.entity_context_dismissed.connect(_clear_entity_hover)
 	ui.entity_selection_requested.connect(_left_click)
 	ui.token_renamed.connect(_rename_token)
 	ui.token_stats_changed.connect(_update_token_stats)
@@ -313,25 +315,26 @@ func _cell_world(cell: Vector2i, extent: Variant = Vector2i.ONE, platform_id := 
 	var dimensions: Vector2i = extent if extent is Vector2i else Vector2i.ONE * int(extent)
 	return surfaces.world(cell,dimensions,platform_id)
 
-func _begin_token_placement(parameters: Dictionary) -> void:
-	if not session_party["members"].has(session_actor) or not session_party["members"].has(parameters.get("owner_member",session_actor)): return
-	if session_actor!="dm" and parameters.get("owner_member",session_actor)!=session_actor: return
+func _begin_token_placement(parameters: Dictionary) -> bool:
+	if network_readonly: return false
+	if not session_party["members"].has(session_actor) or not session_party["members"].has(parameters.get("owner_member",session_actor)): return false
+	if session_actor!="dm" and parameters.get("owner_member",session_actor)!=session_actor: return false
 	if not Footprint.valid(parameters):
 		push_error("棋子占地必须是 1～15 整数格，宽和长必须同时提供。")
-		return
+		return false
 	var extent := Footprint.dimensions(parameters)
 	if parameters.get("kind", "basic") == "basic" and (extent.x != extent.y or extent.x > 5):
 		push_error("基础棋子只能使用 1～5 格正方形占地。")
-		return
+		return false
 	var component_data: Dictionary = parameters.get("components", {})
 	if not component_data.is_empty():
 		if parameters.get("kind", "basic") != "advanced":
 			push_error("独立组件构成仅用于高级棋子。")
-			return
+			return false
 		var checked := Components.validate(component_data, extent)
 		if not checked["ok"]:
 			push_error(checked["message"])
-			return
+			return false
 		component_data = checked["components"]
 	_on_tool("token_create")
 	token_draft = parameters.duplicate(true)
@@ -341,7 +344,6 @@ func _begin_token_placement(parameters: Dictionary) -> void:
 	token_draft["components"] = component_data.duplicate(true)
 	token_placement_fixed = false
 	token_placement_cell = Vector2i(-100, -100)
-	token_cancel_anchor = focus
 	token_preview = TokenAppearance.build(int(token_draft["size"]), parameters["color"], parameters["base"], true, parameters.get("materials", {})) if component_data.is_empty() else Components.build(Components.validate(component_data, extent), true)
 	Instance.apply_orientation(token_preview,token_draft)
 	add_child(token_preview)
@@ -351,10 +353,12 @@ func _begin_token_placement(parameters: Dictionary) -> void:
 	add_child(token_footprint)
 	ui.release_keyboard_focus()
 	_update_status()
+	return true
 
 func begin_tray_placement(parameters: Dictionary) -> void:
-	_begin_token_placement(parameters)
-	if not token_draft.is_empty(): tray_placement_id = parameters["id"]
+	if _begin_token_placement(parameters):
+		tray_placement_id = parameters["id"]
+		_update_status()
 
 func _token_placement_valid() -> bool:
 	if token_draft.is_empty():
@@ -392,6 +396,8 @@ func _update_token_placement(mouse: Vector2) -> void:
 func _on_token_placement_action(action: String) -> void:
 	if tool != Tool.TOKEN_CREATE or token_draft.is_empty():
 		return
+	if network_readonly and action != "cancel":
+		return
 	if action == "confirm" and token_placement_fixed and _token_placement_valid():
 		if surfaces!=null: surfaces.current = placement_surface
 		var previous_count := tokens.size()
@@ -420,7 +426,7 @@ func _clear_token_placement() -> void:
 	tray_placement_id = ""
 	token_placement_fixed = false
 	token_placement_cell = Vector2i(-100, -100)
-	ui.hide_token_placement_actions()
+	ui.set_token_placement_workflow({"active": false})
 
 func _update_camera(delta := -1.0) -> void:
 	pitch = OrbitCamera.clamp_pitch(pitch)
@@ -489,7 +495,7 @@ func _input(event: InputEvent) -> void:
 	# Existing dialogs/popups get Esc before the adventure menu fallback.
 	if event is InputEventKey and event.keycode == KEY_ESCAPE:
 		return
-	if event is InputEventKey and is_instance_valid(ui) and ui.keyboard_owned_by_ui():
+	if event is InputEventKey and is_instance_valid(ui) and (ui.keyboard_owned_by_ui() or turn_control.owns_keyboard()):
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		if left_orbit_pending or camera_button == MOUSE_BUTTON_LEFT:
@@ -566,8 +572,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				else: _left_click(event.position)
 
 func _can_start_left_orbit(mouse: Vector2) -> bool:
-	# Active editing tools own the left button; orbit starts only on selection-mode background.
-	return tool==Tool.SELECT and not ui.pointer_on_ui() and _pick_token(mouse)<0
+	# Measurement places/fixes endpoints with clicks, so background drags can orbit too.
+	# The existing pending threshold delivers a click only when this did not become a drag.
+	return tool in [Tool.SELECT, Tool.MEASURE] and not ui.pointer_on_ui() and _pick_token(mouse)<0
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
@@ -700,7 +707,7 @@ func _update_saved_measurements() -> void:
 			line.set_meta("points", positions.duplicate())
 		for segment in range(1, plan.points.size()):
 			var midpoint := (_plan_world(plan,segment-1) + _plan_world(plan,segment)) / 2.0
-			labels.append({"text": _amount(Rules.segment_feet(plan.points, segment, distance_mode)), "at": camera.unproject_position(midpoint), "visible": not camera.is_position_behind(midpoint), "index": -1})
+			labels.append({"text": _amount(Rules.segment_feet(plan.points, segment, distance_mode)), "at": camera.unproject_position(midpoint), "visible": not camera.is_position_behind(midpoint), "index": index})
 		var end := _plan_world(plan,plan.points.size()-1)
 		labels.append({"text": _measurement_summary(plan), "at": camera.unproject_position(end), "visible": not camera.is_position_behind(end), "index": index})
 	ui.show_saved_measurements(labels)
@@ -808,18 +815,15 @@ func _click_route(mouse: Vector2) -> void:
 			measurement.replace_endpoint(route.editing_index, _measurement_endpoint(mouse))
 		route.finish_edit()
 		selected_point = -1
-		ui.hide_point_actions()
 	elif _pick_path_point(mouse) > 0:
 		selected_point = _pick_path_point(mouse)
 	elif selected_point > 0:
 		selected_point = -1
-		ui.hide_point_actions()
 	else:
 		var cell := _mouse_cell(mouse)
 		if not _on_board(cell) and (tool != Tool.MEASURE or _pick_token(mouse) < 0):
 			return
 		selected_point = -1
-		ui.hide_point_actions()
 		if tool == Tool.MEASURE:
 			measurement.add_endpoint(_measurement_endpoint(mouse))
 		else:
@@ -878,10 +882,11 @@ func _on_token_action(action: String) -> void:
 	tool = Tool.ROUTE
 	route = movement_route
 	ui.clear_overlays()
-	ui.set_tool("route")
 	route.surface_context = tokens[selected].get("platform_id","")
 	route.begin(tokens[selected]["cell"])
 	selected_point = -1
+	_update_route_ui()
+	ui.set_tool("route")
 	_sync_point_markers()
 	_refresh_selection()
 	_update_status()
@@ -958,6 +963,9 @@ func _update_token_stats(index: int, hp: int, maximum: int, ac: int, temporary: 
 		tokens[index]["temp_hp"] = temporary
 
 func _update_route_pointer(mouse: Vector2) -> void:
+	# Do not move an endpoint while a background press is being classified as click/orbit.
+	if left_orbit_pending or camera_button != 0:
+		return
 	if tool == Tool.MEASURE:
 		if measurement.editing_index >= 0 and not measurement_edit_fixed and not ui.pointer_on_ui() and camera_button == 0 and _on_board(_mouse_cell(mouse)):
 			var cell := _route_cell(mouse)
@@ -997,6 +1005,8 @@ func _pick_path_point(mouse: Vector2) -> int:
 	return closest
 
 func _on_point_action(action: String) -> void:
+	if tool != Tool.ROUTE or not can_operate_token(selected):
+		return
 	if selected_point <= 0 or selected_point >= route.points.size():
 		return
 	if action == "move":
@@ -1004,13 +1014,13 @@ func _on_point_action(action: String) -> void:
 	elif action == "delete":
 		route.delete_point(selected_point)
 	selected_point = -1
-	ui.hide_point_actions()
 	_sync_point_markers()
 	_render_route()
 	_update_status()
 
 func _on_route_action(action: String) -> void:
-	if tool == Tool.ROUTE and not can_operate_token(selected): return
+	if tool == Tool.ROUTE and action != "cancel" and not can_operate_token(selected):
+		return
 	if tool not in [Tool.ROUTE, Tool.MEASURE]:
 		return
 	if tool == Tool.MEASURE and not measure_creating and measurement.editing_index < 0:
@@ -1083,7 +1093,6 @@ func _on_route_action(action: String) -> void:
 			if tool == Tool.MEASURE:
 				measurement.resolve(tokens)
 			selected_point = -1
-			ui.hide_point_actions()
 			_sync_point_markers()
 			_render_route()
 			_update_status()
@@ -1113,14 +1122,15 @@ func _update_route_ui() -> void:
 	if route.points.is_empty():
 		return
 	var size := _route_extent()
-	var last: Vector2i = route.points[-1]
-	var panel_cell := route.original_cell if route.editing_index > 0 else last
-	var end_at := camera.unproject_position((_cell_world(panel_cell,size,route.original_surface) if route.editing_index>0 else _plan_world(route,route.points.size()-1,size))+Vector3.UP*0.2)
-	ui.show_route(_amount(Rules.route_feet(route.points, distance_mode)), route.points.size() > 1, route.editing_index > 0, end_at)
-	ui.set_measure_card(tool == Tool.MEASURE, measure_finished, route.editing_index > 0)
-	if tool == Tool.MEASURE:
-		ui.set_measure_summary(_measurement_summary())
-		ui.set_measure_undo_available(_can_undo_measure_point())
+	if tool == Tool.ROUTE:
+		ui.set_movement_workflow({
+			"title": tokens[selected]["title"] if selected >= 0 and selected < tokens.size() else "棋子",
+			"amount": _amount(Rules.route_feet(route.points, distance_mode)),
+			"points": route.points.size(),
+			"editing_index": route.editing_index,
+			"selected_point": selected_point,
+			"writable": can_operate_token(selected),
+		})
 	var point_anchors: Array[Vector2] = []
 	for index in range(1, route.points.size()):
 		point_anchors.append(camera.unproject_position(_plan_world(route,index,size) + Vector3.UP * 0.14))
@@ -1134,11 +1144,6 @@ func _update_route_ui() -> void:
 			segment_amounts.append(_amount(Rules.segment_feet(route.points, index, distance_mode)))
 			segment_anchors.append(camera.unproject_position(midpoint))
 	ui.show_segments(segment_amounts, segment_anchors)
-	if selected_point > 0 and selected_point < route.points.size():
-		var at := camera.unproject_position(_plan_world(route,selected_point,size) + Vector3.UP * 0.2)
-		ui.show_point_actions(at)
-	else:
-		ui.hide_point_actions()
 	ui.hide_distance()
 
 func _sync_point_markers() -> void:
@@ -1151,17 +1156,21 @@ func _sync_point_markers() -> void:
 		return
 	# The origin stays in 3D; editable points use fixed-size UI buttons.
 	for index in range(mini(route.points.size(), 1)):
-		var marker := MeshInstance3D.new()
-		var mesh := CylinderMesh.new()
-		mesh.top_radius = 0.18
-		mesh.bottom_radius = 0.18
-		mesh.height = 0.06
-		mesh.radial_segments = 24
-		marker.mesh = mesh
-		marker.material_override = _material(Color("eebd6a") if index == selected_point or index == route.editing_index else Color("ecf5fd"), true)
+		var marker := _create_origin_marker(index == selected_point or index == route.editing_index)
 		marker.position = _plan_world(route,index,_route_extent()) + Vector3.UP * 0.14
-		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		point_markers.add_child(marker)
+
+func _create_origin_marker(highlighted := false) -> MeshInstance3D:
+	var marker := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 0.18
+	mesh.bottom_radius = 0.18
+	mesh.height = 0.06
+	mesh.radial_segments = 24
+	marker.mesh = mesh
+	marker.material_override = _material(Color("eebd6a") if highlighted else Color("ecf5fd"), true)
+	marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return marker
 
 func _render_route() -> void:
 	if tool == Tool.MEASURE and not measure_creating and measurement.editing_index < 0:
@@ -1218,7 +1227,7 @@ func _clear_lines() -> void:
 	start_marker.hide()
 	end_marker.hide()
 
-func _on_tool(request: String) -> void:
+func _on_tool(request: String, begin_creation := true) -> void:
 	if is_instance_valid(turn_control): turn_control.close()
 	if network_readonly and request!="select": return
 	if (tool == Tool.MEASURE and request == "measure") or (tool == Tool.SHAPE and request == "shape") or (tool == Tool.SELECT and request == "select"):
@@ -1257,15 +1266,47 @@ func _on_tool(request: String) -> void:
 			_render_route()
 		_update_route_ui()
 	ui.set_tool(request)
+	if tool == Tool.MEASURE and begin_creation:
+		_on_measurement_action("new")
 	if tool == Tool.SHAPE:
+		_on_shape_action("new")
 		_shape_changed()
 	_refresh_selection()
 	_update_status()
 
 func _escape() -> void:
+	# Layer 1: Local menus, popups, floating auxiliary panels, turn control, and text input focus
 	if turn_control.panel.visible:
 		turn_control.close()
 		return
+	if is_instance_valid(ui) and ui.close_local_ui_for_escape():
+		return
+	# Layer 2: Active board tool (preserving single-point / continuation / saved-shape drafts first; secondary drawer stays untouched)
+	match tool:
+		Tool.TOKEN_CREATE:
+			_on_tool("select")
+			return
+		Tool.ROUTE:
+			if route.editing_index > 0:
+				_on_route_action("cancel")
+			else:
+				_leave_route()
+			return
+		Tool.MEASURE:
+			if measurement.editing_index >= 0:
+				_on_route_action("cancel")
+			elif measure_creating:
+				_clear_measure()
+			else:
+				_on_tool("select")
+			return
+		Tool.SHAPE:
+			if shape_plan.dirty():
+				_on_shape_action("cancel")
+			else:
+				_on_tool("select")
+			return
+	# Layer 3: Adventure pause menu
 	ui.menu_requested.emit()
 
 func _on_campaign_mode_changed(_index: int) -> void:
@@ -1332,7 +1373,21 @@ func _set_token_mesh_highlight(mesh: MeshInstance3D, highlighted: bool) -> void:
 	if mesh.material_override != target: mesh.material_override = target
 
 func _update_status() -> void:
-	ui.update_measure_state(measure_creating, not measurement.points.is_empty(), measurement.editing_index >= 0)
+	ui.set_token_placement_workflow({
+		"active": tool == Tool.TOKEN_CREATE and not token_draft.is_empty(),
+		"title": str(token_draft.get("title", "棋子")),
+		"footprint": "占地：%d × %d 格" % [int(token_draft.get("width", 1)), int(token_draft.get("length", 1))],
+		"fixed": token_placement_fixed, "valid": _token_placement_valid(),
+		"from_tray": not tray_placement_id.is_empty(), "writable": not network_readonly,
+	})
+	ui.set_measure_workflow({
+		"drawing": measure_creating, "editing": measurement.editing_index >= 0,
+		"points": measurement.points.size(), "fixed": measurement_edit_fixed,
+		"can_new": measurements.size() < 256, "can_undo": _can_undo_measure_point(),
+		"writable": not network_readonly,
+		"target": "测距 %d · 节点 %d" % [measurement.display_id, measurement.editing_index + 1] if measurement.editing_index >= 0 else ("测距 %d" % measurement.display_id if measurement.display_id > 0 else ""),
+		"summary": _measurement_summary() if measurement.points.size() > 1 else "轻点棋盘选择起点和路径点；轻点棋子绑定端点。空白处左拖旋转镜头。",
+	})
 	ui.set_status("")
 
 func _shape_grid_point(mouse: Vector2) -> Vector2:
@@ -1355,6 +1410,7 @@ func _on_shape_action(action: String) -> void:
 		shape_plan.select(hover_shape)
 	match action:
 		"new":
+			if shape_plan.dirty(): return
 			_clear_entity_hover()
 			ui.release_keyboard_focus()
 			_clear_shape_hover()
@@ -1367,7 +1423,7 @@ func _on_shape_action(action: String) -> void:
 				return
 			tool = Tool.SHAPE
 			ui.set_tool("shape")
-			ui.close_shape_editor()
+			ui.open_shape_editor()
 			ui.hide_token_actions()
 			_clear_shape_hover()
 			shape_edit_anchor = _shape_origin_world(shape_plan.draft)
@@ -1376,10 +1432,10 @@ func _on_shape_action(action: String) -> void:
 			if shape_plan.draft.is_empty():
 				return
 			tool = Tool.SHAPE
-			ui.set_tool("shape")
+			ui.open_shape_editor()
 			ui.hide_token_actions()
 			_clear_shape_hover()
-			ui.open_shape_editor()
+			ui.update_shape_state(shape_plan)
 		"confirm": shape_plan.commit()
 		"cancel": shape_plan.cancel()
 		"delete":
@@ -1410,6 +1466,7 @@ func _render_shapes() -> void:
 			var surface := MeshInstance3D.new()
 			surface.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			root.add_child(surface)
+		root.add_child(_create_origin_marker())
 	for index in range(shape_layer.get_child_count()):
 		var root := shape_layer.get_child(index) as Node3D
 		root.hide()
@@ -1448,6 +1505,10 @@ func _update_shape_mesh(root: Node3D, data: Dictionary, style: int) -> void:
 	var outline := root.get_child(1) as MeshInstance3D
 	outline.mesh = _line_mesh(vertices)
 	outline.material_override = _material(color, true)
+	var origin_marker := root.get_child(2) as MeshInstance3D
+	var origin := ShapePlan.get_origin(data)
+	origin_marker.position = Vector3(origin.x - 15, 0.12, origin.y - 15)
+	origin_marker.material_override = _material(Color("eebd6a") if style == 2 else Color("ecf5fd"), true)
 
 func _pick_shape(mouse: Vector2) -> int:
 	for index in range(shape_plan.shapes.size() - 1, -1, -1):
@@ -1517,6 +1578,12 @@ func _can_operate_tool(category: String, display: int) -> bool:
 	return network.tool_owners.get("%s:%s:%d" % [session_map_id,category,display],"dm")==session_actor
 
 func _on_entity_action(target: Dictionary, action: String) -> void:
+	if target.get("kind") == "measure":
+		if not MeasurementTarget.is_valid(target, session_map_id, measurements):
+			_clear_entity_hover()
+			return
+		if action != "select_entity" and not _can_operate_tool("measurements", int(target.get("id", 0))):
+			return
 	var index := _entity_index(target)
 	if action=="select_entity" and index>=0:
 		var entry := {}
@@ -1602,14 +1669,27 @@ func _entity_candidates(mouse: Vector2) -> Array[Dictionary]:
 		if hit:
 			var names := ["圆形", "扇形", "矩形", "直线"]
 			result.append({"kind": "shape", "id": data["display_id"], "label": "%s %d" % [names[int(data["kind"])], data["display_id"]], "anchor": _shape_vertex(at,data), "actions": [["move", "移动"], ["delete", "删除"], ["more", "更多"]]})
-	for candidate in _measurement_candidates(mouse) if tool == Tool.MEASURE else []:
+	for candidate in _measurement_candidates(mouse) if tool in [Tool.SELECT, Tool.MEASURE] else []:
 		var plan := measurements[int(candidate["index"])]
 		var point := int(candidate["point"])
-		result.append({"kind": "measure", "id": plan.display_id, "plan": plan, "point": point, "label": "测距 %d · %s" % [plan.display_id, "节点 %d" % (point + 1) if point >= 0 else "整条"], "anchor": candidate["anchor"], "actions": [["move_node", "移动"], ["delete_node", "删除节点"]] if point >= 0 else [["continue", "继续绘制"], ["delete_measure", "删除整条"]]})
+		var target := {"plan": plan, "map_id": session_map_id, "point": point}
+		target.merge({
+			"kind": "measure", "id": plan.display_id,
+			"label": "测距 %d · 节点 %d" % [plan.display_id, point + 1] if point >= 0 else "测距 %d" % plan.display_id,
+			"details": _measurement_node_details(plan, point) if point >= 0 else "%d 个节点 · 共 %s" % [plan.points.size(), _amount(Rules.route_feet(plan.points, distance_mode))],
+			"warning": "删除此节点后不足两个节点，将移除整条测距。" if point >= 0 and plan.points.size() <= 2 else "",
+			"anchor": candidate["anchor"],
+			"actions": [["move_node", "移动节点"], ["delete_node", "删除节点"]] if point >= 0 else [["continue", "继续绘制"], ["delete_measure", "删除整条"]],
+		})
+		result.append(target)
 	var preferred := "shape" if tool == Tool.SHAPE else ("measure" if tool == Tool.MEASURE else "token")
 	for entry: Dictionary in result:
 		if entry["kind"] in ["shape","measure"] and not _can_operate_tool("shapes" if entry["kind"]=="shape" else "measurements",int(entry["id"])):
-			entry["actions"] = []
+			if entry["kind"] == "measure":
+				entry["actions_enabled"] = false
+				entry["disabled_reason"] = "当前无法编辑这条测距。"
+			else:
+				entry["actions"] = []
 	result.sort_custom(func(a: Dictionary, b: Dictionary):
 		if (a["kind"] == preferred) != (b["kind"] == preferred):
 			return a["kind"] == preferred
@@ -1620,30 +1700,21 @@ func _entity_candidates(mouse: Vector2) -> Array[Dictionary]:
 	return result
 
 func _update_entity_hover(mouse: Vector2, _delta: float) -> void:
+	for entry in entity_entries:
+		if entry.get("kind") == "measure":
+			var permitted := _can_operate_tool("measurements", int(entry.get("id", 0)))
+			if not MeasurementTarget.is_valid(entry, session_map_id, measurements) or permitted != entry.get("actions_enabled", true):
+				_clear_entity_hover()
+				break
 	if tool == Tool.TOKEN_CREATE:
 		_clear_entity_hover()
 		ui.hide_shape_actions()
-		ui.hide_measurement_actions()
-		var at := _cell_world(token_placement_cell, Footprint.dimensions(token_draft)) + Vector3.UP * (_appearance_height(token_preview, int(token_draft["size"])) + 0.45) if token_placement_fixed else token_cancel_anchor
-		ui.show_token_placement_actions(_action_screen(at), token_placement_fixed)
 		return
-	ui.hide_token_placement_actions()
-	if tool == Tool.SHAPE and shape_plan.dirty():
+	if (tool == Tool.SHAPE and shape_plan.dirty()) or (tool == Tool.MEASURE and (measurement.editing_index >= 0 or measure_creating)):
 		_clear_entity_hover()
-		var at := shape_edit_anchor if shape_plan.moving else _shape_origin_world(shape_plan.draft)
-		ui.show_shape_actions(_action_screen(at), not shape_plan.moving and shape_plan.position_ready, shape_plan.moving)
-		return
-	if tool == Tool.MEASURE and measurement.editing_index >= 0:
-		_clear_entity_hover()
-		var at := _plan_world(measurement,measurement.editing_index) if measurement_edit_fixed else _cell_world(measurement.original_cell,Vector2i.ONE,measurement.original_surface)
-		ui.show_measurement_actions(_action_screen(at), "measure_confirm" if measurement_edit_fixed else "measure_move_cancel")
-		return
-	if tool == Tool.MEASURE and measure_creating and measurement.points.is_empty():
-		_clear_entity_hover()
-		ui.show_measurement_actions(_action_screen(creation_action_anchor), "measure_wait")
+		ui.hide_shape_actions()
 		return
 	ui.hide_shape_actions()
-	ui.hide_measurement_actions()
 	if tool == Tool.ROUTE or (tool == Tool.MEASURE and measure_creating):
 		_clear_entity_hover()
 		return
@@ -1660,12 +1731,25 @@ func _update_entity_hover(mouse: Vector2, _delta: float) -> void:
 func _select_entity(entry: Dictionary) -> void:
 	var index := _entity_index(entry)
 	selected = index if entry.get("kind")=="token" else -1
-	if entry.get("kind")=="shape": shape_plan.select(index)
+	if entry.get("kind")=="shape":
+		shape_plan.select(index)
+		ui.update_shape_state(shape_plan)
 	_highlight_entity(entry)
 	_refresh_selection()
 
+func _measurement_node_details(plan: MeasurementPlan, point: int) -> String:
+	if point >= 0 and point < plan.endpoints.size():
+		var token_id := int(plan.endpoints[point].get("token_id", -1))
+		for token in tokens:
+			if token["id"] == token_id: return "绑定棋子：" + str(token["title"])
+	return "自由节点"
+
 func _select_at_pointer(mouse: Vector2) -> void:
 	var candidates := _entity_candidates(mouse)
+	# Freeze command targets only when the context opens, not on every hover frame.
+	for candidate in candidates:
+		if candidate.get("kind") == "measure":
+			candidate.merge(MeasurementTarget.capture(candidate["plan"], session_map_id, int(candidate["point"])), true)
 	_clear_entity_hover()
 	selected = -1
 	if tool==Tool.SHAPE: shape_plan.select(-1)
@@ -1707,12 +1791,13 @@ func _position_entity_group() -> void:
 	var screen := camera.unproject_position(entity_anchor)
 	var below: bool = entity_entries.size() == 1 and first["kind"] == "token"
 	if below:
-		var card := ui.get_node("TokenNames").get_child(index) as Control
-		screen = card.get_global_rect().get_center() + Vector2(0, card.get_global_rect().size.y / 2)
+		var card_rect := ui.token_name_rect(index)
+		screen = card_rect.get_center() + Vector2(0, card_rect.size.y / 2)
 	ui.show_entity_actions(entity_entries, screen, below)
 
 func _measurement_candidates(mouse: Vector2) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
+	var label_indices := ui.saved_measurements_at(mouse)
 	for index in range(measurements.size() - 1, -1, -1):
 		var plan := measurements[index]
 		if not plan.completed or plan.editing_index >= 0 or plan.points.size() < 2:
@@ -1731,8 +1816,8 @@ func _measurement_candidates(mouse: Vector2) -> Array[Dictionary]:
 			candidates.append({"index": index, "point": nearest_point, "distance": node_distance, "anchor": _plan_world(plan,nearest_point)})
 			continue
 		var line_distance := 64.0
-		var line_anchor := Vector3.ZERO
-		var found := false
+		var line_anchor := _plan_world(plan, plan.points.size() - 1)
+		var found := label_indices.has(index)
 		for point in range(1, plan.points.size()):
 			var a := _plan_world(plan,point-1)
 			var b := _plan_world(plan,point)
@@ -1762,13 +1847,13 @@ func _measurement_candidates(mouse: Vector2) -> Array[Dictionary]:
 func _clear_measurement_hover() -> void:
 	hover_measurement = -1
 	hover_measurement_point = -1
-	ui.hide_measurement_actions()
 
 func _activate_measurement(index: int) -> void:
 	var plan := measurements[index]
-	_on_tool("measure")
+	_on_tool("measure", false)
 	measurement = plan
 	route = plan
+	measure_creating = false
 	measure_finished = plan.completed
 	selected_point = -1
 	ui.clear_overlays()
@@ -1776,6 +1861,9 @@ func _activate_measurement(index: int) -> void:
 	ui.release_keyboard_focus()
 
 func _on_measurement_action(action: String) -> void:
+	if action in ["finish", "undo_point"]:
+		if not network_readonly: _on_route_action("confirm" if action == "finish" else "undo")
+		return
 	if network_readonly and action not in ["cancel_creation","cancel_node","forget_measure"]: return
 	if action not in ["new","undo_measure","forget_measure","cancel_creation","confirm_node","cancel_node"] and hover_measurement>=0 and hover_measurement<measurements.size() and not _can_operate_tool("measurements",measurements[hover_measurement].display_id): return
 	if action == "new":
@@ -1798,6 +1886,7 @@ func _on_measurement_action(action: String) -> void:
 		return
 	if action == "forget_measure":
 		deleted_measurement.clear()
+		_update_status()
 		return
 	if action == "undo_measure":
 		if deleted_measurement.is_empty():
@@ -1816,6 +1905,7 @@ func _on_measurement_action(action: String) -> void:
 		deleted_measurement.clear()
 		ui.hide_measurement_undo()
 		_clear_measurement_hover()
+		_update_status()
 		return
 	if action == "cancel_creation":
 		_on_route_action("cancel")
@@ -1957,8 +2047,8 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 			var platform: Dictionary = incoming_tokens[current_token["persistent_id"]]["platform"]
 			var rebuilt: bool = current_token["color"]!=incoming_token["color"] or current_token["base"]!=incoming_token["base"] or Footprint.dimensions(current_token)!=Footprint.dimensions(incoming_token) or Wire.canonical(current_token.get("components",{}))!=Wire.canonical(incoming_token.get("components",{})) or Wire.canonical(current_token.get("materials",{}))!=Wire.canonical(incoming_token.get("materials",{}))
 			if [current_token["hp"],current_token["max_hp"],current_token.get("temp_hp",0)]!=[incoming_token["hp"],incoming_token["max_hp"],incoming_token.get("temp_hp",0)]:
-				ui.get_node("StatsDialog").history.erase(current_token["id"])
-				if ui.get_node("StatsDialog").token_index==index: ui.get_node("StatsDialog").hide()
+				ui.clear_token_stats_history(current_token["id"])
+				ui.close_stats_if_editing_token(index)
 			var raw := incoming_token.duplicate(true)
 			raw.erase("id")
 			raw["cell"] += surfaces.origin(platform)
@@ -1982,7 +2072,7 @@ func apply_network_content(data: Dictionary, party: Dictionary, state: Dictionar
 	selected = -1
 	hover_token = -1
 	ui.reset_after_token_removal(-1)
-	ui.get_node("StatsDialog").history.clear()
+	ui.clear_all_stats_history()
 	for platform: Dictionary in session_map["platforms"]:
 		surfaces.current = platform["id"]
 		for token: Dictionary in platform["data"].get("tokens",[]):

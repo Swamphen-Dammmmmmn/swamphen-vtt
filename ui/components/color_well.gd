@@ -39,5 +39,11 @@ func _ready() -> void:
 func get_popup() -> PanelContainer:
 	return panel
 
+func is_popup_open() -> bool:
+	return is_instance_valid(panel) and panel.visible
+
+func close_popup() -> void:
+	if is_instance_valid(panel) and panel.visible: panel.close()
+
 func _exit_tree() -> void:
 	if is_instance_valid(panel) and not panel.is_queued_for_deletion(): panel.queue_free()

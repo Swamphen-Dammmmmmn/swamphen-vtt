@@ -30,26 +30,27 @@ static func floating_gap(role: int) -> float:
 		FloatingRole.INFO: return 10.0
 	return 22.0
 
-static func floating_position(dimensions: Vector2, anchor: Rect2, bounds: Vector2, left_margin: float, role: int = FloatingRole.ACTION, below := false) -> Vector2:
+static func floating_position(dimensions: Vector2, anchor: Rect2, bounds: Vector2, left_margin: float, role: int = FloatingRole.ACTION, below := false, top_margin := 64.0) -> Vector2:
 	var gap := floating_gap(role)
+	var safe_top := maxf(16.0, top_margin)
 	var upper := anchor.position.y - dimensions.y - gap
 	var lower := anchor.end.y + gap
 	var y := lower if below else upper
-	if below and lower + dimensions.y > bounds.y - 54.0 and upper >= 64.0:
+	if below and lower + dimensions.y > bounds.y - 54.0 and upper >= safe_top:
 		y = upper
-	elif not below and upper < 64.0 and lower + dimensions.y <= bounds.y - 54.0:
+	elif not below and upper < safe_top and lower + dimensions.y <= bounds.y - 54.0:
 		y = lower
-	return Vector2(clampf(anchor.get_center().x - dimensions.x / 2.0, left_margin, maxf(left_margin, bounds.x - dimensions.x - 16)), clampf(y, 64, maxf(64, bounds.y - dimensions.y - 54))).round()
+	return Vector2(clampf(anchor.get_center().x - dimensions.x / 2.0, left_margin, maxf(left_margin, bounds.x - dimensions.x - 16)), clampf(y, safe_top, maxf(safe_top, bounds.y - dimensions.y - 54))).round()
 
-static func place_floating(control: Control, anchor: Rect2, bounds: Vector2, left_margin: float, role: int = FloatingRole.ACTION, below := false) -> void:
+static func place_floating(control: Control, anchor: Rect2, bounds: Vector2, left_margin: float, role: int = FloatingRole.ACTION, below := false, top_margin := 64.0) -> void:
 	control.reset_size()
 	control.size = control.get_combined_minimum_size()
-	control.position = floating_position(control.size, anchor, bounds, left_margin, role, below)
+	control.position = floating_position(control.size, anchor, bounds, left_margin, role, below, top_margin)
 	if Mobile.enabled and control.get_parent() is Control:
 		var safe := Mobile.local_safe_rect(control.get_parent())
 		control.position = control.position.clamp(safe.position,(safe.end-control.size).max(safe.position))
 
-static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margin: float) -> void:
+static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margin: float, top_margin := 64.0) -> void:
 	menu.theme = GoUi.theme()
 	menu.add_theme_font_size_override("font_size", roundi(Typography.CAPTION * preload("res://scripts/ui_preferences.gd").shared().floating_text))
 	menu.add_theme_constant_override("v_separation", 12)
@@ -58,7 +59,7 @@ static func popup_at(menu: PopupMenu, anchor: Rect2, bounds: Vector2, left_margi
 	var dimensions := Vector2(menu.size)
 	dimensions.x = maxf(dimensions.x, 160)
 	dimensions.y = maxf(dimensions.y, 32)
-	var at := floating_position(dimensions, anchor, bounds, left_margin, FloatingRole.MENU, true)
+	var at := floating_position(dimensions, anchor, bounds, left_margin, FloatingRole.MENU, true, top_margin)
 	menu.popup(Rect2i(Vector2i(at), Vector2i(dimensions)))
 
 static func action_button(button: Button, height: float = ACTION_HEIGHT, primary := false, danger := false) -> void:
@@ -99,6 +100,8 @@ static func creation_slot(button: Button, empty: bool) -> void:
 		button.add_theme_stylebox_override(state, face)
 
 static func style_controls(root: Node, height: float = CONTROL_HEIGHT) -> void:
+	# Components that own their theme (e.g. forms/color_well.gd and its popup) are left untouched.
+	if root.get_meta("style_owned", false): return
 	if root is Button and not root is OptionButton and not root.get_meta("embedded_input_action",false):
 		var face := root.get_theme_stylebox("normal") as StyleBoxFlat
 		var primary: bool = root.theme_type_variation == &"PrimaryButton" or (face != null and face.bg_color.a > 0.5 and face.bg_color.r < 0.45 and face.bg_color.b > 0.4)
@@ -234,25 +237,6 @@ static func refresh_sidebar_button(button: Button, animate := false) -> void:
 		button.set_meta("sidebar_tween", motion)
 	else:
 		face.bg_color = color
-
-static func configure_color_picker(button: ColorPickerButton) -> void:
-	var popup := button.get_popup()
-	var picker := button.get_picker()
-	popup.theme = GoUi.theme()
-	popup.add_theme_stylebox_override("panel", BoardUiStyle.card_face(BoardUiStyle.PANEL_PADDING))
-	picker.theme = GoUi.theme()
-	picker.modulate = Color.WHITE
-	# Keep the picker surface fully opaque; its color swatches still show colors.
-	var surface := StyleBoxFlat.new()
-	surface.bg_color = Color.WHITE
-	surface.set_corner_radius_all(BoardUiStyle.CONTROL_RADIUS)
-	surface.set_content_margin_all(8)
-	picker.add_theme_stylebox_override("panel", surface)
-	popup.about_to_popup.connect(func():
-		BoardUiStyle.style_controls(picker)
-		popup.reset_size()
-	)
-	BoardUiStyle.style_controls(picker)
 
 static func small_sidebar_entry(panel: PanelContainer, button: Button) -> void:
 	panel.add_theme_stylebox_override("panel", card_face(ACTION_PADDING))

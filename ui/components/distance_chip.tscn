@@ -1,12 +1,14 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Theme" path="res://ui/theme/modern.tres" id="1"]
 [ext_resource type="StyleBox" path="res://ui/theme/segment_panel.tres" id="2"]
+[ext_resource type="Script" path="res://ui/components/distance_chip.gd" id="3"]
 
 [node name="DistanceChip" type="PanelContainer"]
 theme = ExtResource("1")
 theme_override_styles/panel = ExtResource("2")
 mouse_filter = 2
+script = ExtResource("3")
 
 [node name="Amount" type="Label" parent="."]
 theme_type_variation = &"TypographyBody"

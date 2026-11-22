@@ -1,0 +1,30 @@
+[remap]
+
+importer="2d_array_texture"
+type="CompressedTexture2DArray"
+uid="uid://ol7dl5jdemkf"
+path.bptc="res://.godot/imported/board_detail.png-8e748298d7f950b022cf374c3bfa2825.bptc.ctexarray"
+path.astc="res://.godot/imported/board_detail.png-8e748298d7f950b022cf374c3bfa2825.astc.ctexarray"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+
+[deps]
+
+source_file="res://assets/scenery/textures/planks/board_detail.png"
+dest_files=["res://.godot/imported/board_detail.png-8e748298d7f950b022cf374c3bfa2825.bptc.ctexarray", "res://.godot/imported/board_detail.png-8e748298d7f950b022cf374c3bfa2825.astc.ctexarray"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=true
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/channel_pack=1
+mipmaps/generate=true
+mipmaps/limit=-1
+slices/horizontal=8
+slices/vertical=8

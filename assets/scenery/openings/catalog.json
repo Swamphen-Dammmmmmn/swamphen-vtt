@@ -1,0 +1,29 @@
+{
+	"assets": [
+		{
+			"generator_version": 4,
+			"hole_height_feet": 7.0,
+			"hole_width_feet": 3.0,
+			"id": "opening_wood_door_04",
+			"path": "res://assets/scenery/openings/wood_door_04.tres",
+			"preset": "wood_door",
+			"reference_wall_thickness_feet": 0.5,
+			"triangles": 432
+		},
+		{
+			"generator_version": 4,
+			"hole_height_feet": 4.0,
+			"hole_width_feet": 3.0,
+			"id": "opening_wood_window_04",
+			"path": "res://assets/scenery/openings/wood_window_04.tres",
+			"preset": "wood_window",
+			"reference_wall_thickness_feet": 0.5,
+			"triangles": 504
+		}
+	],
+	"format_version": 1,
+	"generator_version": 4,
+	"origin": "hole_left_bottom",
+	"resizing": "rebuild from parameters with wall_assembly; never scale nodes",
+	"world_units_per_foot": 0.2
+}

@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://ui/components/utility_panel.tscn" id="1"]
+[ext_resource type="Script" path="res://ui/components/features/adventure/token_placement_panel.gd" id="2"]
+[node name="TokenPlacementPanel" instance=ExtResource("1")]
+script = ExtResource("2")
+panel_title = "摆放棋子"
+preferred_width = 320.0
+fluent = true

@@ -1,11 +1,7 @@
-[gd_scene load_steps=4 format=3]
-[ext_resource type="Theme" path="res://ui/theme/modern.tres" id="1"]
+[gd_scene load_steps=2 format=3]
 [ext_resource type="Script" path="res://ui/components/token_name.gd" id="2"]
 
-[ext_resource type="FontFile" path="res://ui/theme/fonts/HarmonyOS_Sans_SC_Bold.ttf" id="NameFont"]
-
 [node name="TokenCard" type="PanelContainer"]
-theme = ExtResource("1")
 script = ExtResource("2")
 mouse_filter = 0
 scale = Vector2(0.8888889, 0.8888889)
@@ -31,7 +27,6 @@ theme_type_variation = &"TypographyTokenName"
 layout_mode = 2
 size_flags_horizontal = 1
 size_flags_vertical = 8
-theme_override_fonts/font = ExtResource("NameFont")
 text = "棋子"
 text_overrun_behavior = 3
 mouse_filter = 2
@@ -49,9 +44,3 @@ size_flags_vertical = 8
 focus_mode = 0
 text = "—"
 tooltip_text = "编辑护甲等级"
-
-[node name="Health" type="ProgressBar" parent="Content"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 5)
-mouse_filter = 2
-show_percentage = false

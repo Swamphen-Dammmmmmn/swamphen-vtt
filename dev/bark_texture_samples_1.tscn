@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/plank_texture_samples.gd" id="1"]
+
+[node name="BarkTextureSamples" type="Node3D"]
+script = ExtResource("1")
+bark_samples = true
+output_directory = "res://artifacts/bark-log-wall-2026-10-24/"
+sample_family = 1

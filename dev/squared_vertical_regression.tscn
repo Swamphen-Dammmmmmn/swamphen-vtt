@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/author_vertical_planks.gd" id="1"]
+[node name="SquaredVerticalRegression" type="Node"]
+script = ExtResource("1")
+report_path = "res://artifacts/squared-log-wall-2026-10-25/regression/vertical.json"

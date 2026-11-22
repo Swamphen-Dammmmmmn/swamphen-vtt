@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/author_round_log_wall.gd" id="1"]
+[node name="WallRegression" type="Node"]
+script = ExtResource("1")
+report_path = "res://artifacts/opening-system-2026-10-25/regression/round.json"

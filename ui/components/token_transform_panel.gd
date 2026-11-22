@@ -1,7 +1,5 @@
 extends "res://ui/components/utility_panel.gd"
 
-const Typography = preload("res://ui/theme/typography.gd")
-
 signal values_changed(values: Array)
 signal reset_requested
 signal interval_changed(value: float)

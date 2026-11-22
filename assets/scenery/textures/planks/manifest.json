@@ -1,0 +1,598 @@
+{
+  "version": 1,
+  "generator": "dev/generate_plank_textures.py",
+  "count": 64,
+  "size": [
+    512,
+    128
+  ],
+  "board_feet": [
+    5,
+    1
+  ],
+  "atlas_grid": [
+    8,
+    8
+  ],
+  "color_space": "color=sRGB; detail=linear RG tangent normal XY, B roughness",
+  "reference_color": "986039",
+  "mipmaps": true,
+  "boards": [
+    {
+      "index": 0,
+      "family": "直纹",
+      "seed": 24102400,
+      "ring_density": 12.15636426770115,
+      "knots": 0,
+      "color_sha256": "ed01d0596562321600b92f215bdcecd1362c8fd6f5ee1b19eaa4be73f309af9a",
+      "detail_sha256": "1b271659b555eef29822ce0141cf02a36811614b53f03043afd351fa70ccca08"
+    },
+    {
+      "index": 1,
+      "family": "山形纹",
+      "seed": 24110319,
+      "ring_density": 8.427319173914801,
+      "knots": 0,
+      "color_sha256": "1c55a51ffaec57d2adf673165d8149dd2e9301c5b35fdf36e88c10f0b0739951",
+      "detail_sha256": "49e473c1bb6a108abff3bdd6c4a350b3f7c171c3ba1c5334c3bb35436124e9b4"
+    },
+    {
+      "index": 2,
+      "family": "结疤纹",
+      "seed": 24118238,
+      "ring_density": 13.321166110041192,
+      "knots": 1,
+      "color_sha256": "88d0aaefb496bbb87c0933a4e6c4f15d86414f0389044aa087339717f97ab61a",
+      "detail_sha256": "4ff6aa7bbc3310202a5e06f6181f53cc10aec1a9945934449dbc76e5b5220037"
+    },
+    {
+      "index": 3,
+      "family": "混合纹",
+      "seed": 24126157,
+      "ring_density": 16.35181776038295,
+      "knots": 2,
+      "color_sha256": "b665a0646d86feb64902fe81f50136fe5f2b357aac1f17345fe6f3a98ec0dc5e",
+      "detail_sha256": "7349131f5b98b71232aee61cce92b7541d53b031de23360a3e5cbc1893567b3b"
+    },
+    {
+      "index": 4,
+      "family": "直纹",
+      "seed": 24134076,
+      "ring_density": 13.68593535196178,
+      "knots": 0,
+      "color_sha256": "39c5467a549b933e0cae0718ed55cc72a5bb4fb93503df8a58fd31a68df4076a",
+      "detail_sha256": "7ffb7fb2c1ec4b340a32d829563c4128e2e11cb4b742946097de0cbd44b0230b"
+    },
+    {
+      "index": 5,
+      "family": "山形纹",
+      "seed": 24141995,
+      "ring_density": 8.266859618624839,
+      "knots": 0,
+      "color_sha256": "534e052674014890aef8131ad8089a37c8683003e832233f66363614635c07d4",
+      "detail_sha256": "1fc3d25064f52182e1efc70f664c246f491f22a153cc41080225767e7b621f3d"
+    },
+    {
+      "index": 6,
+      "family": "结疤纹",
+      "seed": 24149914,
+      "ring_density": 9.417416497860648,
+      "knots": 1,
+      "color_sha256": "ebc9511d6bf96013c1e643fa2127b309e4814136bd2d30eaa0a174b6363915eb",
+      "detail_sha256": "17c6c4afbc7760426e79b120eb438f9d52340a9722b4d5ba025a9eeee90f0cce"
+    },
+    {
+      "index": 7,
+      "family": "混合纹",
+      "seed": 24157833,
+      "ring_density": 12.615912212036788,
+      "knots": 2,
+      "color_sha256": "fc26ac349be5a53b1ce061a07518e5840e34129fbba875f092d9c26c36e1633f",
+      "detail_sha256": "9421958af940f7c2c898916700f0b54f2b5af207d7724c814e2e6017950a63b7"
+    },
+    {
+      "index": 8,
+      "family": "直纹",
+      "seed": 24165752,
+      "ring_density": 9.990471448413928,
+      "knots": 0,
+      "color_sha256": "ca25ca7195b704e7e0005946f51072fd905d1de59b218da51ce6b7e9b4ab2e77",
+      "detail_sha256": "8cf156c67d6e7119d3001ff496e741415343964dab90587e5b552d885055a2eb"
+    },
+    {
+      "index": 9,
+      "family": "山形纹",
+      "seed": 24173671,
+      "ring_density": 12.766817195273951,
+      "knots": 0,
+      "color_sha256": "bc3cc81426daa2c5abc9abc2b8e749cd2042664388a95c0d62554e317d03367b",
+      "detail_sha256": "cf0ec4e8989c90614edfbfcf10a270886155553f0e1ca7d679f09bb9d6e47375"
+    },
+    {
+      "index": 10,
+      "family": "结疤纹",
+      "seed": 24181590,
+      "ring_density": 12.049070312451143,
+      "knots": 1,
+      "color_sha256": "34b8494de89903a6c0bca613162cd1c0b1c7dd7736e5d7f005f976d85e7c3e85",
+      "detail_sha256": "fe047db393e4392555ef70d0fad313098ba6fc386e1c23facb161376d166538f"
+    },
+    {
+      "index": 11,
+      "family": "混合纹",
+      "seed": 24189509,
+      "ring_density": 12.457363570591397,
+      "knots": 2,
+      "color_sha256": "21930146c52625d19a5d174caf8d14d38a40789c962a1161810f360129cfb186",
+      "detail_sha256": "023d27241a954fe682427e0bc726bc505d6659bc3c8b49ceae0407e89fbb650d"
+    },
+    {
+      "index": 12,
+      "family": "直纹",
+      "seed": 24197428,
+      "ring_density": 8.106311631097313,
+      "knots": 0,
+      "color_sha256": "19ce7359f093dfe6be838b2d7e1ef86322137299017349db880a37a7a23bca12",
+      "detail_sha256": "48eeb448446ac8c65250c96604d3cb450cc44ffc738c6c8d49877ae8f95db58b"
+    },
+    {
+      "index": 13,
+      "family": "山形纹",
+      "seed": 24205347,
+      "ring_density": 10.355125669373074,
+      "knots": 0,
+      "color_sha256": "b2f9a6018a83f14f8eb5ba2776e8d25eeaf64a3f53ba699993a2d8f5b9c4b8d1",
+      "detail_sha256": "ac383997848e8923b13e58993aaa728fc5f81fda1afa1700edc86fec6017af63"
+    },
+    {
+      "index": 14,
+      "family": "结疤纹",
+      "seed": 24213266,
+      "ring_density": 12.692013411306585,
+      "knots": 1,
+      "color_sha256": "e7d71559bf77e028255570dc0b3ddd42fb516970799bdeb7e3d2b0c50a494d68",
+      "detail_sha256": "fc2bea7d155f71370f8c5d60a58cca2e8bb98c5ad5d50f16c13a8db588e0152f"
+    },
+    {
+      "index": 15,
+      "family": "混合纹",
+      "seed": 24221185,
+      "ring_density": 12.50658010637238,
+      "knots": 2,
+      "color_sha256": "6e9f08aabd21d646388c5b6c2e85cfe7420fe8a9544aecb7e48577c2c3f8eeaa",
+      "detail_sha256": "ec6347e2d04539c76bce51513ea5ab3a1831ad54b0678b4328438ddb41f49752"
+    },
+    {
+      "index": 16,
+      "family": "直纹",
+      "seed": 24229104,
+      "ring_density": 11.807707998344545,
+      "knots": 0,
+      "color_sha256": "2c1d4fb25f586d25d8800d9b51c6cadeae8fbb7a2de3e55c8fdf82519057a27a",
+      "detail_sha256": "8659772e01a03e6c8529c70b8254917778728e47e7f48f2e5472bc9b243be505"
+    },
+    {
+      "index": 17,
+      "family": "山形纹",
+      "seed": 24237023,
+      "ring_density": 10.789412855432552,
+      "knots": 0,
+      "color_sha256": "f871cd56cc9e4ce5fc50397b2ca0bcb87a466d808b0ef929651745d4422b04b9",
+      "detail_sha256": "71a6f1460b11766a4f924b2facd9c4e6386d24f18bd7b920fdbd136cb7b24044"
+    },
+    {
+      "index": 18,
+      "family": "结疤纹",
+      "seed": 24244942,
+      "ring_density": 12.302942509992377,
+      "knots": 1,
+      "color_sha256": "3754d215f375f295106e03e81a5d0221ee9e756eb0b0d3dcf9b81a2d96c0c52b",
+      "detail_sha256": "23daa44a249df4297f061422a79e36f9d039cf181ff884477d978f26e2036944"
+    },
+    {
+      "index": 19,
+      "family": "混合纹",
+      "seed": 24252861,
+      "ring_density": 13.727656496462366,
+      "knots": 2,
+      "color_sha256": "75d8ee4b3925f809db0d10d645fbdad2c5d1603701092ee84aa544e845e9f448",
+      "detail_sha256": "251ec4910e81138619014a142f5807bed2b62ba4664b1099ddc2f754371611f3"
+    },
+    {
+      "index": 20,
+      "family": "直纹",
+      "seed": 24260780,
+      "ring_density": 8.640789105699223,
+      "knots": 0,
+      "color_sha256": "94e2a90952ccfe81a86e52e41997820087ff66ce00276e5f85a002795014c949",
+      "detail_sha256": "58c117a756affc9c3c376f59363e4766f39e31ab2ca0dbd6fd8622d965635dac"
+    },
+    {
+      "index": 21,
+      "family": "山形纹",
+      "seed": 24268699,
+      "ring_density": 12.86253565689848,
+      "knots": 0,
+      "color_sha256": "d4ec66f659e16f58449839c10ba8442fbf11c48b05afa2aceaf7c8354450899e",
+      "detail_sha256": "600a3e42fd6c2d80f8b74664d21987699890235b58dd69fa899cdd74ec5ec366"
+    },
+    {
+      "index": 22,
+      "family": "结疤纹",
+      "seed": 24276618,
+      "ring_density": 9.375484863500475,
+      "knots": 1,
+      "color_sha256": "25031badb3f69f309eeb90372ac357c9d1034ef634953538f6fe435ecd19789c",
+      "detail_sha256": "8811ca59ccad8b176daebb457dd434ae448b23e6e47e2e31aad9a8d8a43a6d25"
+    },
+    {
+      "index": 23,
+      "family": "混合纹",
+      "seed": 24284537,
+      "ring_density": 14.225100925453438,
+      "knots": 2,
+      "color_sha256": "48fdce2c184cf550b6aa26a18adb7a1543e19a12252b7ef5117b34dda72ebd57",
+      "detail_sha256": "113487495e00659f1ff9558583a78078ec831b5c0d62a252faf3384c0418949b"
+    },
+    {
+      "index": 24,
+      "family": "直纹",
+      "seed": 24292456,
+      "ring_density": 12.235938857814805,
+      "knots": 0,
+      "color_sha256": "02224afb9725381781e38ba413d8aff234eabc9e89d74b548b558de101e9e289",
+      "detail_sha256": "29523ec9ad33c647969c0ff1d3d0dcc23547dca0bde0f9df61cd3ea6253c9b96"
+    },
+    {
+      "index": 25,
+      "family": "山形纹",
+      "seed": 24300375,
+      "ring_density": 13.184553539288423,
+      "knots": 0,
+      "color_sha256": "4d767fdd699081d3ef6d580ba2d9ede457ab2bc13a0ba747f885e1aba93765dc",
+      "detail_sha256": "19905c23b43b46d9dd58a051091c881633bb7452c490e4b4c8ff46bf4ce95b16"
+    },
+    {
+      "index": 26,
+      "family": "结疤纹",
+      "seed": 24308294,
+      "ring_density": 11.403346571934115,
+      "knots": 1,
+      "color_sha256": "ef2b01d3fc89d96eb1f65dcd5164b6f938169d76be743437ca494314c4a8e874",
+      "detail_sha256": "809e8e19e1c32c62272b0de13938863cc84ca52e26d80d5206535d8d34518820"
+    },
+    {
+      "index": 27,
+      "family": "混合纹",
+      "seed": 24316213,
+      "ring_density": 15.233080496554106,
+      "knots": 2,
+      "color_sha256": "9b5883a875fdbe37d86ff8394f3fa072cc9bc6b8e7d8907f88294783d2f2f982",
+      "detail_sha256": "9703691bcd423bd8d98efee99ebd707b5192a84fa3fef671d353c2d6968d543d"
+    },
+    {
+      "index": 28,
+      "family": "直纹",
+      "seed": 24324132,
+      "ring_density": 12.848476838182698,
+      "knots": 0,
+      "color_sha256": "02dda123d735626b2b7bc118a09c559804f5e83f6a7269735f4f28db3ed596e9",
+      "detail_sha256": "1183ca319befc9fac75f49fa2ae6fb546b33a002d69b58fe3aec09102adf25c5"
+    },
+    {
+      "index": 29,
+      "family": "山形纹",
+      "seed": 24332051,
+      "ring_density": 9.617337282227949,
+      "knots": 0,
+      "color_sha256": "509829cfecf465581c62d58c12a78781dd017e7f4dd00eaf5e4169d3d1415cd6",
+      "detail_sha256": "2131b11023e8f7107346ef7f8ebecadbd2d3ea1e43858dfb1c4dc80d482eac59"
+    },
+    {
+      "index": 30,
+      "family": "结疤纹",
+      "seed": 24339970,
+      "ring_density": 8.254020722437996,
+      "knots": 1,
+      "color_sha256": "fd1a503775788a581aab40e7e7b012b0563f058229ae4b0b3a22946937f3a1a0",
+      "detail_sha256": "6f555ad241f6756cc7020f6f16a2bd191c2858e235f02b3c2fe1c43da452f6f5"
+    },
+    {
+      "index": 31,
+      "family": "混合纹",
+      "seed": 24347889,
+      "ring_density": 15.705605749004473,
+      "knots": 2,
+      "color_sha256": "fc6baafb4fc9d44c644b4e917917c1ad418bcf66a8d15afaf67bbaeeca5c9cc3",
+      "detail_sha256": "659f77caf8c6b13d84564175793cfd533e3b41c3f3a2109793bf0180d79d3ad5"
+    },
+    {
+      "index": 32,
+      "family": "直纹",
+      "seed": 24355808,
+      "ring_density": 8.995021897243237,
+      "knots": 0,
+      "color_sha256": "319e2189329ba5a10dd17f1721b25634250fdf4ee27ee133a372b95f75a2ce4f",
+      "detail_sha256": "74d86880dcddc1e48d42a33c31a6ea8f010fe6ef14a9f90b80614be5a0da7c87"
+    },
+    {
+      "index": 33,
+      "family": "山形纹",
+      "seed": 24363727,
+      "ring_density": 9.7868341754929,
+      "knots": 0,
+      "color_sha256": "79c5049bcf190bcb136dc649bdfbc77be89c03e8cbddaf3124a4b63a47d4d729",
+      "detail_sha256": "6a1d6a119660a82585554d0d6dba083ca172ea6d2af54ccb7846551ac8060dfc"
+    },
+    {
+      "index": 34,
+      "family": "结疤纹",
+      "seed": 24371646,
+      "ring_density": 10.377496154289217,
+      "knots": 1,
+      "color_sha256": "d098e5a9f87c88d1c9a7a98ff71051ad5379310d1a8ffa8f4b713eaaef73d48c",
+      "detail_sha256": "2dd2fff339c9f061f4feb80ccd23fd68765e76a7221d480af147b3eb556d40e0"
+    },
+    {
+      "index": 35,
+      "family": "混合纹",
+      "seed": 24379565,
+      "ring_density": 12.133055727907742,
+      "knots": 2,
+      "color_sha256": "7a92fcc14893fe3c5979b76985f99d251568aa8f5fe3706d3ddff9baed4f3559",
+      "detail_sha256": "1cc75d10f99dba940d8648fd2b1dd946bca54c83b82c5bcf073eaca1cefc747b"
+    },
+    {
+      "index": 36,
+      "family": "直纹",
+      "seed": 24387484,
+      "ring_density": 13.906751519892783,
+      "knots": 0,
+      "color_sha256": "9c9cfea1ba6b69eb1c9705fa6e119774a332755bbbe1abec9d8333e520164bb0",
+      "detail_sha256": "407c80df3d42c3bf5f9dc276a68f505d504dc28ea6ffb29b0bd39d7009ed72a2"
+    },
+    {
+      "index": 37,
+      "family": "山形纹",
+      "seed": 24395403,
+      "ring_density": 13.3944334606395,
+      "knots": 0,
+      "color_sha256": "d65520bad690ab82e54d718d5352a95792c24301d7d2c8fea63d0e7dee1264cc",
+      "detail_sha256": "72408418ca5f3ae2f7b265fa7b431feee5424a55380e7bd76b6303e33f6c23ec"
+    },
+    {
+      "index": 38,
+      "family": "结疤纹",
+      "seed": 24403322,
+      "ring_density": 10.663883183139465,
+      "knots": 1,
+      "color_sha256": "fbe3033e64b18649ce8af462afbb0ef1071e300f3c0394476dffc5d0a87adc85",
+      "detail_sha256": "60ad9ecb3daf56fa7cc69bd4c3253455887b6964e9fa9badd3753bfe75de7a80"
+    },
+    {
+      "index": 39,
+      "family": "混合纹",
+      "seed": 24411241,
+      "ring_density": 13.710685368384633,
+      "knots": 2,
+      "color_sha256": "079da406365087b711dea6a8cce404770dee52c98c0cdc87dbd730d298c13ab6",
+      "detail_sha256": "d0a7f05d723e7031f10f89b43d95172de221f1b53ad1e4b762cc786cc81b3adb"
+    },
+    {
+      "index": 40,
+      "family": "直纹",
+      "seed": 24419160,
+      "ring_density": 13.30674562072685,
+      "knots": 0,
+      "color_sha256": "6653ada9adc254f2b893b5be9fdae2ed80e76d261a12157c5508e53d4d8c96bd",
+      "detail_sha256": "5bbc94b7ab1693655946bdba64cb23f34cde4b0b08a033aa35880c832e6d0219"
+    },
+    {
+      "index": 41,
+      "family": "山形纹",
+      "seed": 24427079,
+      "ring_density": 10.277994836723934,
+      "knots": 0,
+      "color_sha256": "d9cfe799a41a2c07b94d5f4f445d55890e1b39492fde6940e7f380f98de1b2c3",
+      "detail_sha256": "063a2e3a617ec42abb2f2ee4ac523a0a1e907ba5414867dab999f1ae0bbad02a"
+    },
+    {
+      "index": 42,
+      "family": "结疤纹",
+      "seed": 24434998,
+      "ring_density": 9.706595742962058,
+      "knots": 1,
+      "color_sha256": "4cf3f16db1f4ba0e764b1aa4acb949f57e91057e43fad3709cefe28a8bb515fc",
+      "detail_sha256": "ee3ce63995051b97e9baf0d975ec0d8b0f00657b2858b27e023eea3e3ee9b2c8"
+    },
+    {
+      "index": 43,
+      "family": "混合纹",
+      "seed": 24442917,
+      "ring_density": 12.23084937266315,
+      "knots": 2,
+      "color_sha256": "94c212563ec38784c55aa53e02b2ec5ba4592353a2483863b408526de1aecb3c",
+      "detail_sha256": "008d991e200bbf73cd9aa54e0a19526c6127881100b674a60837dfb622f6fbc0"
+    },
+    {
+      "index": 44,
+      "family": "直纹",
+      "seed": 24450836,
+      "ring_density": 9.575355088931662,
+      "knots": 0,
+      "color_sha256": "ea6c5ed065229606a26c900a2417bd41f8ebff396a719af255cd14e7a00ebcd7",
+      "detail_sha256": "3b2e8df6068c4a452b413c4f0aca7194526b9ae29f78d4e1e1fee1f4f98399c1"
+    },
+    {
+      "index": 45,
+      "family": "山形纹",
+      "seed": 24458755,
+      "ring_density": 9.412859163096874,
+      "knots": 0,
+      "color_sha256": "372657aed08cb2b291ce8b1e9a09a57f3ee13cd5fa2bfd1afd06b8b471563511",
+      "detail_sha256": "f369de4589375e70463cc6b3c777ec8cf1ee15d4bfe5bd964206c03322e71cdc"
+    },
+    {
+      "index": 46,
+      "family": "结疤纹",
+      "seed": 24466674,
+      "ring_density": 13.191482818722331,
+      "knots": 1,
+      "color_sha256": "f1aa4de41ba85bb8474b9f37a3f7c951fcbae45b20a35234dc006bbb332079ec",
+      "detail_sha256": "5e0c9c3d56636a262fef5b5f508dc50a1bd941d801f3a57a463a4fa2bbaed1e8"
+    },
+    {
+      "index": 47,
+      "family": "混合纹",
+      "seed": 24474593,
+      "ring_density": 16.257583877094483,
+      "knots": 2,
+      "color_sha256": "bf2e599e4086335f5185f78ca92367cf8a7772496e42a6cf11f536f28799363a",
+      "detail_sha256": "b59c6b470fb8244bcdb8bc10deab7a866c681aa08076a3dda94afc394eb81629"
+    },
+    {
+      "index": 48,
+      "family": "直纹",
+      "seed": 24482512,
+      "ring_density": 13.80872343770268,
+      "knots": 0,
+      "color_sha256": "d26e120e5a86e2bfe83b0bf69efc633fed397312c02eac3e13c22cd040687623",
+      "detail_sha256": "f8830defe81bc1940ee20af8938080c40cd88b4137e789f02664b673d08cbdaf"
+    },
+    {
+      "index": 49,
+      "family": "山形纹",
+      "seed": 24490431,
+      "ring_density": 11.645983523908663,
+      "knots": 0,
+      "color_sha256": "11ec6a36446b9298a7a28c00b0f1b2fd056361a09e943a1967305af160a35b0f",
+      "detail_sha256": "3f95914d5ee662be17a84bb81578c4876d88d4159e263bc05fe6cd08ae0da59f"
+    },
+    {
+      "index": 50,
+      "family": "结疤纹",
+      "seed": 24498350,
+      "ring_density": 10.257220015868374,
+      "knots": 1,
+      "color_sha256": "65ebbce04bec5ea6dd3b153b89519a57843e9c9e951c5753a866e35cb409d6a2",
+      "detail_sha256": "b76fa41440d412b73c2b2a4d3d071ce4398338c316faa7a51ae5a5a8e7e835f1"
+    },
+    {
+      "index": 51,
+      "family": "混合纹",
+      "seed": 24506269,
+      "ring_density": 14.094728675324648,
+      "knots": 2,
+      "color_sha256": "5eb0ac1a0b39595f362449bc12f7ade86a7c58ebede8129fb6e738ae7a58d9ba",
+      "detail_sha256": "f52806416fbb096ea1975e98a75e11f771eae28ce18fec490c9e8adccc0e05eb"
+    },
+    {
+      "index": 52,
+      "family": "直纹",
+      "seed": 24514188,
+      "ring_density": 12.802467119024566,
+      "knots": 0,
+      "color_sha256": "ed93cb98c183e16449a2420513864805d8a18cc0a50a08cb50466e6f542480f6",
+      "detail_sha256": "2e3d6b37636875d40975a8a295d8046a283fe2008aed472e601615214d1087ba"
+    },
+    {
+      "index": 53,
+      "family": "山形纹",
+      "seed": 24522107,
+      "ring_density": 13.470814544459822,
+      "knots": 0,
+      "color_sha256": "ba31db0982dc2eba2eb2d88f9fca3a9f5cc4ee6327c82f106151199faebf8cc6",
+      "detail_sha256": "815d23717131b489597f42a1e9cf98f8e0a436198cf72b055040d841d63d248c"
+    },
+    {
+      "index": 54,
+      "family": "结疤纹",
+      "seed": 24530026,
+      "ring_density": 12.16052013919164,
+      "knots": 1,
+      "color_sha256": "a1f8abbd15a134d1d6641baf31bb5af40d4cb05b4db8e13e1ce6887f34c7e665",
+      "detail_sha256": "0a1d5e031bf1cc39bc887ad86b16a2c28bcc9e31a1c31e336bd7af97d50e228e"
+    },
+    {
+      "index": 55,
+      "family": "混合纹",
+      "seed": 24537945,
+      "ring_density": 13.420717534913287,
+      "knots": 2,
+      "color_sha256": "3ee78ee36927ca22c4b70b3685dd7d8d47970fe803932c7f8ef6c3b90b72e57c",
+      "detail_sha256": "361e08a8f958d2c775d6aef7320cf7d9aad7cdb592c360c6e34a898d8d80108f"
+    },
+    {
+      "index": 56,
+      "family": "直纹",
+      "seed": 24545864,
+      "ring_density": 12.816848878640341,
+      "knots": 0,
+      "color_sha256": "9d905902b2b060ed0c9c0ee3cb773b0193fbb08a940303d0cf0cd3fe0204c180",
+      "detail_sha256": "2d3af981aafb6d351223ecab5a5575a3d5a77ac725e5e345219ff244c6ff5d4f"
+    },
+    {
+      "index": 57,
+      "family": "山形纹",
+      "seed": 24553783,
+      "ring_density": 11.191150240513323,
+      "knots": 0,
+      "color_sha256": "42207844f06112e5bc8ec149545c179c4f6f2ca6029748631db3ac5f558ffe01",
+      "detail_sha256": "c1ee75324dbd64787b4a1db9909a028031829f9f1da2cdc1005d3df4f3734d4d"
+    },
+    {
+      "index": 58,
+      "family": "结疤纹",
+      "seed": 24561702,
+      "ring_density": 12.987706866959545,
+      "knots": 1,
+      "color_sha256": "bc2801a8f2b810e93d68ec6917626c062e36d6d76c9f5c9950ac8b8beac09290",
+      "detail_sha256": "6b5b081b71a78e8b7fbd5d0f379e914d87d5cc9cd6deed5c89e1b3e7be777d23"
+    },
+    {
+      "index": 59,
+      "family": "混合纹",
+      "seed": 24569621,
+      "ring_density": 14.28628964737296,
+      "knots": 2,
+      "color_sha256": "a936f955a62f785a259a7c7514f03a9a91b6e865785499d6c79c292450bb4cf0",
+      "detail_sha256": "5c42cf8ef1768a9df7d7493436817629f444bc333c9ffc0ef958c27625642037"
+    },
+    {
+      "index": 60,
+      "family": "直纹",
+      "seed": 24577540,
+      "ring_density": 8.47099076092543,
+      "knots": 0,
+      "color_sha256": "142e942d70509faa3abeaa457aa3f496c0b468735b4c4676ec4e9e243f4ca099",
+      "detail_sha256": "c399cb90418422726075c4b92335ea36b7e3d7bcf2b8d4fe462543c504bd8f60"
+    },
+    {
+      "index": 61,
+      "family": "山形纹",
+      "seed": 24585459,
+      "ring_density": 12.420691375749485,
+      "knots": 0,
+      "color_sha256": "340a97658dd92186ba6ed152ed6380d5040c2778e1ccd34edd16c52e6e34661f",
+      "detail_sha256": "34b3722fe0a04977ef45a681ee8a7c16ce4bf9fc4e1b25c3b5ae327d67ee0306"
+    },
+    {
+      "index": 62,
+      "family": "结疤纹",
+      "seed": 24593378,
+      "ring_density": 9.267987201169735,
+      "knots": 1,
+      "color_sha256": "63af68fb88fa54bd47152f6337152e48610a9008729e82c5f1771a5313b376af",
+      "detail_sha256": "56e35297d86ef27a5978981d02bc674da7cc408257ca764a2e2d7e4b3c7f02ba"
+    },
+    {
+      "index": 63,
+      "family": "混合纹",
+      "seed": 24601297,
+      "ring_density": 13.227968338584951,
+      "knots": 2,
+      "color_sha256": "8d58811010fadadb60043fbd1fae9e7f8545fa48622cdcf9e4956f985a005dfd",
+      "detail_sha256": "a89e916e0405c2607d272d8814b1e2fac212b579cb4d8f58ccf41ab05db3fccb"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/author_round_log_wall.gd" id="1"]
+[node name="AfterBarkAuthoring" type="Node"]
+script = ExtResource("1")
+surface = "logs_bark"
+report_path = "res://artifacts/squared-log-wall-2026-10-25/after-bark.json"

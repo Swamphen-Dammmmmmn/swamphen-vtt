@@ -5,5 +5,6 @@
 
 [node name="TokenCreate" instance=ExtResource("1")]
 script = ExtResource("2")
-panel_title = "创建棋子"
+panel_title = "创建基础棋子"
 preferred_width = 360.0
+fluent = true

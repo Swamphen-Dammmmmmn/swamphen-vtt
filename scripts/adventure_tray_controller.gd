@@ -20,20 +20,15 @@ func attach(scene: Node3D) -> void:
 	board = scene
 	panel = TrayPanel.new()
 	panel.values = application.adventure["trays"]
-	panel.z_index = 7
-	board.ui.add_child(panel)
+	board.ui.mount_tray_panel(panel)
 	panel.tray_action.connect(_action)
-	panel.state_changed.connect(func(_key: String, opened: bool): board.ui.set_tray_navigation_active(opened))
 	board.ui.tray_requested.connect(_toggle)
-	board.ui.creation_palette.state_changed.connect(func(_category: String, opened: bool):
-		if opened: panel.close()
-	)
 	board.token_tray_requested.connect(_collect)
 	board.tray_placement_completed.connect(_placed)
 	_refresh()
 
 func blocked() -> bool:
-	return is_instance_valid(overlay) or (is_instance_valid(panel) and is_instance_valid(panel.options) and panel.options.is_open)
+	return is_instance_valid(overlay) or (is_instance_valid(panel) and panel.has_method("is_menu_open") and panel.is_menu_open())
 
 func _refresh() -> void:
 	if not is_instance_valid(panel): return
@@ -50,14 +45,15 @@ func _refresh() -> void:
 			for token: Dictionary in application.adventure["trays"][key]:
 				if Members.can_token(application.adventure["party"],application.session_actor,token["id"]): panel.permitted_ids[token["id"]] = true
 	panel.refresh(application.adventure["trays"])
-	board.ui.tray_button.text = "棋子托盘 · %d" % count
+	board.ui.set_tray_count(count)
 
 func _toggle() -> void:
 	if blocked() or not application.adventure["party"]["members"].has(application.session_actor): return
-	if panel.visible: panel.close(); return
+	if board.ui.is_tray_drawer_open():
+		board.ui.collapse_workbar_drawer()
+		return
 	board.prepare_session_switch()
-	board.ui.creation_palette.close()
-	panel.open(board.ui.sidebar_right(),panel.category)
+	board.ui.open_tray_drawer(panel.category)
 
 func _find(id: String) -> Dictionary:
 	for key in application.adventure["trays"]:
@@ -74,7 +70,10 @@ func _action(action: String, id: String) -> void:
 	if not Members.can_tray(application.adventure["party"],application.session_actor,found["key"]) or not Members.can_token(application.adventure["party"],application.session_actor,id): return
 	match action:
 		"place":
-			panel.close()
+			if panel.embedded_in_topbar:
+				panel.close_menus()
+			else:
+				panel.close()
 			board.begin_tray_placement(token)
 		"transfer":
 			var target: String = "public" if found["key"]!="public" else Members.tray_key(application.session_actor)
@@ -130,7 +129,7 @@ func _collect_into(data: Dictionary, key: String, dialog: Control) -> void:
 	application.adventure["trays"][key].append(token)
 	dialog.dismiss()
 	_refresh()
-	panel.open(board.ui.sidebar_right(),key)
+	board.ui.open_tray_drawer(key)
 
 func _placed(id: String) -> void:
 	var found := _find(id)
@@ -141,7 +140,8 @@ func _placed(id: String) -> void:
 
 func _overlay(keep_board := true) -> CanvasLayer:
 	board.set_application_active(false,keep_board)
-	panel.options.close()
+	if is_instance_valid(panel) and panel.has_method("close_menus"):
+		panel.close_menus()
 	overlay = CanvasLayer.new()
 	overlay.layer = 100
 	application.add_child(overlay)

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://dev/author_squared_log_wall.gd" id="1"]
+[node name="SquaredLogAuthoring" type="Node"]
+script = ExtResource("1")
+surface = "logs_squared"
+minimum_relief = 0.005
+report_path = "res://artifacts/squared-log-wall-2026-10-25/geometry-report.json"
